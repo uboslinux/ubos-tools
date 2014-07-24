@@ -1,0 +1,30 @@
+pkgname=$(basename $(pwd))
+pkgver=0.6
+pkgrel=1
+pkgdesc="Testing tools for web apps"
+arch=('any')
+url="http://indiebox.net/"
+license=('GPL')
+groups=()
+depends=('indiebox-admin' 'perl-www-curl' 'sudo')
+backup=()
+source=()
+options=('!strip')
+md5sums=()
+
+package() {
+# Code
+    mkdir -p $pkgdir/usr/bin
+    install -m755 $startdir/bin/webapptest $pkgdir/usr/bin/
+
+    mkdir -p $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/WebAppTest/{Scaffolds,TestPlans,Commands}
+    for f in $startdir/vendor_perl/IndieBox/WebAppTest/*.pm; do
+        install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/WebAppTest/
+    done
+    for p in Scaffolds TestPlans Commands; do
+        for f in $startdir/vendor_perl/IndieBox/WebAppTest/$p/*.pm; do
+            install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/WebAppTest/$p
+        done
+    done
+    install -m755 $startdir/vendor_perl/IndieBox/WebAppTest.pm $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/
+}
