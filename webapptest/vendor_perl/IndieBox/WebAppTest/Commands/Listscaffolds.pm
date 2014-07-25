@@ -38,7 +38,7 @@ sub run {
     }
 
     my $scaffolds = IndieBox::WebAppTest::TestingUtils::findScaffolds();
-    IndieBox::WebAppTest::TestingUtils::printHashAsColumns( $scaffolds, sub { IndieBox::Utils::invokeMethod( shift . '::help' ); } );
+    IndieBox::Utils::printHashAsColumns( $scaffolds, sub { IndieBox::Utils::invokeMethod( shift . '::help' ); } );
 
     1;
 }

@@ -38,7 +38,7 @@ sub run {
     }
 
     my $testPlans = IndieBox::WebAppTest::TestingUtils::findTestPlans();
-    IndieBox::WebAppTest::TestingUtils::printHashAsColumns( $testPlans, sub { IndieBox::Utils::invokeMethod( shift . '::help' ); } );
+    IndieBox::Utils::printHashAsColumns( $testPlans, sub { IndieBox::Utils::invokeMethod( shift . '::help' ); } );
 
     1;
 }

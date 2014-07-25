@@ -29,35 +29,6 @@ use IndieBox::Logging;
 use IndieBox::Utils;
 
 ##
-# Helper method to print name-value pairs, with the value optionally processed
-# $hash: hash of first column to second column
-# $f: optional method to invoke on the second column before printing
-
-sub printHashAsColumns {
-    my $hash = shift;
-    my $f    = shift || sub { shift; };
-
-    my $indent = 0;
-    foreach my $name ( keys %$hash ) {
-        my $length = length( $name );
-        if( $length > $indent ) {
-            $indent = $length;
-        }
-    }
-
-    my $s = ' ' x $indent;
-    foreach my $name ( sort keys %$hash ) {
-        my $obj            = $hash->{$name};
-        my $formattedValue = &$f( $obj );
-        $formattedValue =~ s!^\s*!$s!gm;
-        $formattedValue =~ s!^\s+!!;
-        $formattedValue =~ s!\s+$!!;
-
-        printf( '%-' . $indent . "s - %s\n", $name, $formattedValue );
-    }
-}
-
-##
 # Find all AppTests in a directory.
 # $dir: directory to look in
 # return: hash of file name to AppTest object

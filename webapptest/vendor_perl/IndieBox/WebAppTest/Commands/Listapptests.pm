@@ -54,7 +54,7 @@ sub run {
         $allAppTests = IndieBox::WebAppTest::TestingUtils::findAppTestsInDirectory( getcwd() );
     }
 
-    IndieBox::WebAppTest::TestingUtils::printHashAsColumns( $allAppTests, sub { shift->description(); } );
+    IndieBox::Utils::printHashAsColumns( $allAppTests, sub { shift->description(); } );
 
     1;
 }
