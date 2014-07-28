@@ -62,8 +62,9 @@ unless( $essential ) {
     %compareFields = (
         %compareFields,
         'url'       => 'URL',
-        'builddate' => 'BUILDDATE',
-        'license'   => 'LICENSE' # Whole bunch of (minor?) mismatches, e.g. LGPL vs GPL
+        'builddate' => 'BUILDDATE'
+        # 'license'   => 'LICENSE' # There seem to be a bunch of mismatches, e.g. dual-licensed
+        # as GPL and custom in one place, and only GPL in another. FIXME. Needs investigation.
     );
 }
 
@@ -96,8 +97,16 @@ foreach my $dbFile ( @dbFiles ) {
             my $key;
             foreach my $line ( split /\n/, $content ) {
                 if( $key ) {
-                    $packageData->{$key} = $line; # The line after the key was found
-                    $key = undef;
+                    if( $line ) {
+                        if( $packageData->{$key} ) {
+                            $packageData->{$key} .= "\n$line";
+                        } else {
+                            $packageData->{$key} = $line;
+                        }
+                            
+                    } else {
+                        $key = undef;
+                    }
                 } elsif( $line =~ m!^%(.+)%$! ) {
                     $key = $1;
                 }
@@ -169,13 +178,16 @@ foreach my $dbFile ( @dbFiles ) {
     }
     
     # Now find package files that aren't in the database
-    my $notFound = {};
+    my $notInDb = {};
     while( my( $foundPackageNameVersion, $foundPackageInfo ) = each %$foundPackages ) {
         unless( $definedPackages->{$foundPackageNameVersion} ) {
             # let's also report on alternate versions found of the same package
             if( $foundPackageNameVersion =~ m!(.*)(-\d+:)?-([^-]+)-(\d+)! ) {
                 my $packageName = $1;
-                $notFound->{$packageName} = $foundPackageNameVersion;
+                unless( defined( $notInDb->{$packageName} )) {
+                    $notInDb->{$packageName} = [];
+                }
+                push @{$notInDb->{$packageName}}, $foundPackageNameVersion;
                 
             } elsif( !$obsoleteOnly ) {
                 error( 'Failed to parse package name/version:', $foundPackageNameVersion );
@@ -189,27 +201,30 @@ foreach my $dbFile ( @dbFiles ) {
             }
         }
     }
-    while( my( $notFoundName, $notFoundPackageNameVersion ) = each %$notFound ) {
-        if( $obsoleteOnly ) {
-            print $notFoundPackageNameVersion;
-        } else {
-            info( 'Package', $notFoundPackageNameVersion, 'found, but not referenced in package database' );
-        }
-        
-        while( my( $foundPackageNameVersion, $foundPackageInfo ) = each %$foundPackages ) {
-            if( $foundPackageNameVersion =~ m!^\Q$notFoundName\E(-\d+:)?-([^-]+)-(\d+)! ) {
-                if( $definedPackages->{$foundPackageNameVersion} ) {
+    while( my( $notInDbName, $notInDbPackageVersions ) = each %$notInDb ) {
+
+        foreach my $notInDbPackageVersion ( @$notInDbPackageVersions ) {
+            if( $obsoleteOnly ) {
+                print $notInDbPackageVersion;
+            } else {
+                info( 'Package', $notInDbPackageVersion, 'found, but not referenced in package database' );
+            }
+            
+            while( my( $definedPackageVersion, $definedPackageInfo ) = each %$definedPackages ) {
+                if( $definedPackageVersion =~ m!^\Q$notInDbName\E(-\d+:)?-([^-]+)-(\d+)! ) {
                     if( $obsoleteOnly ) {
-                        print " # $foundPackageNameVersion";
+                        if( $verbose ) {
+                            print " # db has: $definedPackageVersion";
+                        }
                     } else {
-                        info( '    however, alternate version', $foundPackageNameVersion, 'found in package database' );
+                        info( '    however, alternate version', $definedPackageVersion, 'found in package database' );
                     }
-                    last;
+                    # putting last here seems to create some really strange effects, so let's not do this
                 }
             }
-        }
-        if( $obsoleteOnly ) {
-            print "\n";
+            if( $obsoleteOnly ) {
+                print "\n";
+            }
         }
     }
 }
