@@ -29,24 +29,21 @@ use Getopt::Long;
 # Keep tempfiles around while the program is running
 my $tempFiles = {};
 
-my %compareFields = (
-    'pkgver'    => 'VERSION',
-    'url'       => 'URL',
-    'builddate' => 'BUILDDATE',
-    'filesize'  => 'CSIZE',
-    'size'      => 'ISIZE',
-    'arch'      => 'ARCH',
-    'license'   => 'LICENSE'
-);
-
+my $essential;
+my $obsoleteOnly;
 my $help;
 my $verbose;
 my $exit = 0;
 
-GetOptions( 'help'    => \$help,
-            'verbose' => \$verbose );
+GetOptions( 'essential'     => \$essential,
+            'obsolete-only' => \$obsoleteOnly,
+            'help'          => \$help,
+            'verbose'       => \$verbose );
 
 if( $help ) {
+    synopsisHelpQuit();
+}
+if( $essential && $obsoleteOnly ) {
     synopsisHelpQuit();
 }
 unless( @ARGV ) {
@@ -54,9 +51,29 @@ unless( @ARGV ) {
 }
 my @dbFiles = @ARGV;
 
+my %compareFields = (
+    'pkgname'   => 'NAME',
+    'pkgver'    => 'VERSION',
+    'filesize'  => 'CSIZE',
+    'size'      => 'ISIZE',
+    'arch'      => 'ARCH' );
+
+unless( $essential ) {
+    %compareFields = (
+        %compareFields,
+        'url'       => 'URL',
+        'builddate' => 'BUILDDATE',
+        'license'   => 'LICENSE' # Whole bunch of (minor?) mismatches, e.g. LGPL vs GPL
+    );
+}
+
 foreach my $dbFile ( @dbFiles ) {
     if( $verbose ) {
-        print "Package db file: $dbFile\n";
+        if( $obsoleteOnly ) {
+            print "# Package db file: $dbFile\n";
+        } else {
+            print "Package db file: $dbFile\n";
+        }
     }
     unless( -r $dbFile ) {
         fatal( 'Cannot read file:', $dbFile );
@@ -119,7 +136,7 @@ foreach my $dbFile ( @dbFiles ) {
         
         my $content = $packageTar->get_content( '.PKGINFO' );
         foreach my $line ( split /\n/, $content ) {
-            if( $line =~ m!(\S+)\s*=\s*(\S+)! ) {
+            if( $line =~ m!(\S+)\s*=\s*(\S*)! ) {
                 my ( $key, $value ) = ( $1, $2 );
                 $pkgInfo->{$key} = $value;
             }
@@ -131,21 +148,23 @@ foreach my $dbFile ( @dbFiles ) {
     
     if( 0 ) { # set to 1 for debugging
         use Data::Dumper;
-        print "*** Defined packages\n";
+        print "*** Packages mentioned in package database\n";
         print Dumper( $definedPackages ) . "\n";
 
-        print "*** Found packages\n";
+        print "*** Packages actually found in filesystem\n";
         print Dumper( $foundPackages ) . "\n";
     }
 
     # Now let's do some matching. First: make sure all package files exist that are referenced in
     # the package database, and are consistent
-    while( my( $definedPackageNameVersion, $definedPackageInfo ) = each %$definedPackages ) {
-        my $foundPackageInfo = $foundPackages->{$definedPackageNameVersion};
-        if( $foundPackageInfo ) {
-            compareFoundDefined( $definedPackageNameVersion, $foundPackageInfo, $definedPackageInfo );
-        } else {
-            error( 'Package', $definedPackageNameVersion, 'is listed in package database, but package file does not exist. Repository broken.' );
+    unless( $obsoleteOnly ) {
+        while( my( $definedPackageNameVersion, $definedPackageInfo ) = each %$definedPackages ) {
+            my $foundPackageInfo = $foundPackages->{$definedPackageNameVersion};
+            if( $foundPackageInfo ) {
+                compareFoundDefined( $definedPackageNameVersion, $foundPackageInfo, $definedPackageInfo );
+            } else {
+                error( 'Package', $definedPackageNameVersion, 'is listed in package database, but package file does not exist. Repository broken.' );
+            }
         }
     }
     
@@ -158,23 +177,39 @@ foreach my $dbFile ( @dbFiles ) {
                 my $packageName = $1;
                 $notFound->{$packageName} = $foundPackageNameVersion;
                 
-            } else {
+            } elsif( !$obsoleteOnly ) {
                 error( 'Failed to parse package name/version:', $foundPackageNameVersion );
             }
             
         } elsif( $verbose ) {
-            info( 'Package', $foundPackageNameVersion, 'found as expected' );
+            if( $obsoleteOnly ) {
+                info( '# Package', $foundPackageNameVersion, 'found as expected' );
+            } else {
+                info( 'Package', $foundPackageNameVersion, 'found as expected' );
+            }
         }
     }
     while( my( $notFoundName, $notFoundPackageNameVersion ) = each %$notFound ) {
-        info( 'Package', $notFoundPackageNameVersion, 'found, but not referenced in package database', $dbFile );
+        if( $obsoleteOnly ) {
+            print $notFoundPackageNameVersion;
+        } else {
+            info( 'Package', $notFoundPackageNameVersion, 'found, but not referenced in package database' );
+        }
         
         while( my( $foundPackageNameVersion, $foundPackageInfo ) = each %$foundPackages ) {
-            if( $foundPackageNameVersion =~ m!^\Q$notFoundName\E-! ) {
+            if( $foundPackageNameVersion =~ m!^\Q$notFoundName\E(-\d+:)?-([^-]+)-(\d+)! ) {
                 if( $definedPackages->{$foundPackageNameVersion} ) {
-                    info( '    however, alternate version', $foundPackageNameVersion, 'found in package database' );
+                    if( $obsoleteOnly ) {
+                        print " # $foundPackageNameVersion";
+                    } else {
+                        info( '    however, alternate version', $foundPackageNameVersion, 'found in package database' );
+                    }
+                    last;
                 }
             }
+        }
+        if( $obsoleteOnly ) {
+            print "\n";
         }
     }
 }
@@ -213,15 +248,23 @@ sub compareFoundDefined {
     my $definedInfo = shift;
 
     while( my( $foundKey, $definedKey ) = each %compareFields ) {
-        if( $foundInfo->{$foundKey} ne $definedInfo->{$definedKey} ) {
-            error(  'Package',
-                    $nameVersion,
-                    'has mismatching',
-                    "$foundKey:",
-                    $foundInfo->{$foundKey},
-                    '(package file meta-data) vs',
-                    $definedInfo->{$definedKey},
-                    '(package database)' );
+        if( defined( $foundInfo->{$foundKey} )) {
+            if( defined( $definedInfo->{$definedKey} )) {
+                if( $foundInfo->{$foundKey} ne $definedInfo->{$definedKey} ) {
+                    error(  'Package',
+                            $nameVersion,
+                            'has mismatching',
+                            "$foundKey:",
+                            $foundInfo->{$foundKey},
+                            '(package file meta-data) vs',
+                            $definedInfo->{$definedKey},
+                            '(package database)' );
+                }
+            } else {
+                info( 'Package', "$nameVersion:", 'expected key', $definedKey, 'in package database, but not found' );
+            }
+        } else {
+            info( 'Package', "$nameVersion:", 'expected key', $foundKey, 'in package metadata, but not found' );
         }
     }
 }
@@ -258,10 +301,17 @@ sub fatal {
 sub synopsisHelpQuit {
 
     print <<END;
-pacsane [--verbose] <dbfile>...
+pacsane [--verbose] [--essential] <dbfile>...
     where <dbfile> is the database file of a pacman repository in the local filesystem.
+    --verbose:   print more info
+    --essential: only compare properties that are essential for the integrity of the 
+                 package database
+pacsane [--verbose] --obsolete-only <dbfile>...
+    Print out a list of package files that is obsolete in the repository, e.g. because
+    the package is not contained in the package database any more, or a more recent
+    version is contained instead.
 pacsane --help
-    this command
+    this version of the command
 END
     exit 0;
 }
