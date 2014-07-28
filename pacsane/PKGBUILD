@@ -1,0 +1,16 @@
+developer=http://indiebox.net/
+maintainer=http://indiebox.net/
+pkgname=$(basename $(pwd))
+pkgver=0.1
+pkgrel=1
+pkgdesc="Check pacman database for internal consistency"
+arch=( 'any' )
+url="http://ubos.indiebox.net/"
+license=('GPL')
+depends=('perl' 'xz' )
+makedepends=()
+
+package() {
+    mkdir -m755 -p $pkgdir/usr/bin/
+    install -m755 $startdir/pacsane $pkgdir/usr/bin/
+}

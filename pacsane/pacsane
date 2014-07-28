@@ -1,0 +1,216 @@
+#!/usr/bin/perl
+#
+# pacsane -- check pacman database for consistency
+#
+# This file is part of pacsane
+# (C) 2012-2014 Indie Computing Corp.
+#
+# pacsane is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# pacsane is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with pacsane.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+use strict;
+use warnings;
+
+use Archive::Tar;
+use File::Temp;
+use Getopt::Long;
+
+# Keep tempfiles around while the program is running
+my $tempFiles = {};
+
+my $help;
+my $verbose;
+my $exit = 0;
+
+GetOptions( 'help'    => \$help,
+            'verbose' => \$verbose );
+
+if( $help ) {
+    synopsisHelpQuit();
+}
+unless( @ARGV ) {
+    synopsisHelpQuit();
+}
+my @dbFiles = @ARGV;
+
+foreach my $dbFile ( @dbFiles ) {
+    if( $verbose ) {
+        print "Package db file: $dbFile\n";
+    }
+    unless( -r $dbFile ) {
+        fatal( 'Cannot read file:', $dbFile );
+    }
+    
+    my $dbTar = readTar( $dbFile );
+    unless( $dbTar ) {
+        fatal( 'Cannot unpack. Is this a package db file?', $dbFile );
+    }
+    my @dbTarFiles = $dbTar->get_files;
+    
+    my $definedPackages = {};
+    foreach my $dbTarFile ( @dbTarFiles ) {
+        my $dbTarPath = $dbTarFile->full_path;
+        if( $dbTarPath =~ m!^(.*)/desc$! ) {
+            my $packageName = $1;
+            my $content     = $dbTarFile->get_content;
+            
+            my $packageData = {};
+            my $key;
+            foreach my $line ( split /\n/, $content ) {
+                if( $key ) {
+                    $packageData->{$key} = $line; # The line after the key was found
+                    $key = undef;
+                } elsif( $line =~ m!^%(.+)%$! ) {
+                    $key = $1;
+                }
+            }
+            $definedPackages->{$packageName} = $packageData;
+        }
+    }
+    delete $tempFiles->{$dbFile};
+    
+    # Now let's see what we have in the same directory.
+    my $dir;
+    if( $dbFile =~ m!^(.*/)[^/]+$! ) {
+        $dir = $1;
+    } else {
+        $dir = '';
+    } # can't have trailing /, we wouldn't have been able to read file earlier
+    my @packageFiles = <$dir*.pkg.*>;
+    my $foundPackages = {};
+    foreach my $packageFile ( @packageFiles ) {
+        my $shortPackageFile = $packageFile;
+        if( $dir ) {
+            $shortPackageFile =~ s!^$dir!!;
+        }
+        my $packagePlusVersion = $shortPackageFile;
+        $packagePlusVersion =~ s!-[a-z0-9_]+\.pkg\..*!!;
+
+        my $packageTar = readTar( $packageFile );
+        unless( $packageTar->contains_file( '.PKGINFO' )) {
+            error( 'Supposed package file', $packageTar, 'does not contain required .PKGINFO entry' );
+            next;
+        }
+        my $pkgInfo = { 'filename' => $shortPackageFile }; # let's not forget about this one
+        my $content = $packageTar->get_content( '.PKGINFO' );
+        foreach my $line ( split /\n/, $content ) {
+            if( $line =~ m!(\S+)\s*=\s*(\S+)! ) {
+                my ( $key, $value ) = ( $1, $2 );
+                $pkgInfo->{$key} = $value;
+            }
+        }
+        $foundPackages->{$packagePlusVersion} = $pkgInfo;
+        
+        delete $tempFiles->{$packageFile};
+    }
+    
+    if( 0 ) { # set to 1 for debugging
+        use Data::Dumper;
+        print "*** Defined packages\n";
+        print Dumper( $definedPackages ) . "\n";
+
+        print "*** Found packages\n";
+        print Dumper( $foundPackages ) . "\n";
+    }
+
+    # Now let's do some matching. First: make sure all package files exist that are referenced in
+    # the package database, and are consistent
+    
+    # Now find package files that aren't in the database
+    my $notFound = {};
+    while( my( $foundPackageNameVersion, $foundPackageInfo ) = each %$foundPackages ) {
+        unless( $definedPackages->{$foundPackageNameVersion} ) {
+            # let's also report on alternate versions found of the same package
+            if( $foundPackageNameVersion =~ m!(.*)(-\d+:)?-([^-]+)-(\d+)! ) {
+                my $packageName = $1;
+                $notFound->{$packageName} = $foundPackageNameVersion;
+                
+            } else {
+                error( 'Failed to parse package name/version:', $foundPackageNameVersion );
+            }
+            
+        } elsif( $verbose ) {
+            print "Package $foundPackageNameVersion found as expected\n";
+        }
+    }
+    while( my( $notFoundName, $notFoundPackageNameVersion ) = each %$notFound ) {
+        print "Package $notFoundPackageNameVersion found, but not referenced in package database $dbFile\n";
+        
+        while( my( $foundPackageNameVersion, $foundPackageInfo ) = each %$foundPackages ) {
+            if( $foundPackageNameVersion =~ m!^\Q$notFoundName\E-! ) {
+                if( $definedPackages->{$foundPackageNameVersion} ) {
+                    print "    however, alternate version $foundPackageNameVersion found in package database\n";
+                }
+            }
+        }
+    }
+}
+
+exit $exit;
+
+
+#####
+# Read a tar.xz file.
+# Archive::Tar doesn't know how to deal with .xz files, we first uncompress
+sub readTar {
+    my $file = shift;
+
+    my $tarFile;
+    if( $file =~ m!\.xz$! ) {
+        my $uncompressed = File::Temp->new( UNLINK => 1 );
+        $tempFiles->{$file} = $uncompressed;
+
+        $tarFile = $uncompressed->filename;
+        system( "xzcat '$file' > '$tarFile'" ) == 0
+            or fatal( 'xzcat failed:', $? );
+    } else {
+        $tarFile = $file;
+    }
+    my $tar = Archive::Tar->new( $tarFile );
+    return $tar;
+}
+    
+#####
+# An error occurred, but we can continue
+sub error {
+    my @args = @_;
+ 
+    print STDERR 'ERROR: ' . join( ' ' , @args ) . "\n";
+    
+    ++$exit;
+}
+    
+#####
+# An unrecoverable error occurred
+sub fatal {
+    my @args = @_;
+ 
+    print STDERR 'FATAL: ' . join( ' ' , @args ) . "\n";
+    exit -1;
+}
+
+#####
+# Print synopsis or help
+sub synopsisHelpQuit {
+
+    print <<END;
+pacsane [--verbose] <dbfile>...
+    where <dbfile> is the database file of a pacman repository in the local filesystem.
+pacsane --help
+    this command
+END
+    exit 0;
+}
+
+1;
