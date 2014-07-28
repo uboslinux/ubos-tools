@@ -29,6 +29,16 @@ use Getopt::Long;
 # Keep tempfiles around while the program is running
 my $tempFiles = {};
 
+my %compareFields = (
+    'pkgver'    => 'VERSION',
+    'url'       => 'URL',
+    'builddate' => 'BUILDDATE',
+    'filesize'  => 'CSIZE',
+    'size'      => 'ISIZE',
+    'arch'      => 'ARCH',
+    'license'   => 'LICENSE'
+);
+
 my $help;
 my $verbose;
 my $exit = 0;
@@ -102,7 +112,11 @@ foreach my $dbFile ( @dbFiles ) {
             error( 'Supposed package file', $packageTar, 'does not contain required .PKGINFO entry' );
             next;
         }
-        my $pkgInfo = { 'filename' => $shortPackageFile }; # let's not forget about this one
+        my $pkgInfo = {
+            'filename' => $shortPackageFile,
+            'filesize' => ( -s $packageFile )
+        }; # keep some other data while we are at it
+        
         my $content = $packageTar->get_content( '.PKGINFO' );
         foreach my $line ( split /\n/, $content ) {
             if( $line =~ m!(\S+)\s*=\s*(\S+)! ) {
@@ -126,6 +140,14 @@ foreach my $dbFile ( @dbFiles ) {
 
     # Now let's do some matching. First: make sure all package files exist that are referenced in
     # the package database, and are consistent
+    while( my( $definedPackageNameVersion, $definedPackageInfo ) = each %$definedPackages ) {
+        my $foundPackageInfo = $foundPackages->{$definedPackageNameVersion};
+        if( $foundPackageInfo ) {
+            compareFoundDefined( $definedPackageNameVersion, $foundPackageInfo, $definedPackageInfo );
+        } else {
+            error( 'Package', $definedPackageNameVersion, 'is listed in package database, but package file does not exist. Repository broken.' );
+        }
+    }
     
     # Now find package files that aren't in the database
     my $notFound = {};
@@ -141,20 +163,23 @@ foreach my $dbFile ( @dbFiles ) {
             }
             
         } elsif( $verbose ) {
-            print "Package $foundPackageNameVersion found as expected\n";
+            info( 'Package', $foundPackageNameVersion, 'found as expected' );
         }
     }
     while( my( $notFoundName, $notFoundPackageNameVersion ) = each %$notFound ) {
-        print "Package $notFoundPackageNameVersion found, but not referenced in package database $dbFile\n";
+        info( 'Package', $notFoundPackageNameVersion, 'found, but not referenced in package database', $dbFile );
         
         while( my( $foundPackageNameVersion, $foundPackageInfo ) = each %$foundPackages ) {
             if( $foundPackageNameVersion =~ m!^\Q$notFoundName\E-! ) {
                 if( $definedPackages->{$foundPackageNameVersion} ) {
-                    print "    however, alternate version $foundPackageNameVersion found in package database\n";
+                    info( '    however, alternate version', $foundPackageNameVersion, 'found in package database' );
                 }
             }
         }
     }
+}
+if( %$tempFiles ) {
+    error( 'Something wrong with the cleanup code', keys %$tempFiles );
 }
 
 exit $exit;
@@ -172,13 +197,41 @@ sub readTar {
         $tempFiles->{$file} = $uncompressed;
 
         $tarFile = $uncompressed->filename;
-        system( "xzcat '$file' > '$tarFile'" ) == 0
-            or fatal( 'xzcat failed:', $? );
+        system( "xzcat '$file' > '$tarFile'" ) == 0 or fatal( 'xzcat failed:', $? );
     } else {
         $tarFile = $file;
     }
     my $tar = Archive::Tar->new( $tarFile );
     return $tar;
+}
+
+#####
+# Compare the found and the defined package info
+sub compareFoundDefined {
+    my $nameVersion = shift;
+    my $foundInfo   = shift;
+    my $definedInfo = shift;
+
+    while( my( $foundKey, $definedKey ) = each %compareFields ) {
+        if( $foundInfo->{$foundKey} ne $definedInfo->{$definedKey} ) {
+            error(  'Package',
+                    $nameVersion,
+                    'has mismatching',
+                    "$foundKey:",
+                    $foundInfo->{$foundKey},
+                    '(package file meta-data) vs',
+                    $definedInfo->{$definedKey},
+                    '(package database)' );
+        }
+    }
+}
+            
+#####
+# Print informational message
+sub info {
+    my @args = @_;
+ 
+    print join( ' ' , @args ) . "\n";
 }
     
 #####
