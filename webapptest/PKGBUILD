@@ -1,5 +1,5 @@
 pkgname=$(basename $(pwd))
-pkgver=0.6
+pkgver=0.7
 pkgrel=1
 pkgdesc="Testing tools for web apps"
 arch=('any')
@@ -7,6 +7,7 @@ url="http://indiebox.net/"
 license=('GPL')
 groups=()
 depends=('indiebox-admin' 'perl-www-curl' 'sudo')
+optdepends=('virtualbox: run tests in VirtualBox virtual machines')
 backup=()
 source=()
 options=('!strip')
