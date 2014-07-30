@@ -61,6 +61,11 @@ sub run {
     unless( $scaffoldName ) {
         $scaffoldName  = 'here';
     }
+    my $scaffoldOptions;
+    if( $scaffoldName =~ m!^(.*):(.*)$! ) {
+        $scaffoldName    = $1;
+        $scaffoldOptions = $2;
+    }
     my $scaffoldPackageName = IndieBox::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
     unless( $scaffoldPackageName ) {
         fatal( 'Cannot find scaffold', $scaffoldName );
@@ -85,9 +90,10 @@ sub run {
     
     my $ret = 1;
 
-    my $testPlan = IndieBox::Utils::invokeMethod( $testPlanPackage     . '::new',   $testPlanPackage );
+print "About to invoke new in package $testPlanPackage\n";
+    my $testPlan = IndieBox::Utils::invokeMethod( $testPlanPackage     . '->new' );
 
-    my $scaffold = IndieBox::Utils::invokeMethod( $scaffoldPackageName . '::setup', $scaffoldPackageName );
+    my $scaffold = IndieBox::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
     foreach my $appTest ( @appTestsToRun ) {
         if( $verbose || @appTestsToRun > 1 ) {
             print "Running AppTest " . $appTest->name . "\n";
@@ -113,12 +119,14 @@ sub run {
 sub synopsisHelp {
     return {
         <<SSS => <<HHH
-    [--interactive] [--verbose] [--scaffold <scaffold>] [--testplan <testplan>] <apptest>...
+    [--interactive] [--verbose] [--scaffold <scaffold[:scaffoldoptions]>] [--testplan <testplan>] <apptest>...
 SSS
     Run the test apptest.
     --interactive: stop at important points and wait for user input
     --verbose: print more information about how the test progresses
-    <scaffold>: use this named scaffold instead of the default
+    <scaffold>: use this named scaffold instead of the default. If given as
+                "abc:def", "abc" represents the name of the scaffold, and
+                "def" are scaffold-specific options
     <testplan>: use this named testplan instead of the default
 HHH
     };
