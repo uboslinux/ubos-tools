@@ -8,6 +8,18 @@
 #    download new packages if the test requires that.
 # 2: uses hostonly, so the host can do HTTP get on web apps
 #
+# The following options can be provied:
+# * vmdktemplate (required): name of a VMDK file containing a VirtualBox
+#   virtual Indie Box. This file will only be copied as a template, and
+#   not modified by tests
+# * vmdkfile (optional): name of the copy of the VMDK template file
+# * ram (optional): amount of RAM to allocate to the guest
+# * indiebox-admin-keyfile (required): private ssh key for the
+#   indiebox-admin user on the guest, so the scaffold can invoke
+#   'sudo indiebox-admin' on the guest
+# * vncsecret (optional): if provided, the guest will be instantiated
+#   with its display available via VNC, and this password
+#
 # This file is part of webapptest.
 # (C) 2012-2014 Indie Computing Corp.
 #
@@ -31,7 +43,7 @@ use warnings;
 package IndieBox::WebAppTest::Scaffolds::VBox;
 
 use base qw( IndieBox::WebAppTest::AbstractScaffold );
-use fields qw( vmdkTemplate vmdkFile ram vram indieboxAdminKeyfile vmName hostOnlyIp );
+use fields qw( vmdkTemplate vmdkFile indieboxAdminKeyfile vmName hostOnlyIp );
 use IndieBox::Logging;
 use IndieBox::Utils;
 
@@ -40,11 +52,6 @@ my $hostonlyInterface = 'vboxnet0';
 
 # how many seconds we try until we give up waiting for boot
 my $bootMaxSeconds = 120;
-
-# How to connect to the console: (example)
-# VBoxManage setproperty vrdeextpack VNC
-# VBoxManage modifyvm test1 --vrdeproperty VNCPassword=s3cr3t 
-# VBoxManage modifyvm test1 --vrdeauthlibrary null
 
 ##
 # Instantiate the Scaffold.
@@ -57,8 +64,10 @@ sub setup {
     }
     $self->SUPER::setup();
 
-    $self->{ram}  = 512; # default
-    $self->{vram} =  16; # default
+    my $vncSecret = undef;
+    my $ram       = 512; # default
+    my $vram      =  16; # default
+
     if( $options ) {
         foreach my $pair ( split /&/, $options ) {
             if( $pair =~ m!^(.*)(=(.*))$! ) {
@@ -89,7 +98,7 @@ sub setup {
                     if( !$value ) {
                         fatal( 'No value provided for ram' );
                     } else {
-                        $self->{ram} = $value;
+                        $ram = $value;
                     }
     
                 } elsif( 'indiebox-admin-keyfile' eq $key ) {
@@ -99,6 +108,13 @@ sub setup {
                         $self->{indieboxAdminKeyfile} = $value;
                     }
     
+                } elsif( 'vncsecret' eq $key ) {
+                    if( !$value ) {
+                        fatal( 'No value provided for vncsecret' );
+                    } else {
+                        $vncSecret = $value;
+                    }
+
                 } else {
                     fatal( 'Unknown VBox scaffold option', $key );
                 }
@@ -119,7 +135,7 @@ sub setup {
         fatal( 'Cannot find or read file', $self->{indieboxAdminKeyfile} );
     }
 
-    my $vmName = 'webapptest-' . IndieBox::Utils::randomHex( 16 );
+    my $vmName = 'webapptest-' . IndieBox::Utils::time2string( time() );
     $self->{vmName} = $vmName;
 
     unless( $self->{vmdkFile} ) {
@@ -142,7 +158,7 @@ sub setup {
     }
 
     debug( 'Setting RAM' );
-    if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --memory " . $self->{ram} )) {
+    if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --memory $ram" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
@@ -186,6 +202,28 @@ sub setup {
     if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --hostonlyadapter2 $hostonlyInterface" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
+
+    if( $vncSecret ) {
+        if( IndieBox::Utils::myexec( "VBoxManage setproperty vrdeextpack VNC" )) {
+            error( 'VBoxManage setproperty vrdeextpack failed' );
+        }
+        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrde on" )) { 
+            error( 'VBoxManage modifyvm (enabling vrde) failed. You may not be able to connect via VNC.' );
+        }
+        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeproperty 'VNCPassword=$vncSecret'" )) { 
+            error( 'VBoxManage modifyvm (setting VNC password) failed. You may not be able to connect via VNC.' );
+        }
+        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeauthlibrary null" )) {
+            error( 'VBoxManage modifyvm --vrdeauthlibrary failed' );
+        }
+        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeport 1501" )) {
+            error( 'VBoxManage modifyvm --vrdeport failed' );
+        } else {
+            info( 'You can access the VM via VNC at port 1501' );
+        }
+    }
+
+    debug( 'Starting vm', $vmName );
     if( IndieBox::Utils::myexec( "VBoxManage startvm '$vmName' --type headless" )) {
         # This starts the VM in the background (unless VBoxHeadless)
         fatal( 'VBoxManage startvm failed' );
@@ -264,6 +302,7 @@ sub getTargetIp {
         my $ret;
         if( $out =~ m!Value: (\d+\.\d+\.\d+\.\d+)! ) {
             $self->{hostOnlyIp} = $1;
+            info( 'The virtual machine is accessible, from this host only, at', $self->{hostOnlyIp} );
             return $self->{hostOnlyIp};
         }
         sleep 1;
