@@ -44,7 +44,7 @@ sub run {
     my $parseOk = GetOptionsFromArray(
             \@args,
             'interactive' => \$interactive,
-            'verbose'     => \$verbose,
+            'verbose+'    => \$verbose,
             'scaffold=s'  => \$scaffoldName,
             'testplan=s'  => \$testPlanName );
     unless( $parseOk ) {
@@ -55,7 +55,7 @@ sub run {
     }
 
     if( $verbose ) {
-        IndieBox::Logging::setVerbose();
+        IndieBox::Logging::setVerbose( $verbose );
     }
 
     unless( $scaffoldName ) {
@@ -90,7 +90,6 @@ sub run {
     
     my $ret = 1;
 
-print "About to invoke new in package $testPlanPackage\n";
     my $testPlan = IndieBox::Utils::invokeMethod( $testPlanPackage     . '->new' );
 
     my $scaffold = IndieBox::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
