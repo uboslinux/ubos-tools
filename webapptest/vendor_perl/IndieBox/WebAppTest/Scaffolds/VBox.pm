@@ -249,6 +249,7 @@ sub teardown {
     }
 
     my $out;
+    my $err;
     for( my $count = 0 ; $count < $shutdownMaxSeconds ; ++$count ) {
         if( IndieBox::Utils::myexec( "VBoxManage showvminfo '$vmName' --machinereadable", undef, \$out )) {
             error( 'VBoxManage showvminfo failed' );
@@ -260,8 +261,8 @@ sub teardown {
         sleep 1;
     }
 
-    if( IndieBox::Utils::myexec( "VBoxManage unregistervm '$vmName' --delete" )) {
-        error( 'VBoxManage unregistervm failed' );
+    if( IndieBox::Utils::myexec( "VBoxManage unregistervm '$vmName' --delete", undef, \$out, \$err )) {
+        error( 'VBoxManage unregistervm failed', $err );
     }
     if( -e $self->{vmdkFile} ) {
         IndieBox::Utils::deleteFile( $self->{vmdkFile} );

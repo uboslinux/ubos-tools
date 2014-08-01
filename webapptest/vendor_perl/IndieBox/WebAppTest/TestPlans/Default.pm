@@ -56,7 +56,7 @@ sub run {
 
     info( 'Running TestPlan Default' );
 
-    my $appConfigJson = $self->_createAppConfiurationJson( $test );
+    my $appConfigJson = $self->_createAppConfigurationJson( $test );
     my $siteJson      = $self->_createSiteJson( $test, $appConfigJson );
 
     my $ret = 1;
