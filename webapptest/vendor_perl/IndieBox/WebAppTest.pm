@@ -28,7 +28,7 @@ package IndieBox::WebAppTest;
 use IndieBox::App;
 use IndieBox::Logging;
 
-use fields qw( name description packageName app hostname customizationPointValues statesTransitions );
+use fields qw( name description packageName testContext hostname customizationPointValues statesTransitions );
 
 ##
 # Constructor.
@@ -39,9 +39,10 @@ sub new {
     my $self = shift;
     my %pars = @_;
     
-    my $description       = $pars{description};
     my $packageName       = $pars{appToTest};
     my $name              = $pars{name} || ( 'Testing app ' . $packageName );
+    my $testContext       = $pars{testContext};
+    my $description       = $pars{description};
     my $custPointValues   = $pars{customizationPointValues};
     my $statesTransitions = $pars{checks};
     my $hostname          = $pars{hostname};
@@ -49,19 +50,17 @@ sub new {
     unless( $packageName ) {
         fatal( 'AppTest must identify the application package being tested. Use parameter named "appToTest".' );
     }
-    if( ref( $packageName )) {
-        fatal( 'AppTest package name must be a string.' );
-    }
-    
-    IndieBox::Host::installPackages( $packageName );
-    
-    my $app = new IndieBox::App( $packageName );
-    unless( $app ) {
-        fatal( 'Cannot load Manifest JSON for app', $app );
-    }
-
     if( ref( $name )) {
         fatal( 'AppTest name name must be a string.' );
+    }
+    unless( defined( $testContext )) {
+        fatal( 'AppTest testContext must be provided.' );
+    }
+    if( ref( $testContext )) {
+        fatal( 'AppTest testContext name must be a string.' );
+    }
+    unless( $testContext eq '' || $testContext =~ m!^/[-_.a-z0-9%]+$! ) {
+        fatal( 'AppTest testContext must be a single-level relative path starting with a slash, or be empty' );
     }
     if( ref( $description )) {
         fatal( 'AppTest description name must be a string.' );
@@ -105,7 +104,7 @@ sub new {
     $self->{name}                     = $name;
     $self->{description}              = $description;
     $self->{packageName}              = $packageName;
-    $self->{app}                      = $app;
+    $self->{testContext}              = $testContext;
     $self->{hostname}                 = $hostname;
     $self->{customizationPointValues} = $custPointValues;
     $self->{statesTransitions}        = $statesTransitions;
@@ -141,12 +140,12 @@ sub description {
 }
 
 ##
-# Obtain the app that is being tested.
-# return: the app
-sub getApp {
+# Obtain the relative context at which the app will be installed and tested
+# return: the context
+sub getTestContext {
     my $self = shift;
 
-    return $self->{app};
+    return $self->{testContext};
 }
 
 ##

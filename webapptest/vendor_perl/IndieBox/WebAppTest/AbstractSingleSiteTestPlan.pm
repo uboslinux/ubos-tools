@@ -80,18 +80,12 @@ sub run {
 # Helper to create the AppConfiguration JSON fragment for this test
 # $test: the AppTest
 # return: the AppConfiguration JSON fragment
-sub _createAppConfiurationJson {
+sub _createAppConfigurationJson {
     my $self = shift;
     my $test = shift;
 
-    my $app     = $test->getApp();
-    my $context = $app->fixedContext();
-    unless( defined( $context )) {
-        $context = $app->defaultContext();
-    }
-
     my $appconfig = {
-        'context'     => $context,
+        'context'     => $test->getTestContext(),
         'appconfigid' => $self->{appConfigId},
         'appid'       => $test->{packageName}
     };
@@ -99,7 +93,7 @@ sub _createAppConfiurationJson {
     my $custPointValues = $test->getCustomizationPointValues();
     if( $custPointValues ) {
         my $jsonHash = {};
-        $appconfig->{customizationpoints}->{$app->packageName()} = $jsonHash;
+        $appconfig->{customizationpoints}->{$test->{packageName}} = $jsonHash;
 
         while( my( $name, $value ) = each %$custPointValues ) {
             $jsonHash->{$name}->{value} = $value;
