@@ -50,8 +50,10 @@ use IndieBox::Utils;
 # name of the hostonly interface
 my $hostonlyInterface = 'vboxnet0';
 
-# how many seconds we try until we give up waiting for boot
+# how many seconds until we give up waiting for boot
 my $bootMaxSeconds = 120;
+# how many seconds until we give up waiting for shutdown
+my $shutdownMaxSeconds = 30;
 
 ##
 # Instantiate the Scaffold.
@@ -153,8 +155,8 @@ sub setup {
     }
 
     debug( 'Defining VM' );
-    if( IndieBox::Utils::myexec( "VBoxManage createvm -name '$vmName' -ostype Linux_64 -register" )) {
-        fatal( 'VBoxManage createvm failed' );
+    if( IndieBox::Utils::myexec( "VBoxManage createvm -name '$vmName' -ostype Linux_64 -register", undef, \$out, \$err )) {
+        fatal( 'VBoxManage createvm failed:', $err );
     }
 
     debug( 'Setting RAM' );
@@ -224,7 +226,7 @@ sub setup {
     }
 
     debug( 'Starting vm', $vmName );
-    if( IndieBox::Utils::myexec( "VBoxManage startvm '$vmName' --type headless" )) {
+    if( IndieBox::Utils::myexec( "VBoxManage startvm '$vmName' --type headless", undef, \$out, \$err )) {
         # This starts the VM in the background (unless VBoxHeadless)
         fatal( 'VBoxManage startvm failed' );
     }
@@ -245,7 +247,19 @@ sub teardown {
     if( IndieBox::Utils::myexec( "VBoxManage controlvm '$vmName' acpipowerbutton" )) {
         error( 'VBoxManage unregistervm failed' );
     }
-    sleep 10;
+
+    my $out;
+    for( my $count = 0 ; $count < $shutdownMaxSeconds ; ++$count ) {
+        if( IndieBox::Utils::myexec( "VBoxManage showvminfo '$vmName' --machinereadable", undef, \$out )) {
+            error( 'VBoxManage showvminfo failed' );
+        }
+        if( $out =~ m!VMState="poweroff"! ) {
+            debug( 'VM state is poweroff' );
+            last;
+        }
+        sleep 1;
+    }
+
     if( IndieBox::Utils::myexec( "VBoxManage unregistervm '$vmName' --delete" )) {
         error( 'VBoxManage unregistervm failed' );
     }
@@ -272,7 +286,8 @@ sub invokeOnTarget {
     my $ip = $self->getTargetIp();
     
     my $sshCmd = 'ssh';
-    $sshCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null';
+    $sshCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
+            # don't put into known_hosts file, and don't print resulting warnings
     $sshCmd .= ' indiebox-admin@' . $ip;
     $sshCmd .= ' -i ' . $self->{indieboxAdminKeyfile};
     $sshCmd .= " '$cmd'";
