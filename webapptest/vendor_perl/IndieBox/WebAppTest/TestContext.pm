@@ -25,7 +25,7 @@ use warnings;
 package IndieBox::WebAppTest::TestContext;
 
 use fields qw( siteJson appConfigJson scaffold appTest testPlan ip curl cookieFile errors );
-use IndieBox::Logging;
+use IndieBox::Logging qw( debug );
 use IndieBox::WebAppTest::TestingUtils;
 use IndieBox::Utils;
 
@@ -76,7 +76,7 @@ sub hostName {
 sub context {
     my $self = shift;
 
-    return $self->{appConfigJson}->{context};
+    return $self->{appTest}->getTestContext();
 }
 
 ##
@@ -105,14 +105,22 @@ sub clearHttpSession {
 }
 
 ##
-# Perform an HTTP GET request on the host on which the application is being tested.
-# $relativeUrl: appended to the host's URL
+# Perform an HTTP GET request. If the URL does not contain a protocol and
+# hostname but starts with a slash, "http://hostname" with the hostname 
+# of the site being tested is prepended.
+# $url: URL to access
 # return: hash containing content and headers of the HTTP response
-sub httpGetRelativeHost {
-    my $self        = shift;
-    my $relativeUrl = shift;
+sub absGet {
+    my $self = shift;
+    my $url  = shift;
 
-    my $url = 'http://' . $self->hostName . $relativeUrl;
+    if( $url !~ m!^[a-z]+://! ) {
+        if( $url !~ m!^/! ) {
+            $self->error( 'Cannot access URL without protocol or leading slash:', $url );
+            return {};
+        }
+        $url = 'http://' . $self->hostName . $url;
+    }
 
     debug( 'Accessing url', $url );
 
@@ -122,7 +130,7 @@ sub httpGetRelativeHost {
     my $stdout;
     my $stderr;
     if( IndieBox::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
-        $self->reportError( 'HTTP request failed:', $stderr );
+        $self->error( 'HTTP request failed:', $stderr );
     }
 
     return { 'content' => $stdout,
@@ -134,25 +142,32 @@ sub httpGetRelativeHost {
 # Perform an HTTP GET request on the application being tested, appending to the context URL.
 # $relativeUrl: appended to the application's context URL
 # return: hash containing content and headers of the HTTP response
-sub httpGetRelativeContext {
+sub get {
     my $self        = shift;
     my $relativeUrl = shift;
 
-    return $self->httpGetRelativeHost( $self->context() . $relativeUrl );
+    return $self->absGet( $self->context() . $relativeUrl );
 }
 
 ##
-# Perform an HTTP POST request on the host on which the application is being tested.
-# $relativeUrl: appended to the host's URL
+# Perform an HTTP POST request. If the URL does not contain a protocol and
+# hostname but starts with a slash, "http://hostname" with the hostname 
+# of the site being tested is prepended.
+# $url: URL to access
 # $postPars: hash of posted parameters
 # return: hash containing content and headers of the HTTP response
-sub httpPostRelativeHost {
-    my $self        = shift;
-    my $relativeUrl = shift;
-    my $postPars    = shift;
+sub absPost {
+    my $self     = shift;
+    my $url      = shift;
+    my $postPars = shift;
 
-    my $url = 'http://' . $self->hostName . $relativeUrl;
-    my $response;
+    if( $url !~ m!^[a-z]+://! ) {
+        if( $url !~ m!^/! ) {
+            $self->error( 'Cannot access URL without protocol or leading slash:', $url );
+            return {};
+        }
+        $url = 'http://' . $self->hostName . $url;
+    }
 
     debug( 'Posting to url', $url );
 
@@ -167,7 +182,7 @@ sub httpPostRelativeHost {
     my $stdout;
     my $stderr;
     if( IndieBox::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
-        $self->reportError( 'HTTP request failed:', $stderr );
+        $self->error( 'HTTP request failed:', $stderr );
     }
     return { 'content'     => $stdout,
              'headers'     => $stderr,
@@ -182,24 +197,169 @@ sub httpPostRelativeHost {
 # $relativeUrl: appended to the application's context URL
 # $payload: hash of posted parameters
 # return: hash containing content and headers of the HTTP response
-sub httpPostRelativeContext {
+sub post {
     my $self        = shift;
     my $relativeUrl = shift;
     my $postData    = shift;
 
-    return $self->httpPostRelativeHost( $self->context() . $relativeUrl, $postData );
+    return $self->absPost( $self->context() . $relativeUrl, $postData );
 }
-        
+
+##
+# Test that an HTTP GET on a relative URL returns a page that contains certain content.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $content: the content to look for in the response
+# $status: optional HTTP status to look for
+sub getMustContain {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $content     = shift;
+    my $status      = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret = $self->mustContain( $response, $content );
+    if( defined( $status )) {
+        $ret &= $self->mustStatus( $response, $status );
+    }
+    return $ret;
+}
+
+##
+# Test that an HTTP GET on a relative URL returns a page that matches a regular expression.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $regex: the regex for the content to look for in the response
+# $status: optional HTTP status to look for
+sub getMustMatch {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $regex       = shift;
+    my $status      = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret = $self->mustMatch( $response, $regex );
+    if( defined( $status )) {
+        $ret &= $self->mustStatus( $response, $status );
+    }
+    return $ret;
+}
+
+##
+# Test that an HTTP GET on a relative URL redirects to a certain other URL.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $target: the destination URL
+# $status: optional HTTP status to look for
+sub getMustRedirect {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $target      = shift;
+    my $status      = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret = $self->mustRedirect( $response, $target );
+    if( defined( $status )) {
+        $ret &= $self->mustStatus( $response, $status );
+    }
+    return $ret;
+}
+
+##
+# Look for certain content in a response.
+# $response: the response
+# $content: the content to look for in the response
+sub mustContain {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+
+    if( $response->{content} !~ m!\Q$content\E! ) {
+        debugResponse( $response );
+        return $self->error( 'Response content does not contain', $content );
+    }
+    return 0;
+}
+
+##
+# Look for a regular expression match on the content in a response
+# $response: the response
+# $regex: the regex for the content to look for in the response
+sub mustRegex {
+    my $self     = shift;
+    my $response = shift;
+    my $regex    = shift;
+    
+    if( $response->{content} !~ m!$regex! ) {
+        debugResponse( $response );
+        return $self->error( 'Response content does not match regex', $regex );
+    }
+    return 0;
+}
+
+##
+# Look for a redirect to a certain URL in the response
+# $response: the response
+# $target: the redirect target
+sub mustRedirect {
+    my $self     = shift;
+    my $response = shift;
+    my $target   = shift;
+    
+    if( $target !~ m!^https?://! ) {
+        if( $target !~ m!^/! ) {
+            return $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
+        }
+        $target = $self->fullContext() . $target;
+    }
+
+    if( $response->{headers} !~ m!Location: $target! ) {
+        debugResponse( $response );
+        return $self->error( 'Response is not redirecting to', $target );
+    }
+    return 0;
+}
+
+##
+# Look for an HTTP status in the response
+# $response: the response
+# $status: the HTTP status
+sub mustStatus {
+    my $self     = shift;
+    my $response = shift;
+    my $status   = shift;
+
+    if( $response->{headers} !~ m!HTTP/1\.1 $status! ) {
+        debugResponse( $response );
+        return $self->error( 'Response does not have HTTP status $status' );
+    }
+    return 0;
+}
+
+##
+# Emit a response in the debug level of the log
+# $response: the response
+sub debugResponse {
+    my $response = shift;
+
+    my $msg = "Response:\n";
+    $msg .= IndieBox::Utils::printHashAsColumns( $response );
+
+    debug( $msg );
+}
+
 ##
 # Report an error.
 # @args: error message
-sub reportError {
+sub error {
     my $self = shift;
     my @args = @_;
 
-    error( 'TestContext reports error:', @_ );
+    IndieBox::Logging::error( @_ );
 
     push @{$self->{errors}}, join( ' ', @_ );
+    
+    return 1;
 }
 
 ##

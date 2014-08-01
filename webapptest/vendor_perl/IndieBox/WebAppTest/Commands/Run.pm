@@ -94,9 +94,11 @@ sub run {
 
     my $scaffold = IndieBox::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
     foreach my $appTest ( @appTestsToRun ) {
-        if( $verbose || @appTestsToRun > 1 ) {
+        if( @appTestsToRun > 1 ) {
             print "Running AppTest " . $appTest->name . "\n";
         }
+        info( 'Running AppTest', $appTest->name );
+
         my $status = $testPlan->run( $appTest, $scaffold, $interactive );
         $ret &= $status;
 
