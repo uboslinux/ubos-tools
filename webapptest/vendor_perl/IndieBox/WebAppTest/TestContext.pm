@@ -211,16 +211,41 @@ sub post {
 # $relativeUrl: appended to the application's context URL
 # $content: the content to look for in the response
 # $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
 sub getMustContain {
     my $self        = shift;
     my $relativeUrl = shift;
     my $content     = shift;
     my $status      = shift;
+    my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustContain( $response, $content );
+    my $ret = $self->mustContain( $response, $content, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status );
+        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+    }
+    return $ret;
+}
+
+##
+# Test that an HTTP GET on a relative URL returns a page that does not
+# contain certain content.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $content: the content to look for in the response
+# $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustNotContain {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $content     = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret = $self->mustNotContain( $response, $content, $errorMsg );
+    if( defined( $status )) {
+        $ret &= $self->mustStatus( $response, $status, $errorMsg );
     }
     return $ret;
 }
@@ -231,16 +256,41 @@ sub getMustContain {
 # $relativeUrl: appended to the application's context URL
 # $regex: the regex for the content to look for in the response
 # $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
 sub getMustMatch {
     my $self        = shift;
     my $relativeUrl = shift;
     my $regex       = shift;
     my $status      = shift;
+    my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustMatch( $response, $regex );
+    my $ret = $self->mustMatch( $response, $regex, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status );
+        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+    }
+    return $ret;
+}
+
+##
+# Test that an HTTP GET on a relative URL returns a page that does not
+# match a regular expression.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $regex: the regex for the content to look for in the response
+# $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustNotMatch {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $regex       = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret = $self->mustNotMatch( $response, $regex, $errorMsg );
+    if( defined( $status )) {
+        $ret &= $self->mustStatus( $response, $status, $errorMsg );
     }
     return $ret;
 }
@@ -251,16 +301,41 @@ sub getMustMatch {
 # $relativeUrl: appended to the application's context URL
 # $target: the destination URL
 # $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
 sub getMustRedirect {
     my $self        = shift;
     my $relativeUrl = shift;
     my $target      = shift;
     my $status      = shift;
+    my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustRedirect( $response, $target );
+    my $ret = $self->mustRedirect( $response, $target, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status );
+        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+    }
+    return $ret;
+}
+
+##
+# Test that an HTTP GET on a relative URL does not redirect to a certain
+# other URL.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $target: the destination URL
+# $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustNotRedirect {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $target      = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret = $self->mustNotRedirect( $response, $target, $errorMsg );
+    if( defined( $status )) {
+        $ret &= $self->mustNotStatus( $response, $status, $errorMsg );
     }
     return $ret;
 }
@@ -269,14 +344,34 @@ sub getMustRedirect {
 # Look for certain content in a response.
 # $response: the response
 # $content: the content to look for in the response
+# $errorMsg: if the test fails, report this error message
 sub mustContain {
     my $self     = shift;
     my $response = shift;
     my $content  = shift;
+    my $errorMsg = shift;
 
     if( $response->{content} !~ m!\Q$content\E! ) {
         debugResponse( $response );
-        return $self->error( 'Response content does not contain', $content );
+        return $self->error( $errorMsg, 'Response content does not contain', $content );
+    }
+    return 0;
+}
+
+##
+# Look for the lack of a certain content in a response.
+# $response: the response
+# $content: the content to look for in the response
+# $errorMsg: if the test fails, report this error message
+sub mustNotContain {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+    my $errorMsg = shift;
+
+    if( $response->{content} =~ m!\Q$content\E! ) {
+        debugResponse( $response );
+        return $self->error( $errorMsg, 'Response content contains', $content );
     }
     return 0;
 }
@@ -285,14 +380,34 @@ sub mustContain {
 # Look for a regular expression match on the content in a response
 # $response: the response
 # $regex: the regex for the content to look for in the response
+# $errorMsg: if the test fails, report this error message
 sub mustRegex {
     my $self     = shift;
     my $response = shift;
     my $regex    = shift;
+    my $errorMsg = shift;
     
     if( $response->{content} !~ m!$regex! ) {
         debugResponse( $response );
-        return $self->error( 'Response content does not match regex', $regex );
+        return $self->error( $errorMsg, 'Response content does not match regex', $regex );
+    }
+    return 0;
+}
+
+##
+# Look for a regular expression non-match on the content in a response
+# $response: the response
+# $regex: the regex for the content to look for in the response
+# $errorMsg: if the test fails, report this error message
+sub mustNotRegex {
+    my $self     = shift;
+    my $response = shift;
+    my $regex    = shift;
+    my $errorMsg = shift;
+    
+    if( $response->{content} =~ m!$regex! ) {
+        debugResponse( $response );
+        return $self->error( $errorMsg, 'Response content does not match regex', $regex );
     }
     return 0;
 }
@@ -301,10 +416,12 @@ sub mustRegex {
 # Look for a redirect to a certain URL in the response
 # $response: the response
 # $target: the redirect target
+# $errorMsg: if the test fails, report this error message
 sub mustRedirect {
     my $self     = shift;
     my $response = shift;
     my $target   = shift;
+    my $errorMsg = shift;
     
     if( $target !~ m!^https?://! ) {
         if( $target !~ m!^/! ) {
@@ -315,7 +432,32 @@ sub mustRedirect {
 
     if( $response->{headers} !~ m!Location: $target! ) {
         debugResponse( $response );
-        return $self->error( 'Response is not redirecting to', $target );
+        return $self->error( $errorMsg, 'Response is not redirecting to', $target );
+    }
+    return 0;
+}
+
+##
+# Look for the lack of a redirect to a certain URL in the response
+# $response: the response
+# $target: the redirect target
+# $errorMsg: if the test fails, report this error message
+sub mustNotRedirect {
+    my $self     = shift;
+    my $response = shift;
+    my $target   = shift;
+    my $errorMsg = shift;
+    
+    if( $target !~ m!^https?://! ) {
+        if( $target !~ m!^/! ) {
+            return $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
+        }
+        $target = $self->fullContext() . $target;
+    }
+
+    if( $response->{headers} =~ m!Location: $target! ) {
+        debugResponse( $response );
+        return $self->error( $errorMsg, 'Response is redirecting to', $target );
     }
     return 0;
 }
@@ -324,14 +466,34 @@ sub mustRedirect {
 # Look for an HTTP status in the response
 # $response: the response
 # $status: the HTTP status
+# $errorMsg: if the test fails, report this error message
 sub mustStatus {
     my $self     = shift;
     my $response = shift;
     my $status   = shift;
+    my $errorMsg = shift;
 
     if( $response->{headers} !~ m!HTTP/1\.1 $status! ) {
         debugResponse( $response );
-        return $self->error( 'Response does not have HTTP status $status' );
+        return $self->error( $errorMsg, 'Response does not have HTTP status', $status );
+    }
+    return 0;
+}
+
+##
+# Look for an HTTP status other than the provided one in the response
+# $response: the response
+# $status: the HTTP status
+# $errorMsg: if the test fails, report this error message
+sub mustNotStatus {
+    my $self     = shift;
+    my $response = shift;
+    my $status   = shift;
+    my $errorMsg = shift;
+
+    if( $response->{headers} =~ m!HTTP/1\.1 $status! ) {
+        debugResponse( $response );
+        return $self->error( $errorMsg, 'Response has HTTP status',  $status );
     }
     return 0;
 }
