@@ -275,16 +275,20 @@ sub check {
 
     $c->clearHttpSession(); # always before a new StateCheck
                         
-    my $ret    = eval { &{$self->{function}}( $c ); };
+    eval { &{$self->{function}}( $c ); };
+    
     my $errors = $c->errorsAndClear;
     my $msg    = 'failed.';
     
+    my $ret;
     if( $errors ) {
+        $msg = 'failed.';
         $ret = 0;
     } elsif( $@ ) {
         $msg = $@;
+        $ret = 0;
     } else {
-        $msg = 'return value 0.';
+        $ret = 1;
     }
 
     unless( $ret ) {
@@ -344,22 +348,26 @@ sub execute {
 
     $c->clearHttpSession(); # always before a new StateTransition
 
-    my $ret    = eval { &{$self->{function}}( $c ); };
+    eval { &{$self->{function}}( $c ); };
+
     my $errors = $c->errorsAndClear;
     my $msg    = 'failed.';
-
+    
+    my $ret;
     if( $errors ) {
+        $msg = 'failed.';
         $ret = 0;
     } elsif( $@ ) {
         $msg = $@;
         $ret = 0;
-    } elsif( !$ret ) {
-        $msg = 'return value 0.';
+    } else {
+        $ret = 1;
     }
 
     unless( $ret ) {
         error( 'StateTransition', $self->{name}, ':', $msg );
     }
+        
     return $ret;
 }
 
