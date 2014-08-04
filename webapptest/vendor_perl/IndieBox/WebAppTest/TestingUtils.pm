@@ -115,7 +115,13 @@ sub findAppTestInDirectory {
     my $dir  = shift;
     my $name = shift;
 
-    my $fileName = getcwd() . "/$name";
+    my $fileName;
+    if( $name =~ m!^/! ) {
+        $fileName = $name;
+    } else {
+        $fileName = getcwd() . "/$name";
+    }
+
     if( !-r $fileName && $fileName !~ m!\.pm$! ) {
         $fileName = "$fileName.pm";
     }
