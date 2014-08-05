@@ -71,6 +71,15 @@ sub hostName {
 }
 
 ##
+# Determine the test being run.
+# return: the test
+sub getTest {
+    my $self = shift;
+    
+    return $self->{appTest};
+}
+
+##
 # Determine the context path of the application being tested
 # return: context, e.g. /foo
 sub context {
@@ -116,8 +125,9 @@ sub absGet {
 
     if( $url !~ m!^[a-z]+://! ) {
         if( $url !~ m!^/! ) {
-            $self->error( 'Cannot access URL without protocol or leading slash:', $url );
-            return {};
+            return {
+                'error' => $self->error( 'Cannot access URL without protocol or leading slash:', $url )
+            };
         }
         $url = 'http://' . $self->hostName . $url;
     }
@@ -129,13 +139,16 @@ sub absGet {
     
     my $stdout;
     my $stderr;
+    my $ret = {};
+    
     if( IndieBox::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
-        $self->error( 'HTTP request failed:', $stderr );
+        $ret->{error} = $self->error( 'HTTP request failed:', $stderr );
     }
+    $ret->{content} = $stdout;
+    $ret->{headers} = $stderr;
+    $ret->{url}     = $url;
 
-    return { 'content' => $stdout,
-             'headers' => $stderr,
-             'url'     => $url };
+    return $ret;
 }
 
 ##
@@ -181,14 +194,18 @@ sub absPost {
     
     my $stdout;
     my $stderr;
+    my $ret = {};
+
     if( IndieBox::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
-        $self->error( 'HTTP request failed:', $stderr );
+        $ret->{error} = $self->error( 'HTTP request failed:', $stderr );
     }
-    return { 'content'     => $stdout,
-             'headers'     => $stderr,
-             'url'         => $url,
-             'postpars'    => $postPars,
-             'postcontent' => $postData };
+    $ret->{content}     = $stdout;
+    $ret->{headers}     = $stderr;
+    $ret->{url}         = $url;
+    $ret->{postpars}    = $postPars;
+    $ret->{postcontent} = $postData;
+
+    return $ret;
 }
 
 ##
@@ -220,9 +237,13 @@ sub getMustContain {
     my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustContain( $response, $content, $errorMsg );
+    my $ret      = $self->mustContain( $response, $content, $errorMsg );
+ 
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
     }
     return $ret;
 }
@@ -243,9 +264,12 @@ sub getMustNotContain {
     my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustNotContain( $response, $content, $errorMsg );
+    my $ret      = $self->mustNotContain( $response, $content, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
     }
     return $ret;
 }
@@ -265,9 +289,12 @@ sub getMustMatch {
     my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustMatch( $response, $regex, $errorMsg );
+    my $ret      = $self->mustMatch( $response, $regex, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
     }
     return $ret;
 }
@@ -288,9 +315,12 @@ sub getMustNotMatch {
     my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustNotMatch( $response, $regex, $errorMsg );
+    my $ret      = $self->mustNotMatch( $response, $regex, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
     }
     return $ret;
 }
@@ -310,9 +340,12 @@ sub getMustRedirect {
     my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustRedirect( $response, $target, $errorMsg );
+    my $ret      = $self->mustRedirect( $response, $target, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustStatus( $response, $status, $errorMsg );
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
     }
     return $ret;
 }
@@ -333,10 +366,30 @@ sub getMustNotRedirect {
     my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret = $self->mustNotRedirect( $response, $target, $errorMsg );
+    my $ret      = $self->mustNotRedirect( $response, $target, $errorMsg );
     if( defined( $status )) {
-        $ret &= $self->mustNotStatus( $response, $status, $errorMsg );
+        my $tmp = $self->mustNotStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
     }
+    return $ret;
+}
+
+##
+# Look for a certain status code in a response.
+# $response: the response
+# $status: HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustStatus {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret      = $self->mustStatus( $response, $status, $errorMsg );
+    
     return $ret;
 }
 
@@ -351,11 +404,12 @@ sub mustContain {
     my $content  = shift;
     my $errorMsg = shift;
 
+    my %ret = %$response; # make copy
     if( $response->{content} !~ m!\Q$content\E! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response content does not contain', $content );
+        $ret{error} = $self->error( $errorMsg, 'Response content does not contain', $content );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -369,11 +423,12 @@ sub mustNotContain {
     my $content  = shift;
     my $errorMsg = shift;
 
+    my %ret = %$response; # make copy
     if( $response->{content} =~ m!\Q$content\E! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response content contains', $content );
+        $ret{error} = $self->error( $errorMsg, 'Response content contains', $content );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -381,17 +436,18 @@ sub mustNotContain {
 # $response: the response
 # $regex: the regex for the content to look for in the response
 # $errorMsg: if the test fails, report this error message
-sub mustRegex {
+sub mustMatch {
     my $self     = shift;
     my $response = shift;
     my $regex    = shift;
     my $errorMsg = shift;
     
+    my %ret = %$response; # make copy
     if( $response->{content} !~ m!$regex! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response content does not match regex', $regex );
+        $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -399,17 +455,18 @@ sub mustRegex {
 # $response: the response
 # $regex: the regex for the content to look for in the response
 # $errorMsg: if the test fails, report this error message
-sub mustNotRegex {
+sub mustNotMatch {
     my $self     = shift;
     my $response = shift;
     my $regex    = shift;
     my $errorMsg = shift;
     
+    my %ret = %$response; # make copy
     if( $response->{content} =~ m!$regex! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response content does not match regex', $regex );
+        $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -422,7 +479,8 @@ sub mustRedirect {
     my $response = shift;
     my $target   = shift;
     my $errorMsg = shift;
-    
+
+    my %ret = %$response; # make copy
     if( $target !~ m!^https?://! ) {
         if( $target !~ m!^/! ) {
             return $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
@@ -432,9 +490,9 @@ sub mustRedirect {
 
     if( $response->{headers} !~ m!Location: $target! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response is not redirecting to', $target );
+        $ret{error} = $self->error( $errorMsg, 'Response is not redirecting to', $target );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -447,7 +505,8 @@ sub mustNotRedirect {
     my $response = shift;
     my $target   = shift;
     my $errorMsg = shift;
-    
+
+    my %ret = %$response; # make copy
     if( $target !~ m!^https?://! ) {
         if( $target !~ m!^/! ) {
             return $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
@@ -457,9 +516,9 @@ sub mustNotRedirect {
 
     if( $response->{headers} =~ m!Location: $target! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response is redirecting to', $target );
+        $ret{error} = $self->error( $errorMsg, 'Response is redirecting to', $target );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -473,11 +532,12 @@ sub mustStatus {
     my $status   = shift;
     my $errorMsg = shift;
 
-    if( $response->{headers} !~ m!HTTP/1\.1 $status! ) {
+    my %ret = %$response; # make copy
+    if( $response->{headers} !~ m!HTTP/1\.[01] $status! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response does not have HTTP status', $status );
+        $ret{error} = $self->error( $errorMsg, 'Response does not have HTTP status', $status );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -491,11 +551,12 @@ sub mustNotStatus {
     my $status   = shift;
     my $errorMsg = shift;
 
+    my %ret = %$response; # make copy
     if( $response->{headers} =~ m!HTTP/1\.1 $status! ) {
         debugResponse( $response );
-        return $self->error( $errorMsg, 'Response has HTTP status',  $status );
+        $ret{error} = $self->error( $errorMsg, 'Response has HTTP status',  $status );
     }
-    return 0;
+    return \%ret;
 }
 
 ##
@@ -517,11 +578,13 @@ sub error {
     my $self = shift;
     my @args = @_;
 
-    IndieBox::Logging::error( @_ );
+    my $msg = join( ' ', grep { !/^\s*$/ } @_ );
 
-    push @{$self->{errors}}, join( ' ', @_ );
+    IndieBox::Logging::error( $msg );
+
+    push @{$self->{errors}}, $msg;
     
-    return 1;
+    return $msg;
 }
 
 ##
@@ -534,6 +597,35 @@ sub errorsAndClear {
     $self->{errors} = [];
 
     return @ret;
+}
+
+##
+# Append an error message to the error messages that may already be
+# contained in this response hash
+# $hash: the response hash
+# $newError: the error message
+sub appendError {
+    my $hash     = shift;
+    my $newError = shift;
+
+    my $error = $hash->{error};
+    if( $error ) {
+        my $index = 0;
+        while( my $line = split( "\n", $error )) {
+            if( $line =~ m!^\s*(\d+):! ) {
+                $index = $1;
+            }
+        }
+        if( $index ) {
+            $error .= ++$index . ": " . $newError;
+        } else {
+            $error = "1: $error$newError";
+        }
+        
+    } else {
+        $hash->{error} = $error;
+    }
+    return $hash;
 }
 
 ##

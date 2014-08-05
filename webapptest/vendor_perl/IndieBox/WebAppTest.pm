@@ -28,7 +28,7 @@ package IndieBox::WebAppTest;
 use IndieBox::App;
 use IndieBox::Logging;
 
-use fields qw( name description packageName testContext hostname customizationPointValues statesTransitions );
+use fields qw( name description packageName siteId appConfigId testContext hostname customizationPointValues statesTransitions );
 
 ##
 # Constructor.
@@ -109,6 +109,10 @@ sub new {
     $self->{customizationPointValues} = $custPointValues;
     $self->{statesTransitions}        = $statesTransitions;
 
+    # generate random identifiers, so multiple tests can run at the same time
+    $self->{siteId}      = 's' . IndieBox::Utils::randomHex( 40 );
+    $self->{appConfigId} = 'a' . IndieBox::Utils::randomHex( 40 );
+
     return $self;
 }
 
@@ -137,6 +141,24 @@ sub description {
     my $self = shift;
 
     return $self->{description};
+}
+
+##
+# Obtain the siteId of the site currently being tested.
+# return: the siteId
+sub siteId {
+    my $self = shift;
+
+    return $self->{siteId};
+}
+
+##
+# Obtain the appconfigid of the AppConfiguration currently being tested.
+# return the appconfigid
+sub appConfigId {
+    my $self = shift;
+
+    return $self->{appConfigId};
 }
 
 ##
@@ -190,6 +212,92 @@ sub getTransitionFrom {
     }
     return undef;
 }
+
+##
+# Obtain the site JSON for this test. In the second return value, point to
+# the AppConfiguration in the JSON that is being tested
+sub getSiteAndAppConfigJson {
+    my $self = shift;
+
+    my $appConfigJson = $self->_createAppConfigurationJson();
+    my $siteJson      = $self->_createSiteJson( $appConfigJson );
+    
+    return( $siteJson, $appConfigJson );
+}
+
+##
+# Helper to create the AppConfiguration JSON fragment for this test
+# $test: the AppTest
+# return: the AppConfiguration JSON fragment
+sub _createAppConfigurationJson {
+    my $self = shift;
+
+    my $appconfig = {
+        'context'     => $self->getTestContext(),
+        'appconfigid' => $self->{appConfigId},
+        'appid'       => $self->{packageName}
+    };
+
+    my $custPointValues = $self->getCustomizationPointValues();
+    if( $custPointValues ) {
+        my $jsonHash = {};
+        $appconfig->{customizationpoints}->{$self->{packageName}} = $jsonHash;
+
+        while( my( $name, $value ) = each %$custPointValues ) {
+            $jsonHash->{$name}->{value} = $value;
+        }
+    }
+    return $appconfig;
+}
+
+##
+# Helper to create the Site JSON for this test.
+# $appConfigJson: the AppConfiguration JSON fragment for this test
+# return: the site JSON
+sub _createSiteJson {
+    my $self          = shift;
+    my $appConfigJson = shift;
+
+    my $hostname = $self->hostname();
+    unless( $hostname ) {
+        $hostname = ref $self;
+        $hostname =~ s!^.*::!!;
+        $hostname = 'testhost-' . lc( $hostname ) . IndieBox::Utils::randomHex( 8 );    
+    }
+
+    my $admin = $self->getAdminData();
+    unless( $admin ) {
+        fatal( ref( $self ), 'method getAdminData() returned undef value' );
+    }
+    foreach my $field ( qw( userid username credential email )) {
+        unless( defined( $admin->{$field} )) {
+            fatal( ref( $self ), 'method getAdminData() returned hash that does not contain field', $field );
+        }
+    }
+    
+    my $site = {
+        'siteid'     => $self->{siteId},
+        'hostname'   => $hostname,
+        'admin'      => $admin,
+        'appconfigs' => [ $appConfigJson ]
+    };
+
+    return $site;
+}
+
+##
+# Overridable method that returns the desired admin information for the Site JSON.
+# This needs to be a hash containing userid, username, credential and email.
+sub getAdminData {
+    my $self = shift;
+
+    return {
+        'userid'     => 'testuser',
+        'username'   => 'Test User',
+        'credential' => 's3cr3t',
+        'email'      => 'testing@localhost',
+    };
+}    
 
 ################################################################################
 
