@@ -104,7 +104,7 @@ sub run {
 
         unless( $ret ) {
             error( 'Test', $appTest->name, 'failed.' );
-        } elsif( $verbose ) {
+        } else {
             print "Test passed.\n";
         }
     }
