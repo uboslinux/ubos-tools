@@ -71,7 +71,7 @@ sub setup {
     my $vram      =  16; # default
 
     if( $options ) {
-        foreach my $pair ( split /&/, $options ) {
+        foreach my $pair ( split /:/, $options ) {
             if( $pair =~ m!^(.*)(=(.*))$! ) {
                 my $key   = $1;
                 my $value = $3;

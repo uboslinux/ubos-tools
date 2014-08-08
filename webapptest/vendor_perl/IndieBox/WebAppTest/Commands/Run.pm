@@ -120,14 +120,14 @@ sub run {
 sub synopsisHelp {
     return {
         <<SSS => <<HHH
-    [--interactive] [--verbose] [--scaffold <scaffold[:scaffoldoptions]>] [--testplan <testplan>] <apptest>...
+    [--interactive] [--verbose] [--scaffold <scaffold[:scaffoldoption]...>] [--testplan <testplan>] <apptest>...
 SSS
     Run the test apptest.
     --interactive: stop at important points and wait for user input
     --verbose: print more information about how the test progresses
     <scaffold>: use this named scaffold instead of the default. If given as
-                "abc:def", "abc" represents the name of the scaffold, and
-                "def" are scaffold-specific options
+                "abc:def:ghi", "abc" represents the name of the scaffold, and
+                "def" and "ghi" are scaffold-specific options
     <testplan>: use this named testplan instead of the default
 HHH
     };
