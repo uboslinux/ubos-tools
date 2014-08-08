@@ -57,6 +57,7 @@ my $shutdownMaxSeconds = 30;
 
 ##
 # Instantiate the Scaffold.
+# $options: array of options
 sub setup {
     my $self    = shift;
     my $options = shift;
@@ -70,8 +71,8 @@ sub setup {
     my $ram       = 512; # default
     my $vram      =  16; # default
 
-    if( $options ) {
-        foreach my $pair ( split /:/, $options ) {
+    if( defined( $options ) && @$options ) {
+        foreach my $pair ( @$options ) {
             if( $pair =~ m!^(.*)(=(.*))$! ) {
                 my $key   = $1;
                 my $value = $3;

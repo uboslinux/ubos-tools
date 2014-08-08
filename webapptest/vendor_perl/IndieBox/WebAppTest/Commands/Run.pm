@@ -61,11 +61,9 @@ sub run {
     unless( $scaffoldName ) {
         $scaffoldName  = 'here';
     }
-    my $scaffoldOptions;
-    if( $scaffoldName =~ m!^(.*):(.*)$! ) {
-        $scaffoldName    = $1;
-        $scaffoldOptions = $2;
-    }
+    my @scaffoldOptions = split( ':', $scaffoldName );
+    $scaffoldName = shift @scaffoldOptions;
+
     my $scaffoldPackageName = IndieBox::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
     unless( $scaffoldPackageName ) {
         fatal( 'Cannot find scaffold', $scaffoldName );
@@ -92,7 +90,7 @@ sub run {
 
     my $testPlan = IndieBox::Utils::invokeMethod( $testPlanPackage     . '->new' );
 
-    my $scaffold = IndieBox::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
+    my $scaffold = IndieBox::Utils::invokeMethod( $scaffoldPackageName . '->setup', \@scaffoldOptions );
     foreach my $appTest ( @appTestsToRun ) {
         if( @appTestsToRun > 1 ) {
             print "Running AppTest " . $appTest->name . "\n";
