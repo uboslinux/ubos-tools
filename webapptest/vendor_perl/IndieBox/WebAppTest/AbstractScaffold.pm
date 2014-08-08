@@ -51,7 +51,7 @@ sub deploy {
     my $jsonString = IndieBox::Utils::writeJsonToString( $site );
     debug( 'Site JSON:', $jsonString );
 
-    my $exit = $self->invokeOnTarget( 'sudo indiebox-admin deploy', $jsonString );
+    my $exit = $self->invokeOnTarget( 'sudo indiebox-admin deploy --stdin', $jsonString );
     return !$exit;
 }
 
