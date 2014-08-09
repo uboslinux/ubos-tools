@@ -405,7 +405,7 @@ sub mustContain {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $response->{content} !~ m!\Q$content\E! ) {
+    if( $self->contains( $response, $content )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content does not contain', $content );
     }
@@ -424,7 +424,7 @@ sub mustNotContain {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $response->{content} =~ m!\Q$content\E! ) {
+    if( $self->notContains( $response, $content )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content contains', $content );
     }
@@ -443,7 +443,7 @@ sub mustMatch {
     my $errorMsg = shift;
     
     my %ret = %$response; # make copy
-    if( $response->{content} !~ m!$regex! ) {
+    if( $self->matches( $response, $regex )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
     }
@@ -462,7 +462,7 @@ sub mustNotMatch {
     my $errorMsg = shift;
     
     my %ret = %$response; # make copy
-    if( $response->{content} =~ m!$regex! ) {
+    if( $self->notMatches( $response, $regex )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
     }
@@ -481,14 +481,7 @@ sub mustRedirect {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $target !~ m!^https?://! ) {
-        if( $target !~ m!^/! ) {
-            return $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
-        }
-        $target = $self->fullContext() . $target;
-    }
-
-    if( $response->{headers} !~ m!Location: $target! ) {
+    if( $self->redirects( $response, $target )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response is not redirecting to', $target );
     }
@@ -507,14 +500,7 @@ sub mustNotRedirect {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $target !~ m!^https?://! ) {
-        if( $target !~ m!^/! ) {
-            return $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
-        }
-        $target = $self->fullContext() . $target;
-    }
-
-    if( $response->{headers} =~ m!Location: $target! ) {
+    if( $self->notRedirects( $response, $target )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response is redirecting to', $target );
     }
@@ -533,7 +519,7 @@ sub mustStatus {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $response->{headers} !~ m!HTTP/1\.[01] $status! ) {
+    if( $self->status( $response, $status )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response does not have HTTP status', $status );
     }
@@ -552,11 +538,148 @@ sub mustNotStatus {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $response->{headers} =~ m!HTTP/1\.1 $status! ) {
+    if( $self->notStatus( $response, $status )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response has HTTP status',  $status );
     }
     return \%ret;
+}
+
+##
+# Look for certain content in a response.
+# $response: the response
+# $content: the content to look for in the response
+# $errorMsg: if the test fails, report this error message
+sub contains {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+
+    if( $response->{content} !~ m!\Q$content\E! ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Look for the lack of a certain content in a response.
+# $response: the response
+# $content: the content to look for in the response
+sub notContains {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+
+    if( $response->{content} =~ m!\Q$content\E! ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Look for a regular expression match on the content in a response
+# $response: the response
+# $regex: the regex for the content to look for in the response
+sub matches {
+    my $self     = shift;
+    my $response = shift;
+    my $regex    = shift;
+    
+    if( $response->{content} !~ m!$regex! ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Look for a regular expression non-match on the content in a response
+# $response: the response
+# $regex: the regex for the content to look for in the response
+sub notMatches {
+    my $self     = shift;
+    my $response = shift;
+    my $regex    = shift;
+
+    if( $response->{content} =~ m!$regex! ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Look for a redirect to a certain URL in the response
+# $response: the response
+# $target: the redirect target
+sub redirects {
+    my $self     = shift;
+    my $response = shift;
+    my $target   = shift;
+
+    if( $target !~ m!^https?://! ) {
+        if( $target !~ m!^/! ) {
+            $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
+            return 0;
+        }
+        $target = $self->fullContext() . $target;
+    }
+
+    if( $response->{headers} !~ m!Location: $target! ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Look for the lack of a redirect to a certain URL in the response
+# $response: the response
+# $target: the redirect target
+sub notRedirects {
+    my $self     = shift;
+    my $response = shift;
+    my $target   = shift;
+
+    if( $target !~ m!^https?://! ) {
+        if( $target !~ m!^/! ) {
+            $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
+            return 0;
+        }
+        $target = $self->fullContext() . $target;
+    }
+
+    if( $response->{headers} =~ m!Location: $target! ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Look for an HTTP status in the response
+# $response: the response
+# $status: the HTTP status
+sub status {
+    my $self     = shift;
+    my $response = shift;
+    my $status   = shift;
+
+    if( $response->{headers} !~ m!HTTP/1\.[01] $status! ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Look for an HTTP status other than the provided one in the response
+# $response: the response
+# $status: the HTTP status
+sub notStatus {
+    my $self     = shift;
+    my $response = shift;
+    my $status   = shift;
+
+    if( $response->{headers} =~ m!HTTP/1\.1 $status! ) {
+        return 0;
+    }
+    return 1;
 }
 
 ##
