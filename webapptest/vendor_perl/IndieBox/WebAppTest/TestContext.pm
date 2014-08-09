@@ -405,7 +405,7 @@ sub mustContain {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $self->contains( $response, $content )) {
+    unless( $self->contains( $response, $content )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content does not contain', $content );
     }
@@ -424,7 +424,7 @@ sub mustNotContain {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $self->notContains( $response, $content )) {
+    unless( $self->notContains( $response, $content )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content contains', $content );
     }
@@ -443,7 +443,7 @@ sub mustMatch {
     my $errorMsg = shift;
     
     my %ret = %$response; # make copy
-    if( $self->matches( $response, $regex )) {
+    unless( $self->matches( $response, $regex )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
     }
@@ -462,7 +462,7 @@ sub mustNotMatch {
     my $errorMsg = shift;
     
     my %ret = %$response; # make copy
-    if( $self->notMatches( $response, $regex )) {
+    unless( $self->notMatches( $response, $regex )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
     }
@@ -481,7 +481,7 @@ sub mustRedirect {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $self->redirects( $response, $target )) {
+    unless( $self->redirects( $response, $target )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response is not redirecting to', $target );
     }
@@ -500,7 +500,7 @@ sub mustNotRedirect {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $self->notRedirects( $response, $target )) {
+    unless( $self->notRedirects( $response, $target )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response is redirecting to', $target );
     }
@@ -519,7 +519,7 @@ sub mustStatus {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $self->status( $response, $status )) {
+    unless( $self->status( $response, $status )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response does not have HTTP status', $status );
     }
@@ -538,7 +538,7 @@ sub mustNotStatus {
     my $errorMsg = shift;
 
     my %ret = %$response; # make copy
-    if( $self->notStatus( $response, $status )) {
+    unless( $self->notStatus( $response, $status )) {
         debugResponse( $response );
         $ret{error} = $self->error( $errorMsg, 'Response has HTTP status',  $status );
     }
