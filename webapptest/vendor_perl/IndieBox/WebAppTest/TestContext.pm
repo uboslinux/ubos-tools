@@ -611,7 +611,7 @@ sub appendError {
     my $error = $hash->{error};
     if( $error ) {
         my $index = 0;
-        while( my $line = split( "\n", $error )) {
+        foreach my $line ( split( "\n", $error ) ) {
             if( $line =~ m!^\s*(\d+):! ) {
                 $index = $1;
             }
