@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Only deploys the app and tests the virgin state.
+# Simple test plan: walks through the states and transitions in sequence.
 #
 # This file is part of webapptest.
 # (C) 2012-2014 Indie Computing Corp.
@@ -22,13 +22,13 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::TestPlans::DeployOnly;
+package UBOS::WebAppTest::TestPlans::Simple;
 
-use base qw( IndieBox::WebAppTest::AbstractSingleSiteTestPlan );
+use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
 use fields;
-use IndieBox::Logging;
-use IndieBox::WebAppTest::TestContext;
-use IndieBox::Utils;
+use UBOS::Logging;
+use UBOS::WebAppTest::TestContext;
+use UBOS::Utils;
 
 ##
 # Instantiate the TestPlan.
@@ -54,7 +54,7 @@ sub run {
     my $scaffold    = shift;
     my $interactive = shift;
 
-    info( 'Running TestPlan DeployOnly' );
+    info( 'Running TestPlan Simple' );
 
     my( $siteJson, $appConfigJson ) = $test->getSiteAndAppConfigJson();
 
@@ -67,26 +67,51 @@ sub run {
     do {
         $success = $scaffold->deploy( $siteJson );
 
-        ( $repeat, $abort, $quit ) = $self->askUser( 'Performed deployment', $interactive, $success, $ret );
+        ( $repeat, $abort, $quit ) = $self->askUser( 'Performed deploy', $interactive, $success, $ret );
 
     } while( $repeat );
     $ret &= $success;
 
     if( !$abort && !$quit ) {
-        my $c = new IndieBox::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
+        my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
 
         my $currentState = $test->getVirginStateTest();
+        while( 1 ) {
+            info( 'Checking StateCheck', $currentState->getName() );
 
-        info( 'Checking StateCheck', $currentState->getName() );
+            do {
+                $success = $currentState->check( $c );
 
-        do {
-            $success = $currentState->check( $c );
+                ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
 
-            ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
+            } while( $repeat );
+            $ret &= $success;
 
-        } while( $repeat );
-        $ret &= $success;
+            if( $abort || $quit ) {
+                last;
+            }
 
+            my( $transition, $nextState ) = $test->getTransitionFrom( $currentState );
+            unless( $transition ) {
+                last;
+            }
+    
+            info( 'Taking StateTransition', $transition->getName() );
+
+            do {
+                $success = $transition->execute( $c );
+
+                ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateTransition ' . $transition->getName(), $interactive, $success, $ret );
+
+            } while( $repeat );
+            $ret &= $success;
+
+            if( $abort || $quit ) {
+                last;
+            }
+
+            $currentState = $nextState;
+        }
         $c->destroy();
     }
 
@@ -94,7 +119,7 @@ sub run {
         $scaffold->undeploy( $siteJson );
     }
     
-    info( 'End running TestPlan DeployOnly' );
+    info( 'End running TestPlan Simple' );
 
     return $ret;
 }
@@ -103,7 +128,7 @@ sub run {
 # Return help text.
 # return: help text
 sub help {
-    return 'Only tests whether the application can be installed.';
+    return 'Walks through all States and Transitions in sequence.';
 }
 
 ##

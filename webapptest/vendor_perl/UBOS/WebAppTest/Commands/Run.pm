@@ -22,13 +22,13 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::Commands::Run;
+package UBOS::WebAppTest::Commands::Run;
 
 use Cwd;
 use Getopt::Long qw( GetOptionsFromArray );
-use IndieBox::Host;
-use IndieBox::Logging;
-use IndieBox::Utils;
+use UBOS::Host;
+use UBOS::Logging;
+use UBOS::Utils;
 
 ##
 # Execute this command.
@@ -55,7 +55,7 @@ sub run {
     }
 
     if( $verbose ) {
-        IndieBox::Logging::setVerbose( $verbose );
+        UBOS::Logging::setVerbose( $verbose );
     }
 
     unless( $scaffoldName ) {
@@ -64,7 +64,7 @@ sub run {
     my @scaffoldOptions = split( ':', $scaffoldName );
     $scaffoldName = shift @scaffoldOptions;
 
-    my $scaffoldPackageName = IndieBox::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
+    my $scaffoldPackageName = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
     unless( $scaffoldPackageName ) {
         fatal( 'Cannot find scaffold', $scaffoldName );
     }
@@ -72,14 +72,14 @@ sub run {
     unless( $testPlanName ) {
         $testPlanName  = 'default';
     }
-    my $testPlanPackage = IndieBox::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
+    my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
     unless( $testPlanPackage ) {
         fatal( 'Cannot find test plan', $testPlanName );
     }
 
     my @appTestsToRun = ();
     foreach my $appTestName ( @args ) {
-        my $appTestToRun = IndieBox::WebAppTest::TestingUtils::findAppTestInDirectory( getcwd(), $appTestName );
+        my $appTestToRun = UBOS::WebAppTest::TestingUtils::findAppTestInDirectory( getcwd(), $appTestName );
         unless( $appTestToRun ) {
             fatal( 'Cannot find app test', $appTestName );
         }
@@ -88,9 +88,9 @@ sub run {
     
     my $ret = 1;
 
-    my $testPlan = IndieBox::Utils::invokeMethod( $testPlanPackage     . '->new' );
+    my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage     . '->new' );
 
-    my $scaffold = IndieBox::Utils::invokeMethod( $scaffoldPackageName . '->setup', \@scaffoldOptions );
+    my $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', \@scaffoldOptions );
     foreach my $appTest ( @appTestsToRun ) {
         if( @appTestsToRun > 1 ) {
             print "Running AppTest " . $appTest->name . "\n";

@@ -22,12 +22,12 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::TestContext;
+package UBOS::WebAppTest::TestContext;
 
 use fields qw( siteJson appConfigJson scaffold appTest testPlan ip curl cookieFile errors );
-use IndieBox::Logging qw( debug );
-use IndieBox::WebAppTest::TestingUtils;
-use IndieBox::Utils;
+use UBOS::Logging qw( debug );
+use UBOS::WebAppTest::TestingUtils;
+use UBOS::Utils;
 
 ##
 # Instantiate the TextContext.
@@ -141,7 +141,7 @@ sub absGet {
     my $stderr;
     my $ret = {};
     
-    if( IndieBox::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
+    if( UBOS::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
         $ret->{error} = $self->error( 'HTTP request failed:', $stderr );
     }
     $ret->{content} = $stdout;
@@ -186,7 +186,7 @@ sub absPost {
 
     my $postData = join(
             '&',
-            map { IndieBox::Utils::uri_escape( $_ ) . '=' . IndieBox::Utils::uri_escape( $postPars->{$_} ) } keys %$postPars );
+            map { UBOS::Utils::uri_escape( $_ ) . '=' . UBOS::Utils::uri_escape( $postPars->{$_} ) } keys %$postPars );
     
     my $cmd = $self->{curl};
     $cmd .= " -d '$postData'";
@@ -196,7 +196,7 @@ sub absPost {
     my $stderr;
     my $ret = {};
 
-    if( IndieBox::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
+    if( UBOS::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
         $ret->{error} = $self->error( 'HTTP request failed:', $stderr );
     }
     $ret->{content}     = $stdout;
@@ -689,7 +689,7 @@ sub debugResponse {
     my $response = shift;
 
     my $msg = "Response:\n";
-    $msg .= IndieBox::Utils::printHashAsColumns( $response );
+    $msg .= UBOS::Utils::printHashAsColumns( $response );
 
     debug( $msg );
 }
@@ -703,7 +703,7 @@ sub error {
 
     my $msg = join( ' ', grep { !/^\s*$/ } @_ );
 
-    IndieBox::Logging::error( $msg );
+    UBOS::Logging::error( $msg );
 
     push @{$self->{errors}}, $msg;
     

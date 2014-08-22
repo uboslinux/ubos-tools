@@ -23,11 +23,11 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::Scaffolds::Here;
+package UBOS::WebAppTest::Scaffolds::Here;
 
-use base qw( IndieBox::WebAppTest::AbstractScaffold );
+use base qw( UBOS::WebAppTest::AbstractScaffold );
 use fields;
-use IndieBox::Logging;
+use UBOS::Logging;
 
 ##
 # Instantiate the Scaffold.
@@ -73,7 +73,7 @@ sub invokeOnTarget {
     my $stdout = shift;
     my $stderr = shift;
 
-    return IndieBox::Utils::myexec( $cmd, $stdin, $stdout, $stderr );
+    return UBOS::Utils::myexec( $cmd, $stdin, $stdout, $stderr );
 }
 
 ##

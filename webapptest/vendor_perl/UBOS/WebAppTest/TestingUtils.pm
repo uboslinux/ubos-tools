@@ -22,11 +22,11 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::TestingUtils;
+package UBOS::WebAppTest::TestingUtils;
 
 use Cwd;
-use IndieBox::Logging;
-use IndieBox::Utils;
+use UBOS::Logging;
+use UBOS::Utils;
 
 ##
 # Find all AppTests in a directory.
@@ -35,13 +35,13 @@ use IndieBox::Utils;
 sub findAppTestsInDirectory {
     my $dir = shift;
     
-    my $appTestCandidates = IndieBox::Utils::readFilesInDirectory( $dir, 'Test\.pm$' );
+    my $appTestCandidates = UBOS::Utils::readFilesInDirectory( $dir, 'Test\.pm$' );
     my $appTests = {};
     
     while( my( $fileName, $content ) = each %$appTestCandidates ) {
         my $appTest = eval $content;
 
-        if( defined( $appTest ) && ref( $appTest ) eq 'IndieBox::WebAppTest' ) {
+        if( defined( $appTest ) && ref( $appTest ) eq 'UBOS::WebAppTest' ) {
             $appTests->{$fileName} = $appTest;
 
         } elsif( $@ ) {
@@ -58,7 +58,7 @@ sub findAppTestsInDirectory {
 # Find available commands.
 # return: hash of command name to full package name
 sub findCommands {
-    my $ret = IndieBox::Utils::findPerlShortModuleNamesInPackage( 'IndieBox::WebAppTest::Commands' );
+    my $ret = UBOS::Utils::findPerlShortModuleNamesInPackage( 'UBOS::WebAppTest::Commands' );
 
     return $ret;
 }
@@ -67,7 +67,7 @@ sub findCommands {
 # Find available test plans
 # return: hash of test plan name to full package name
 sub findTestPlans {
-    my $ret = IndieBox::Utils::findPerlShortModuleNamesInPackage( 'IndieBox::WebAppTest::TestPlans' );
+    my $ret = UBOS::Utils::findPerlShortModuleNamesInPackage( 'UBOS::WebAppTest::TestPlans' );
 
     return $ret;
 }
@@ -89,7 +89,7 @@ sub findTestPlan {
 # Find available test scaffolds.
 # return: hash of scaffold name to full package name
 sub findScaffolds {
-    my $ret = IndieBox::Utils::findPerlShortModuleNamesInPackage( 'IndieBox::WebAppTest::Scaffolds' );
+    my $ret = UBOS::Utils::findPerlShortModuleNamesInPackage( 'UBOS::WebAppTest::Scaffolds' );
     return $ret;
 }
 
@@ -126,18 +126,18 @@ sub findAppTestInDirectory {
         $fileName = "$fileName.pm";
     }
     if( -r $fileName ) {
-        my $content = IndieBox::Utils::slurpFile( $fileName );
+        my $content = UBOS::Utils::slurpFile( $fileName );
         
         my $appTest = eval $content;
 
-        if( defined( $appTest ) && ref( $appTest ) eq 'IndieBox::WebAppTest' ) {
+        if( defined( $appTest ) && ref( $appTest ) eq 'UBOS::WebAppTest' ) {
             return $appTest;
 
         } elsif( $@ ) {
             error( 'Failed to parse', $fileName, ':', $@ );
             
         } else {
-            error( 'Not a IndieBox::WebAppTest:', $fileName );
+            error( 'Not a UBOS::WebAppTest:', $fileName );
         }
     }        
     return undef;

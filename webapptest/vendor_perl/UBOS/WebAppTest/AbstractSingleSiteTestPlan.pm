@@ -22,11 +22,11 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::AbstractSingleSiteTestPlan;
+package UBOS::WebAppTest::AbstractSingleSiteTestPlan;
 
-use base qw( IndieBox::WebAppTest::AbstractTestPlan );
+use base qw( UBOS::WebAppTest::AbstractTestPlan );
 use fields;
-use IndieBox::Logging;
+use UBOS::Logging;
 
 ##
 # Instantiate the TestPlan.

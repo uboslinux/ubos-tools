@@ -14,9 +14,9 @@
 #   not modified by tests
 # * vmdkfile (optional): name of the copy of the VMDK template file
 # * ram (optional): amount of RAM to allocate to the guest
-# * indiebox-admin-keyfile (required): private ssh key for the
-#   indiebox-admin user on the guest, so the scaffold can invoke
-#   'sudo indiebox-admin' on the guest
+# * ubos-admin-keyfile (required): private ssh key for the
+#   ubos-admin user on the guest, so the scaffold can invoke
+#   'sudo ubos-admin' on the guest
 # * vncsecret (optional): if provided, the guest will be instantiated
 #   with its display available via VNC, and this password
 #
@@ -40,12 +40,12 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::Scaffolds::VBox;
+package UBOS::WebAppTest::Scaffolds::VBox;
 
-use base qw( IndieBox::WebAppTest::AbstractScaffold );
-use fields qw( vmdkTemplate vmdkFile indieboxAdminKeyfile vmName hostOnlyIp );
-use IndieBox::Logging;
-use IndieBox::Utils;
+use base qw( UBOS::WebAppTest::AbstractScaffold );
+use fields qw( vmdkTemplate vmdkFile ubosAdminKeyfile vmName hostOnlyIp );
+use UBOS::Logging;
+use UBOS::Utils;
 
 # name of the hostonly interface
 my $hostonlyInterface = 'vboxnet0';
@@ -104,11 +104,11 @@ sub setup {
                         $ram = $value;
                     }
     
-                } elsif( 'indiebox-admin-keyfile' eq $key ) {
+                } elsif( 'ubos-admin-keyfile' eq $key ) {
                     if( !$value ) {
-                        fatal( 'No value provided for indiebox-admin-keyfile' );
+                        fatal( 'No value provided for ubos-admin-keyfile' );
                     } else {
-                        $self->{indieboxAdminKeyfile} = $value;
+                        $self->{ubosAdminKeyfile} = $value;
                     }
     
                 } elsif( 'vncsecret' eq $key ) {
@@ -131,14 +131,14 @@ sub setup {
         fatal( 'Cannot find or read file', $self->{vmdkTemplate} );
     }
 
-    unless( defined( $self->{indieboxAdminKeyfile} )) {
-        fatal( 'Must provide option indiebox-admin-keyfile pointing to private ssh key for indiebox-admin on guest' );
+    unless( defined( $self->{ubosAdminKeyfile} )) {
+        fatal( 'Must provide option ubos-admin-keyfile pointing to private ssh key for ubos-admin on guest' );
     }
-    unless( -r $self->{indieboxAdminKeyfile} ) {
-        fatal( 'Cannot find or read file', $self->{indieboxAdminKeyfile} );
+    unless( -r $self->{ubosAdminKeyfile} ) {
+        fatal( 'Cannot find or read file', $self->{ubosAdminKeyfile} );
     }
 
-    my $vmName = 'webapptest-' . IndieBox::Utils::time2string( time() );
+    my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
     $self->{vmName} = $vmName;
 
     unless( $self->{vmdkFile} ) {
@@ -151,75 +151,75 @@ sub setup {
     my $err;
     
     debug( 'Copying VMDK file' );
-    if( IndieBox::Utils::myexec( 'cp ' . $self->{vmdkTemplate} . ' ' . $self->{vmdkFile} )) {
+    if( UBOS::Utils::myexec( 'cp ' . $self->{vmdkTemplate} . ' ' . $self->{vmdkFile} )) {
         fatal( 'Copying VMDK file failed' );
     }
 
     debug( 'Defining VM' );
-    if( IndieBox::Utils::myexec( "VBoxManage createvm -name '$vmName' -ostype Linux_64 -register", undef, \$out, \$err )) {
+    if( UBOS::Utils::myexec( "VBoxManage createvm -name '$vmName' -ostype Linux_64 -register", undef, \$out, \$err )) {
         fatal( 'VBoxManage createvm failed:', $err );
     }
 
     debug( 'Setting RAM' );
-    if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --memory $ram" )) {
+    if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --memory $ram" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
     debug( 'Setting video RAM' );
-        if( IndieBox::Utils::myexec( "VBoxManage hostonlyif ipconfig $hostonlyInterface --ip 192.168.56.1" )) {
+    if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig $hostonlyInterface --ip 192.168.56.1" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
     debug( 'Adding NIC1 in nat mode' );
-    if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --nic1 nat" )) {
+    if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --nic1 nat" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
     
     debug( 'Adding NIC2 in hostonly mode' );
-    if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --nic2 hostonly" )) {
+    if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --nic2 hostonly" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
     
     debug( 'Attaching storage controller, drive and making it the boot drive' );
     # Storage controller with same name as the vm
-    if( IndieBox::Utils::myexec( "VBoxManage storagectl '$vmName' --name '$vmName' --add sata --bootable on" )) {
+    if( UBOS::Utils::myexec( "VBoxManage storagectl '$vmName' --name '$vmName' --add sata --bootable on" )) {
         fatal( 'VBoxManage storagectl failed' );
     }
-    if( IndieBox::Utils::myexec( "VBoxManage storageattach '$vmName' --storagectl '$vmName' --port 1 --type hdd --medium " . $self->{vmdkFile} )) {
+    if( UBOS::Utils::myexec( "VBoxManage storageattach '$vmName' --storagectl '$vmName' --port 1 --type hdd --medium " . $self->{vmdkFile} )) {
         fatal( 'VBoxManage storageattach failed' );
     }
-    if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --boot1 disk --boot2 none --boot3 none --boot4 none" )) {
+    if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --boot1 disk --boot2 none --boot3 none --boot4 none" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
     debug( 'Setting up host-only networking' );
-    if( IndieBox::Utils::myexec( "ip link show dev $hostonlyInterface", undef, \$out, \$err )) {
+    if( UBOS::Utils::myexec( "ip link show dev $hostonlyInterface", undef, \$out, \$err )) {
         # doesn't exist
-        if( IndieBox::Utils::myexec( "VBoxManage hostonlyif create" )) {
+        if( UBOS::Utils::myexec( "VBoxManage hostonlyif create" )) {
             error( 'VBoxManage hostonlyif create failed' );
         }
-        if( IndieBox::Utils::myexec( "VBoxManage hostonlyif ipconfig $hostonlyInterface --ip 192.168.56.1" )) {
+        if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig $hostonlyInterface --ip 192.168.56.1" )) {
             error( 'VBoxManage hostonlyif ipconfig failed' );
         }
     }
-    if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --hostonlyadapter2 $hostonlyInterface" )) {
+    if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --hostonlyadapter2 $hostonlyInterface" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
     if( $vncSecret ) {
-        if( IndieBox::Utils::myexec( "VBoxManage setproperty vrdeextpack VNC" )) {
+        if( UBOS::Utils::myexec( "VBoxManage setproperty vrdeextpack VNC" )) {
             error( 'VBoxManage setproperty vrdeextpack failed' );
         }
-        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrde on" )) { 
+        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrde on" )) { 
             error( 'VBoxManage modifyvm (enabling vrde) failed. You may not be able to connect via VNC.' );
         }
-        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeproperty 'VNCPassword=$vncSecret'" )) { 
+        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeproperty 'VNCPassword=$vncSecret'" )) { 
             error( 'VBoxManage modifyvm (setting VNC password) failed. You may not be able to connect via VNC.' );
         }
-        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeauthlibrary null" )) {
+        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeauthlibrary null" )) {
             error( 'VBoxManage modifyvm --vrdeauthlibrary failed' );
         }
-        if( IndieBox::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeport 1501" )) {
+        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeport 1501" )) {
             error( 'VBoxManage modifyvm --vrdeport failed' );
         } else {
             info( 'You can access the VM via VNC at port 1501' );
@@ -227,7 +227,7 @@ sub setup {
     }
 
     debug( 'Starting vm', $vmName );
-    if( IndieBox::Utils::myexec( "VBoxManage startvm '$vmName' --type headless", undef, \$out, \$err )) {
+    if( UBOS::Utils::myexec( "VBoxManage startvm '$vmName' --type headless", undef, \$out, \$err )) {
         # This starts the VM in the background (unless VBoxHeadless)
         fatal( 'VBoxManage startvm failed' );
     }
@@ -245,14 +245,14 @@ sub teardown {
     my $vmName = $self->{vmName};
     
     debug( 'Shutting down vm, unregistering, and deleting image file' );
-    if( IndieBox::Utils::myexec( "VBoxManage controlvm '$vmName' acpipowerbutton" )) {
+    if( UBOS::Utils::myexec( "VBoxManage controlvm '$vmName' acpipowerbutton" )) {
         error( 'VBoxManage unregistervm failed' );
     }
 
     my $out;
     my $err;
     for( my $count = 0 ; $count < $shutdownMaxSeconds ; ++$count ) {
-        if( IndieBox::Utils::myexec( "VBoxManage showvminfo '$vmName' --machinereadable", undef, \$out )) {
+        if( UBOS::Utils::myexec( "VBoxManage showvminfo '$vmName' --machinereadable", undef, \$out )) {
             error( 'VBoxManage showvminfo failed' );
         }
         if( $out =~ m!VMState="poweroff"! ) {
@@ -262,11 +262,11 @@ sub teardown {
         sleep 1;
     }
 
-    if( IndieBox::Utils::myexec( "VBoxManage unregistervm '$vmName' --delete", undef, \$out, \$err )) {
+    if( UBOS::Utils::myexec( "VBoxManage unregistervm '$vmName' --delete", undef, \$out, \$err )) {
         error( 'VBoxManage unregistervm failed', $err );
     }
     if( -e $self->{vmdkFile} ) {
-        IndieBox::Utils::deleteFile( $self->{vmdkFile} );
+        UBOS::Utils::deleteFile( $self->{vmdkFile} );
     }
         
     return 1;
@@ -290,12 +290,12 @@ sub invokeOnTarget {
     my $sshCmd = 'ssh';
     $sshCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
             # don't put into known_hosts file, and don't print resulting warnings
-    $sshCmd .= ' indiebox-admin@' . $ip;
-    $sshCmd .= ' -i ' . $self->{indieboxAdminKeyfile};
+    $sshCmd .= ' ubos-admin@' . $ip;
+    $sshCmd .= ' -i ' . $self->{ubosAdminKeyfile};
     $sshCmd .= " '$cmd'";
     debug( 'ssh command:', $sshCmd );
 
-    return IndieBox::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
+    return UBOS::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
 }
 
 ##
@@ -312,7 +312,7 @@ sub getTargetIp {
     for( my $count = 0 ; $count < $bootMaxSeconds ; ++$count ) {
         # This is on the hostonly interface
         my $out;
-        if( IndieBox::Utils::myexec( "VBoxManage guestproperty get '$vmName' /VirtualBox/GuestInfo/Net/1/V4/IP", undef, \$out )) {
+        if( UBOS::Utils::myexec( "VBoxManage guestproperty get '$vmName' /VirtualBox/GuestInfo/Net/1/V4/IP", undef, \$out )) {
             error( 'VBoxManage guestproperty failed' );
         }
         # $out is something like "Value: 192.168.56.103"
