@@ -22,13 +22,13 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::Commands::Listapptests;
+package UBOS::WebAppTest::Commands::Listapptests;
 
 use Cwd;
-use IndieBox::Logging;
-use IndieBox::Host;
-use IndieBox::WebAppTest::TestingUtils;
-use IndieBox::Utils;
+use UBOS::Logging;
+use UBOS::Host;
+use UBOS::WebAppTest::TestingUtils;
+use UBOS::Utils;
 
 ##
 # Execute this command.
@@ -40,7 +40,7 @@ sub run {
     my $allAppTests;
     if( @args ) {
         foreach my $dir ( @args ) {
-            my $appTests = IndieBox::WebAppTest::TestingUtils::findAppTestsInDirectory( $dir );
+            my $appTests = UBOS::WebAppTest::TestingUtils::findAppTestsInDirectory( $dir );
             if( !defined( $allAppTests )) {
                 $allAppTests = $appTests;
             } else {
@@ -51,10 +51,10 @@ sub run {
         }
             
     } else {
-        $allAppTests = IndieBox::WebAppTest::TestingUtils::findAppTestsInDirectory( getcwd() );
+        $allAppTests = UBOS::WebAppTest::TestingUtils::findAppTestsInDirectory( getcwd() );
     }
 
-    IndieBox::Utils::printHashAsColumns( $allAppTests, sub { shift->description(); } );
+    UBOS::Utils::printHashAsColumns( $allAppTests, sub { shift->description(); } );
 
     1;
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Command that lists all available Scaffolds.
+# Command that lists all available test plans.
 #
 # This file is part of webapptest.
 # (C) 2012-2014 Indie Computing Corp.
@@ -22,10 +22,10 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::Commands::Listscaffolds;
+package UBOS::WebAppTest::Commands::Listtestplans;
 
-use IndieBox::Host;
-use IndieBox::Utils;
+use UBOS::Host;
+use UBOS::Utils;
 
 ##
 # Execute this command.
@@ -37,8 +37,8 @@ sub run {
         fatal( 'No arguments are recognized for this command' );
     }
 
-    my $scaffolds = IndieBox::WebAppTest::TestingUtils::findScaffolds();
-    IndieBox::Utils::printHashAsColumns( $scaffolds, sub { IndieBox::Utils::invokeMethod( shift . '::help' ); } );
+    my $testPlans = UBOS::WebAppTest::TestingUtils::findTestPlans();
+    UBOS::Utils::printHashAsColumns( $testPlans, sub { UBOS::Utils::invokeMethod( shift . '::help' ); } );
 
     1;
 }
@@ -49,7 +49,8 @@ sub run {
 sub synopsisHelp {
     return {
         '' => <<HHH
-    Lists all available web app test scaffolds.
+    Lists all available test plans. For example, some test plans may only
+    perform short, brief smoke tests, while others may perform exhaustive tests.
 HHH
     };
 }

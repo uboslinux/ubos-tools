@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 # Provides the StateCheck and StateTransition abstractions for writing
-# Indie Box tests.
+# UBOS web app tests.
 #
 # This file is part of webapptest.
 # (C) 2012-2014 Indie Computing Corp.
@@ -23,10 +23,10 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest;
+package UBOS::WebAppTest;
 
-use IndieBox::App;
-use IndieBox::Logging;
+use UBOS::App;
+use UBOS::Logging;
 
 use fields qw( name description packageName siteId appConfigId testContext hostname customizationPointValues statesTransitions );
 
@@ -83,11 +83,11 @@ sub new {
     foreach my $candidate ( @$statesTransitions ) {
         my $candidateRef = ref( $candidate );
         if( $i % 2 ) {
-            unless( $candidateRef eq 'IndieBox::WebAppTest::StateTransition' ) {
+            unless( $candidateRef eq 'UBOS::WebAppTest::StateTransition' ) {
                 fatal( 'Array of StateChecks and StateTransitions must alternate: expected StateTransition' );
             }
         } else {
-            unless( $candidateRef eq 'IndieBox::WebAppTest::StateCheck' ) {
+            unless( $candidateRef eq 'UBOS::WebAppTest::StateCheck' ) {
                 fatal( 'Array of StateChecks and StateTransitions must alternate: expected StateCheck' );
             }
         }
@@ -110,8 +110,8 @@ sub new {
     $self->{statesTransitions}        = $statesTransitions;
 
     # generate random identifiers, so multiple tests can run at the same time
-    $self->{siteId}      = 's' . IndieBox::Utils::randomHex( 40 );
-    $self->{appConfigId} = 'a' . IndieBox::Utils::randomHex( 40 );
+    $self->{siteId}      = 's' . UBOS::Utils::randomHex( 40 );
+    $self->{appConfigId} = 'a' . UBOS::Utils::randomHex( 40 );
 
     return $self;
 }
@@ -262,7 +262,7 @@ sub _createSiteJson {
     unless( $hostname ) {
         $hostname = ref $self;
         $hostname =~ s!^.*::!!;
-        $hostname = 'testhost-' . lc( $hostname ) . IndieBox::Utils::randomHex( 8 );    
+        $hostname = 'testhost-' . lc( $hostname ) . UBOS::Utils::randomHex( 8 );    
     }
 
     my $admin = $self->getAdminData();
@@ -301,7 +301,7 @@ sub getAdminData {
 
 ################################################################################
 
-package IndieBox::WebAppTest::StatesTransitions;
+package UBOS::WebAppTest::StatesTransitions;
 
 use fields qw( name function );
 
@@ -335,11 +335,11 @@ sub getName {
 
 ################################################################################
 
-package IndieBox::WebAppTest::StateCheck;
+package UBOS::WebAppTest::StateCheck;
 
-use base qw( IndieBox::WebAppTest::StatesTransitions );
+use base qw( UBOS::WebAppTest::StatesTransitions );
 use fields;
-use IndieBox::Logging;
+use UBOS::Logging;
 
 ##
 # Instantiate the StateCheck.
@@ -408,11 +408,11 @@ sub check {
 
 ################################################################################
 
-package IndieBox::WebAppTest::StateTransition;
+package UBOS::WebAppTest::StateTransition;
 
-use base qw( IndieBox::WebAppTest::StatesTransitions );
+use base qw( UBOS::WebAppTest::StatesTransitions );
 use fields;
-use IndieBox::Logging;
+use UBOS::Logging;
 
 ##
 # Instantiate the StateTransition.

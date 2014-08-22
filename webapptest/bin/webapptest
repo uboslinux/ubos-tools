@@ -22,10 +22,10 @@
 use strict;
 use warnings;
 
-use IndieBox::WebAppTest::TestingUtils;
-use IndieBox::Utils;
+use UBOS::WebAppTest::TestingUtils;
+use UBOS::Utils;
 
-my $commands = IndieBox::WebAppTest::TestingUtils::findCommands();
+my $commands = UBOS::WebAppTest::TestingUtils::findCommands();
 
 unless( @ARGV ) {
     synopsisHelpQuit();
@@ -47,7 +47,7 @@ if( $commandPackage ) {
         }
     }
     
-    my $result = IndieBox::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
+    my $result = UBOS::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
 
     exit !$result;
 
@@ -66,7 +66,7 @@ sub synopsisHelpQuit {
     unless( $helpFor ) {
         if( $long ) {
             print <<END;
-The central testing script for Indie Box web application testing.
+The central testing script for UBOS web application testing.
 
 It may be invoked in the following ways:
 
@@ -82,7 +82,7 @@ END
     foreach my $command ( sort keys %$commands ) {
         if( !$helpFor || $command eq $helpFor ) {
             my $package      = $commands->{$command};
-            my $synopsisHelp = IndieBox::Utils::invokeMethod( $package . '::synopsisHelp' ) || '';
+            my $synopsisHelp = UBOS::Utils::invokeMethod( $package . '::synopsisHelp' ) || '';
             
             while( my( $synopsis, $help ) = each %$synopsisHelp ) {
                 $synopsis =~ s!^\s+!!;

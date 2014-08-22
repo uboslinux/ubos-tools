@@ -22,13 +22,13 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::TestPlans::Default;
+package UBOS::WebAppTest::TestPlans::Default;
 
-use base qw( IndieBox::WebAppTest::AbstractSingleSiteTestPlan );
+use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
 use fields;
-use IndieBox::Logging;
-use IndieBox::WebAppTest::TestContext;
-use IndieBox::Utils;
+use UBOS::Logging;
+use UBOS::WebAppTest::TestContext;
+use UBOS::Utils;
 
 ##
 # Instantiate the TestPlan.
@@ -77,7 +77,7 @@ sub run {
     my @statesBackupsReverse = ();
 
     if( !$abort && !$quit ) {
-        my $c = new IndieBox::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
+        my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
 
         my $currentState = $test->getVirginStateTest();
 

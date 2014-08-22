@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Deploys the app, updates the app and only tests the virgin state.
+# Only deploys the app and tests the virgin state.
 #
 # This file is part of webapptest.
 # (C) 2012-2014 Indie Computing Corp.
@@ -22,13 +22,13 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::TestPlans::DeployUpdate;
+package UBOS::WebAppTest::TestPlans::DeployOnly;
 
-use base qw( IndieBox::WebAppTest::AbstractSingleSiteTestPlan );
+use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
 use fields;
-use IndieBox::Logging;
-use IndieBox::WebAppTest::TestContext;
-use IndieBox::Utils;
+use UBOS::Logging;
+use UBOS::WebAppTest::TestContext;
+use UBOS::Utils;
 
 ##
 # Instantiate the TestPlan.
@@ -54,7 +54,7 @@ sub run {
     my $scaffold    = shift;
     my $interactive = shift;
 
-    info( 'Running TestPlan DeployUpdate' );
+    info( 'Running TestPlan DeployOnly' );
 
     my( $siteJson, $appConfigJson ) = $test->getSiteAndAppConfigJson();
 
@@ -72,8 +72,9 @@ sub run {
     } while( $repeat );
     $ret &= $success;
 
-    my $c = new IndieBox::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
     if( !$abort && !$quit ) {
+        my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
+
         my $currentState = $test->getVirginStateTest();
 
         info( 'Checking StateCheck', $currentState->getName() );
@@ -85,39 +86,15 @@ sub run {
 
         } while( $repeat );
         $ret &= $success;
+
+        $c->destroy();
     }
-    if( !$abort && !$quit ) {
-        my $currentState = $test->getVirginStateTest();
-
-        do {
-            do { 
-                info( 'Updating' );
-
-                $success = $scaffold->update();
-
-               ( $repeat, $abort, $quit ) = $self->askUser( 'Performed update', $interactive, $success, $ret );
-            } while( $repeat );
-
-            if( !$abort && !$quit ) { # apparently, do-while is "not a loop" in Perl, so I can't do "last" here.
-                
-                info( 'Checking StateCheck', $currentState->getName() );
-
-                $success = $currentState->check( $c );
-
-                ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
-            }
-            
-        } while( $repeat );
-        $ret &= $success;
-    }
-    
-    $c->destroy();
 
     unless( $abort ) {
         $scaffold->undeploy( $siteJson );
     }
     
-    info( 'End running TestPlan DeployUpdate' );
+    info( 'End running TestPlan DeployOnly' );
 
     return $ret;
 }
@@ -126,7 +103,7 @@ sub run {
 # Return help text.
 # return: help text
 sub help {
-    return 'Tests whether the application can be installed and updated.';
+    return 'Only tests whether the application can be installed.';
 }
 
 ##

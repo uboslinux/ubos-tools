@@ -1,31 +1,33 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=$developer
 pkgname=$(basename $(pwd))
 pkgver=0.19
-pkgrel=1
+pkgrel=2
 pkgdesc="Testing tools for web apps"
 arch=('any')
-url="http://indiebox.net/"
 license=('GPL')
-groups=()
-depends=('indiebox-admin' 'perl-www-curl' 'sudo')
+depends=(
+        'ubos-admin'
+        'perl-www-curl'
+        'sudo'
+)
 optdepends=('virtualbox: run tests in VirtualBox virtual machines')
-backup=()
-source=()
 options=('!strip')
-md5sums=()
 
 package() {
 # Code
     mkdir -p $pkgdir/usr/bin
     install -m755 $startdir/bin/webapptest $pkgdir/usr/bin/
 
-    mkdir -p $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/WebAppTest/{Scaffolds,TestPlans,Commands}
-    for f in $startdir/vendor_perl/IndieBox/WebAppTest/*.pm; do
-        install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/WebAppTest/
+    mkdir -p $pkgdir/usr/lib/perl5/vendor_perl/UBOS/WebAppTest/{Scaffolds,TestPlans,Commands}
+    for f in $startdir/vendor_perl/UBOS/WebAppTest/*.pm; do
+        install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/UBOS/WebAppTest/
     done
     for p in Scaffolds TestPlans Commands; do
-        for f in $startdir/vendor_perl/IndieBox/WebAppTest/$p/*.pm; do
-            install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/WebAppTest/$p
+        for f in $startdir/vendor_perl/UBOS/WebAppTest/$p/*.pm; do
+            install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/UBOS/WebAppTest/$p
         done
     done
-    install -m755 $startdir/vendor_perl/IndieBox/WebAppTest.pm $pkgdir/usr/lib/perl5/vendor_perl/IndieBox/
+    install -m755 $startdir/vendor_perl/UBOS/WebAppTest.pm $pkgdir/usr/lib/perl5/vendor_perl/UBOS/
 }

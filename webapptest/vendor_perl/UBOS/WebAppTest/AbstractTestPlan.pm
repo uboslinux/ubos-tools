@@ -21,10 +21,10 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::AbstractTestPlan;
+package UBOS::WebAppTest::AbstractTestPlan;
 
 use fields;
-use IndieBox::Logging;
+use UBOS::Logging;
 
 ##
 # Instantiate the TestPlan.

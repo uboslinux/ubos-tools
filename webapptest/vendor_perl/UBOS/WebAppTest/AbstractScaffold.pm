@@ -22,11 +22,11 @@
 use strict;
 use warnings;
 
-package IndieBox::WebAppTest::AbstractScaffold;
+package UBOS::WebAppTest::AbstractScaffold;
 
 use fields;
-use IndieBox::Logging;
-use IndieBox::Utils;
+use UBOS::Logging;
+use UBOS::Utils;
 
 ##
 # Instantiate the Scaffold. This may take a long time.
@@ -48,10 +48,10 @@ sub deploy {
     my $self = shift;
     my $site = shift;
 
-    my $jsonString = IndieBox::Utils::writeJsonToString( $site );
+    my $jsonString = UBOS::Utils::writeJsonToString( $site );
     debug( 'Site JSON:', $jsonString );
 
-    my $exit = $self->invokeOnTarget( 'sudo indiebox-admin deploy --stdin', $jsonString );
+    my $exit = $self->invokeOnTarget( 'sudo ubos-admin deploy --stdin', $jsonString );
     return !$exit;
 }
 
@@ -62,7 +62,7 @@ sub undeploy {
     my $self = shift;
     my $site = shift;
 
-    my $exit = $self->invokeOnTarget( 'sudo indiebox-admin undeploy --siteid ' . $site->{siteid} );
+    my $exit = $self->invokeOnTarget( 'sudo ubos-admin undeploy --siteid ' . $site->{siteid} );
     return !$exit;
 }
 
@@ -71,7 +71,7 @@ sub undeploy {
 sub update {
     my $self = shift;
 
-    my $exit = $self->invokeOnTarget( 'sudo indiebox-admin update' );
+    my $exit = $self->invokeOnTarget( 'sudo ubos-admin update' );
     return !$exit;
 }
 
@@ -85,7 +85,7 @@ sub backup {
 
     my $file;
     
-    my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.indie-backup); sudo indiebox-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$file );
+    my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.ubos-backup); sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$file );
     if( !$exit ) {
         return $file;
     } else {
@@ -102,7 +102,7 @@ sub restore {
     my $site       = shift;
     my $identifier = shift;
 
-    my $exit = $self->invokeOnTarget( 'sudo indiebox-admin restore --siteid ' . $site->{siteid} . ' --in ' . $identifier );
+    my $exit = $self->invokeOnTarget( 'sudo ubos-admin restore --siteid ' . $site->{siteid} . ' --in ' . $identifier );
     return !$exit;
 }
 
