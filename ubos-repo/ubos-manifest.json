@@ -1,0 +1,59 @@
+{
+    "type" : "app",
+
+    "roles" : {
+        "apache2" : {
+            "defaultcontext" : "/dev",
+            "apache2modules" : [
+                "autoindex"
+            ],
+            "appconfigitems" : [
+                {
+                    "type"         : "directory",
+                    "name"         : "${appconfig.datadir}"
+                },
+                {
+                    "type"         : "directory",
+                    "name"         : "${appconfig.datadir}/x86_64",
+                    "uname"          : "buildmaster",
+                    "gname"          : "buildmaster",
+                    "retentionpolicy" : "keep",
+                    "retentionbucket" : "x86_64"
+                },
+                {
+                    "type"         : "directory",
+                    "name"         : "${appconfig.datadir}/arm",
+                    "uname"          : "buildmaster",
+                    "gname"          : "buildmaster",
+                    "retentionpolicy" : "keep",
+                    "retentionbucket" : "arm"
+                },
+                {
+                    "type"         : "directory",
+                    "name"         : "${appconfig.datadir}/armv6h",
+                    "uname"          : "buildmaster",
+                    "gname"          : "buildmaster",
+                    "retentionpolicy" : "keep",
+                    "retentionbucket" : "armv6h"
+                },
+                {
+                    "type"         : "directory",
+                    "name"         : "${appconfig.datadir}/armv7h",
+                    "uname"          : "buildmaster",
+                    "gname"          : "buildmaster",
+                    "retentionpolicy" : "keep",
+                    "retentionbucket" : "armv7h"
+                },
+                {
+                    "type"         : "file",
+                    "name"         : "${appconfig.apache2.appconfigfragmentfile}",
+                    "uname"          : "buildmaster",
+                    "gname"          : "buildmaster",
+                    "template"     : "tmpl/htaccess.tmpl",
+                    "templatelang" : "varsubst"
+                }
+            ]
+        }
+    }
+}
+

@@ -1,0 +1,22 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=$developer
+pkgname=$(basename $(pwd))
+pkgver=0.1
+pkgrel=1
+pkgdesc="UBOS package repository"
+arch=('any')
+license=('GPL')
+
+package() {
+# Manifest
+    mkdir -p $pkgdir/var/lib/ubos/manifests
+    install -m0644 $startdir/ubos-manifest.json $pkgdir/var/lib/ubos/manifests/${pkgname}.json
+
+# Data
+    mkdir -p $pkgdir/var/lib/${pkgname}
+
+# Tmpl
+    mkdir -p $pkgdir/usr/share/${pkgname}/tmpl
+    install -m644 $startdir/tmpl/htaccess.tmpl $pkgdir/usr/share/${pkgname}/tmpl/
+}
