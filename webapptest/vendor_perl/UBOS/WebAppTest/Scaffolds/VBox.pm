@@ -166,9 +166,9 @@ sub setup {
     }
 
     debug( 'Configuring hostonly if' );
-    # That VBox API is pretty awful, so we simply attempt to remove the interface, and recreate it
-    UBOS::Utils::myexec( "VBoxManage hostonlyif remove vboxnet0 2> /dev/null" );
-    UBOS::Utils::myexec( "VBoxManage hostonlyif create" );
+    # VBoxManage hostonlyif remove vboxnet0 manages to hang the machine! So we try not to do that any more.
+    
+    UBOS::Utils::myexec( "ip link show vboxnet0 > /dev/null || VBoxManage hostonlyif create" );
     if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig $hostonlyInterface --ip 192.168.56.1" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
