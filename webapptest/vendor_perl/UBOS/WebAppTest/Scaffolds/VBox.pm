@@ -231,7 +231,7 @@ sub setup {
 
     debug( 'Starting vm', $vmName );
     if( UBOS::Utils::myexec( "VBoxManage startvm '$vmName' --type headless", undef, \$out, \$err )) {
-        # This starts the VM in the background (unless VBoxHeadless)
+        # This starts the VM in the background (unlike VBoxHeadless)
         fatal( 'VBoxManage startvm failed' );
     }
   
