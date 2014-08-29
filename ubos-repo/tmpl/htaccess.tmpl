@@ -1,0 +1,8 @@
+RedirectMatch ^/$ http://ubos.net/
+
+Alias ${appconfig.contextorslash} /var/lib/ubos-repo/${appconfig.appconfigid}
+
+<Directory /var/lib/ubos-repo/${appconfig.appconfigid}>
+    Require all granted
+    Options +Indexes
+</Directory>
