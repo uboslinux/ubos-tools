@@ -52,6 +52,9 @@ my $hostonlyInterface = 'vboxnet0';
 
 # how many seconds until we give up waiting for boot
 my $bootMaxSeconds = 120;
+# how many seconds until we give up that pacman keys have been initialized
+my $keysMaxSeconds = 60;
+
 # how many seconds until we give up waiting for shutdown
 my $shutdownMaxSeconds = 30;
 
@@ -234,7 +237,12 @@ sub setup {
         # This starts the VM in the background (unlike VBoxHeadless)
         fatal( 'VBoxManage startvm failed' );
     }
-  
+
+    info( 'Waiting until target is ready' );
+    unless( $self->waitUntilTargetReady() ) {
+        error( 'Virtual machine failed to start up in time' );
+    }
+
     return $self;
 }
 
@@ -307,28 +315,55 @@ sub invokeOnTarget {
 sub getTargetIp {
     my $self  = shift;
 
-    if( $self->{hostOnlyIp} ) {
-        return $self->{hostOnlyIp};
-    }
+    return $self->{hostOnlyIp};
+}
+
+##
+# Wait until target is ready.
+sub waitUntilTargetReady {
+    my $self = shift;
+
+    # first we wait for an IP address, then we make sure pacman keys have been
+    # initialized
 
     my $vmName = $self->{vmName};
-    for( my $count = 0 ; $count < $bootMaxSeconds ; ++$count ) {
+    my $ret    = 0;
+    for( my $count = 0 ; $count < $bootMaxSeconds ; $count += 5 ) {
         # This is on the hostonly interface
         my $out;
         if( UBOS::Utils::myexec( "VBoxManage guestproperty get '$vmName' /VirtualBox/GuestInfo/Net/1/V4/IP", undef, \$out )) {
             error( 'VBoxManage guestproperty failed' );
         }
         # $out is something like "Value: 192.168.56.103"
-        my $ret;
         if( $out =~ m!Value: (\d+\.\d+\.\d+\.\d+)! ) {
             $self->{hostOnlyIp} = $1;
             info( 'The virtual machine is accessible, from this host only, at', $self->{hostOnlyIp} );
-            return $self->{hostOnlyIp};
+            $ret = 1;
         }
         sleep 1;
     }
-    return undef;
+    unless( $ret ) {
+        return $ret;
+    }
+    for( my $count = 0 ; $count < $keysMaxSeconds ; $count += 5  ) {
+        my $out;
+        $self->invokeOnTarget( 'ls -l /etc/pacman.d/gnupg/pubring.gpg', undef, \$out );
+        # format: -rw-r--r-- 1 root root 450806 Aug 31 20:26 /etc/pacman.d/gnupg/pubring.gpg
+
+        if( $out =~ m!^(?:\S{9})\s+(?:\S+)\s+(?:\S+)\s+(?:\S+)\s+(?:\d+)\s+! ) {
+            my $size = $1;
+            if( $size > 10000 ) {
+                # rather arbitrary cutoff, but seems to do the job
+                $ret = 1;
+                return $ret;
+            }
+        }
+    }
+    debug( 'Pacman keys file not populated in time' );
+
+    return $ret;
 }
+
 
 ##
 # Return help text.
@@ -337,10 +372,12 @@ sub help {
     return <<TXT;
 A scaffold that runs tests on the local machine in a VirtualBox virtual machine.
 Options:
-    vmdktemplate (required) -- template for the VMDK file
-    vmdkfile     (required) -- local copy of the VMDK file on which tests is performed
-    ram          (optional) -- RAM in MB
+    vmdktemplate       (required) -- template for the VMDK file
+    vmdkfile           (required) -- local copy of the VMDK file on which tests is performed
+    ubos-admin-keyfile (required) -- name of the file that contains the private key for ssh access
+    ram                (optional) -- RAM in MB
+    vncsecret          (optional) -- if given, the virtual machine will be accessible over VNC with this password
 TXT
 }
-
+                    
 1;
