@@ -24,7 +24,7 @@ use warnings;
 
 package UBOS::WebAppTest::AbstractScaffold;
 
-use fields;
+use fields qw( isOk );
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -39,6 +39,15 @@ sub setup {
     }
 
     return $self;
+}
+
+##
+# Determine whether this Scaffold has successfully initialized
+# return: true or false
+sub isOk {
+    my $self = shift;
+
+    return $self->{isOk};
 }
 
 ##
