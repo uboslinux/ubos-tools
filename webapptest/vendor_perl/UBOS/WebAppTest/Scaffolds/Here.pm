@@ -46,7 +46,9 @@ sub setup {
     $self->SUPER::setup();
 
     info( 'Creating Scaffold Here' );
-    
+
+    $self->{isOk} = 1; # always
+
     return $self;
 }
 

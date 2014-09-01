@@ -74,6 +74,8 @@ sub setup {
     my $ram       = 512; # default
     my $vram      =  16; # default
 
+    $self->{isOk} = 0; # until we decide otherwise
+
     if( defined( $options ) && @$options ) {
         foreach my $pair ( @$options ) {
             if( $pair =~ m!^(.*)(=(.*))$! ) {
@@ -239,7 +241,12 @@ sub setup {
     }
 
     info( 'Waiting until target is ready' );
-    unless( $self->waitUntilTargetReady() ) {
+    if( $self->waitUntilTargetReady() ) {
+        unless( $self->invokeOnTarget( "ubos-admin update" )) { # get latest code; image may not be most current
+            $self->{isOk} = 1;
+        }
+
+    } else {
         error( 'Virtual machine failed to start up in time' );
     }
 
@@ -351,7 +358,7 @@ sub waitUntilTargetReady {
         $self->invokeOnTarget( 'ls -l /etc/pacman.d/gnupg/pubring.gpg', undef, \$out );
         # format: -rw-r--r-- 1 root root 450806 Aug 31 20:26 /etc/pacman.d/gnupg/pubring.gpg
 
-        if( $out =~ m!^(?:\S{9})\s+(?:\S+)\s+(?:\S+)\s+(?:\S+)\s+(?:\d+)\s+! ) {
+        if( $out =~ m!^(?:\S{10})\s+(?:\S+)\s+(?:\S+)\s+(?:\S+)\s+(?:\d+)\s+! ) {
             my $size = $1;
             if( $size > 10000 ) {
                 # rather arbitrary cutoff, but seems to do the job

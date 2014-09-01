@@ -91,23 +91,29 @@ sub run {
     my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage     . '->new' );
 
     my $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', \@scaffoldOptions );
-    foreach my $appTest ( @appTestsToRun ) {
-        if( @appTestsToRun > 1 ) {
-            print "Running AppTest " . $appTest->name . "\n";
-        }
-        info( 'Running AppTest', $appTest->name );
+    if( $scaffold && $scaffold->isOk ) {
+        foreach my $appTest ( @appTestsToRun ) {
+            if( @appTestsToRun > 1 ) {
+                print "Running AppTest " . $appTest->name . "\n";
+            }
+            info( 'Running AppTest', $appTest->name );
 
-        my $status = $testPlan->run( $appTest, $scaffold, $interactive );
-        $ret &= $status;
+            my $status = $testPlan->run( $appTest, $scaffold, $interactive );
+            $ret &= $status;
 
-        unless( $ret ) {
-            error( 'Test', $appTest->name, 'failed.' );
-        } else {
-            print "Test passed.\n";
+            unless( $ret ) {
+                error( 'Test', $appTest->name, 'failed.' );
+            } else {
+                print "Test passed.\n";
+            }
         }
+    } else {
+        error( 'Setting up scaffold failed.' );
     }
 
-    $scaffold->teardown();
+    if( $scaffold ) {
+        $scaffold->teardown();
+    }
 
     return $ret;
 }
