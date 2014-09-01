@@ -339,6 +339,7 @@ sub waitUntilTargetReady {
             $self->{hostOnlyIp} = $1;
             info( 'The virtual machine is accessible, from this host only, at', $self->{hostOnlyIp} );
             $ret = 1;
+            last;
         }
         sleep 5;
     }
