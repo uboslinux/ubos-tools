@@ -340,7 +340,7 @@ sub waitUntilTargetReady {
             info( 'The virtual machine is accessible, from this host only, at', $self->{hostOnlyIp} );
             $ret = 1;
         }
-        sleep 1;
+        sleep 5;
     }
     unless( $ret ) {
         return $ret;
@@ -358,6 +358,7 @@ sub waitUntilTargetReady {
                 return $ret;
             }
         }
+        sleep 5;
     }
     debug( 'Pacman keys file not populated in time' );
 
