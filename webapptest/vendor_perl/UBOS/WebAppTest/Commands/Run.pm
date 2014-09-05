@@ -59,10 +59,6 @@ sub run {
         fatal( 'Must provide name of at least one test suite.' );
     }
 
-    if( $verbose ) {
-        UBOS::Logging::setVerbose( $verbose );
-    }
-
     unless( $scaffoldName ) {
         $scaffoldName  = 'here';
     }
