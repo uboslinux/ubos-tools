@@ -110,6 +110,7 @@ sub run {
         }
     } else {
         error( 'Setting up scaffold failed.' );
+        $ret = 0;
     }
 
     if( $scaffold ) {
