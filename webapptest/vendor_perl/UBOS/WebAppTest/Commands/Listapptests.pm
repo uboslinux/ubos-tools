@@ -25,7 +25,6 @@ use warnings;
 package UBOS::WebAppTest::Commands::Listapptests;
 
 use Cwd;
-use UBOS::Logging;
 use UBOS::Host;
 use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;

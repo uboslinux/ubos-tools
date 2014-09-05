@@ -37,16 +37,21 @@ use UBOS::Utils;
 sub run {
     my @args = @_;
 
-    my $interactive = 0;
-    my $verbose = 0;
+    my $interactive   = 0;
+    my $verbose       = 0;
+    my $logConfigFile = undef;
     my $scaffoldName;
     my $testPlanName;
     my $parseOk = GetOptionsFromArray(
             \@args,
             'interactive' => \$interactive,
             'verbose+'    => \$verbose,
+            'logConfig=s' => \$logConfigFile,
             'scaffold=s'  => \$scaffoldName,
             'testplan=s'  => \$testPlanName );
+
+    UBOS::Logging::initialize( 'webapptest', 'run', $verbose, $logConfigFile );
+
     unless( $parseOk ) {
         fatal( 'Invalid command-line arguments' );
     }
