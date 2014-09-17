@@ -35,7 +35,7 @@ use UBOS::Utils;
 sub findAppTestsInDirectory {
     my $dir = shift;
     
-    my $appTestCandidates = UBOS::Utils::readFilesInDirectory( $dir, 'Test\.pm$' );
+    my $appTestCandidates = UBOS::Utils::readFilesInDirectory( $dir, 'Test.*\.pm$' );
     my $appTests = {};
     
     while( my( $fileName, $content ) = each %$appTestCandidates ) {
