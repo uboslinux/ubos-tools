@@ -295,7 +295,7 @@ sub getAdminData {
         'userid'     => 'testuser',
         'username'   => 'Test User',
         'credential' => 's3cr3t',
-        'email'      => 'testing@localhost',
+        'email'      => 'testing@ignore.ubos.net',
     };
 }    
 
