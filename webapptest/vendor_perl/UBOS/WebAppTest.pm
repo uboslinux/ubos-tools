@@ -40,7 +40,7 @@ sub new {
     my %pars = @_;
     
     my $packageName       = $pars{appToTest};
-    my $name              = $pars{name} || ( 'Testing app ' . $packageName );
+    my $name              = $pars{name};
     my $testContext       = $pars{testContext};
     my $description       = $pars{description};
     my $custPointValues   = $pars{customizationPointValues};
@@ -123,6 +123,16 @@ sub name {
     my $self = shift;
 
     return $self->{name};
+}
+
+##
+# Allows the Run command to set a name for the test
+# $name: the name
+sub setName {
+    my $self = shift;
+    my $name = shift;
+
+    $self->{name} = $name;
 }
 
 ##
