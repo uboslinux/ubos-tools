@@ -84,6 +84,9 @@ sub run {
         unless( $appTestToRun ) {
             fatal( 'Cannot find app test', $appTestName );
         }
+        unless( $appTestToRun->name ) {
+            $appTestToRun->setName( $appTestName );
+        }
         push @appTestsToRun, $appTestToRun;
     }
     
