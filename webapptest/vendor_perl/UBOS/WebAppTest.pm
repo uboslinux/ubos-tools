@@ -304,7 +304,10 @@ sub getAdminData {
     return {
         'userid'     => 'testuser',
         'username'   => 'Test User',
-        'credential' => 's3cr3t',
+        'credential' => 's3cr3t', # This is of course not secure, but we're trying
+                                  # to be memorable here so the user can easily log
+                                  # on in interactive mode. To be secure, override
+                                  # this method in your test.
         'email'      => 'testing@ignore.ubos.net',
     };
 }    
