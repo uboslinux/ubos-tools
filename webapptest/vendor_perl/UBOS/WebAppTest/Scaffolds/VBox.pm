@@ -60,7 +60,7 @@ my $shutdownMaxSeconds = 30;
 
 ##
 # Instantiate the Scaffold.
-# $options: array of options
+# $options: hash of options
 sub setup {
     my $self    = shift;
     my $options = shift;
@@ -76,72 +76,46 @@ sub setup {
 
     $self->{isOk} = 0; # until we decide otherwise
 
-    if( defined( $options ) && @$options ) {
-        foreach my $pair ( @$options ) {
-            if( $pair =~ m!^(.*)(=(.*))$! ) {
-                my $key   = $1;
-                my $value = $3;
-    
-                if( 'vmdktemplate' eq $key ) {
-                    if( !$value ) {
-                        fatal( 'No value provided for vmdktemplate' );
-                    } elsif( $value !~ m!\.vmdk$! ) {
-                        fatal( 'Vmdktemplate file must have extension .vmdk, is:', $value );
-                    } elsif( !-e $value ) {
-                        fatal( 'Vmdktemplate file does not exist:', $value );
-                    }
-                    $self->{vmdkTemplate} = $value;
-    
-                } elsif( 'vmdkfile' eq $key ) {
-                    if( !$value ) {
-                        fatal( 'No value provided for vmdkfile' );
-                    } elsif( $value !~ m!\.vmdk$! ) {
-                        fatal( 'Vmdkfile must have extension .vmdk, is:', $value );
-                    } elsif( -e $value ) {
-                        fatal( 'Vmdkfile file exists already:', $value );
-                    }
-                    $self->{vmdkFile} = $value;
-    
-                } elsif( 'ram' eq $key ) {
-                    if( !$value ) {
-                        fatal( 'No value provided for ram' );
-                    } else {
-                        $ram = $value;
-                    }
-    
-                } elsif( 'ubos-admin-keyfile' eq $key ) {
-                    if( !$value ) {
-                        fatal( 'No value provided for ubos-admin-keyfile' );
-                    } else {
-                        $self->{ubosAdminKeyfile} = $value;
-                    }
-    
-                } elsif( 'vncsecret' eq $key ) {
-                    if( !$value ) {
-                        fatal( 'No value provided for vncsecret' );
-                    } else {
-                        $vncSecret = $value;
-                    }
-
-                } else {
-                    fatal( 'Unknown VBox scaffold option', $key );
-                }
-            }
-        }
+    unless( exists( $options->{vmdktemplate} )) {
+        fatal( 'No value provided for vmdktemplate' );
     }
-    unless( defined( $self->{vmdkTemplate} )) {
-        fatal( 'Must provide option vmdktemplate pointing to template VMDK file to copy and use as guest drive' );
+    unless( $options->{vmdktemplate} =~ m!\.vmdk$! ) {
+        fatal( 'Vmdktemplate file must have extension .vmdk, is:', $options->{vmdktemplate} );
     }
-    unless( -r $self->{vmdkTemplate} ) {
-        fatal( 'Cannot find or read file', $self->{vmdkTemplate} );
+    unless( -r $options->{vmdktemplate} ) {
+        fatal( 'Vmdktemplate file does not exist or cannot be read:', $options->{vmdktemplate} );
+    }
+    
+    unless( exists( $options->{vmdkfile} )) {
+        fatal( 'No value provided for vmdkfile' );
+    }
+    unless( $options->{vmdkfile} =~ m!\.vmdk$! ) {
+        fatal( 'Vmdkfile file must have extension .vmdk, is:', $options->{vmdkfile} );
+    }
+    if( -e $options->{vmdkfile} ) {
+        fatal( 'Vmdkfile file exists already:', $options->{vmdkfile} );
     }
 
-    unless( defined( $self->{ubosAdminKeyfile} )) {
-        fatal( 'Must provide option ubos-admin-keyfile pointing to private ssh key for ubos-admin on guest' );
+    unless( exists( $options->{'ubos-admin-keyfile'} ) && $options->{'ubos-admin-keyfile'} ) {
+        fatal( 'No value provided for ubos-admin-keyfile' );
     }
-    unless( -r $self->{ubosAdminKeyfile} ) {
-        fatal( 'Cannot find or read file', $self->{ubosAdminKeyfile} );
+    unless( -r $options->{'ubos-admin-keyfile'} ) {
+        fatal( 'Cannot find or read file', $options->{'ubos-admin-keyfile'} );
     }
+
+    unless( exists( $options->{ram} ) && $options->{ram} ) {
+        fatal( 'No value provided for ram' );
+    }
+
+    if( exists( $options->{vncsecret} ) && !$options->{vncsecret} ) {
+        fatal( 'Vncsecret cannot be empty' );
+    }
+
+    $self->{vmdkTemplate}     = $options->{vmdktemplate} );
+    $self->{vmdkFile}         = $options->{vmdkfile};
+    $self->{ubosAdminKeyfile} = $options->{ubos-admin-keyfile};
+    my $ram                   = $options->{ram};
+    my $vncSecret             = $options->{vncsecret};
 
     my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
     $self->{vmName} = $vmName;

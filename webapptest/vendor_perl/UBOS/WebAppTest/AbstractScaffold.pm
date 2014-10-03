@@ -31,8 +31,10 @@ use UBOS::Utils;
 ##
 # Instantiate the Scaffold. This may take a long time.
 # This method must be overridden by subclasses.
+# $options: hash of options
 sub setup {
-    my $self = shift;
+    my $self    = shift;
+    my $options = shift;
 
     unless( ref $self ) {
         fatal( 'Must override Scaffold' );

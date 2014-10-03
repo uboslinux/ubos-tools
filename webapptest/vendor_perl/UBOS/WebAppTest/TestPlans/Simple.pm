@@ -32,8 +32,14 @@ use UBOS::Utils;
 
 ##
 # Instantiate the TestPlan.
+# $options: options for the test plan
 sub new {
-    my $self = shift;
+    my $self    = shift;
+    my $options = shift;
+
+    if( defined( $options ) && %$options ) {
+        fatal( 'TestPlan Simple does not support any options' );
+    }
 
     unless( ref $self ) {
         $self = fields::new( $self );
