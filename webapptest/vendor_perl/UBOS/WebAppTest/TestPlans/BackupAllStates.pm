@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 # Walks through the states and transitions in sequence, and creates a
-# backup file for each of them. This allows the RestoreFromAllStates
+# backup file for each of them. This allows the RestoreAllStates
 # TestPlan to test upgrades.
 #
 # This file is part of webapptest.
@@ -27,20 +27,28 @@ use warnings;
 package UBOS::WebAppTest::TestPlans::BackupAllStates;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
-use fields;
+use fields qw( backupFilePrefix );
 use UBOS::Logging;
 use UBOS::WebAppTest::TestContext;
 use UBOS::Utils;
 
 ##
 # Instantiate the TestPlan.
+# $options: options for the test plan
 sub new {
-    my $self = shift;
+    my $self    = shift;
+    my $options = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
     }
     $self = $self->SUPER::new();
+    if( exists( $options->{backupfileprefix} )) {
+        unless( $options->{backupfileprefix} ) {
+            fatal( 'backupfileprefix cannot be empty' );
+        }
+        $self->{backupFilePrefix} = $options->{backupfileprefix};
+    } # cannot calculcate the fallback yet
 
     return $self;
 }
@@ -56,7 +64,12 @@ sub run {
     my $scaffold    = shift;
     my $interactive = shift;
 
-    my $backupFilePrefix = $test->packageName() . '-' . $test->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
+    my $backupFilePrefix;
+    if( exists( $self->{backupFilePrefix} )) {
+        $backupFilePrefix = $self->{backupFilePrefix};
+    } else {
+        $backupFilePrefix = $test->packageName() . '-' . $test->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
+    }
 
     info( 'Running TestPlan BackupAllStates' );
 

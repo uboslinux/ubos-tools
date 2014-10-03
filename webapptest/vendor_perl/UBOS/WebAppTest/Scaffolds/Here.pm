@@ -31,13 +31,13 @@ use UBOS::Logging;
 
 ##
 # Instantiate the Scaffold.
-# $options: array of options
+# $options: hash of options
 sub setup {
     my $self    = shift;
     my $options = shift;
 
-    if( defined( $options ) && @$options ) {
-        fatal( 'Scaffold', ref( $self ), 'does not support any options, got:', @$options );
+    if( defined( $options ) && %$options ) {
+        fatal( 'Scaffold', ref( $self ), 'does not support any options' );
     }
 
     unless( ref $self ) {

@@ -40,15 +40,15 @@ sub run {
     my $interactive   = 0;
     my $verbose       = 0;
     my $logConfigFile = undef;
-    my $scaffoldName;
-    my $testPlanName;
+    my $scaffoldOpt;
+    my $testPlanOpt;
     my $parseOk = GetOptionsFromArray(
             \@args,
             'interactive' => \$interactive,
             'verbose+'    => \$verbose,
             'logConfig=s' => \$logConfigFile,
-            'scaffold=s'  => \$scaffoldName,
-            'testplan=s'  => \$testPlanName );
+            'scaffold=s'  => \$scaffoldOpt,
+            'testplan=s'  => \$testPlanOpt );
 
     UBOS::Logging::initialize( 'webapptest', 'run', $verbose, $logConfigFile );
 
@@ -59,20 +59,21 @@ sub run {
         fatal( 'Must provide name of at least one test suite.' );
     }
 
-    unless( $scaffoldName ) {
-        $scaffoldName  = 'here';
+    unless( $scaffoldOpt ) {
+        $scaffoldOpt = 'here';
     }
-    my @scaffoldOptions = split( ':', $scaffoldName );
-    $scaffoldName = shift @scaffoldOptions;
+    unless( $testPlanOpt ) {
+        $testPlanOpt = 'default';
+    }
 
+    my( $scaffoldName, $scaffoldOptions ) = decode( $scaffoldOpt );
+    my( $testPlanName, $testPlanOptions ) = decode( $testPlanOpt );
+    
     my $scaffoldPackageName = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
     unless( $scaffoldPackageName ) {
         fatal( 'Cannot find scaffold', $scaffoldName );
     }
 
-    unless( $testPlanName ) {
-        $testPlanName  = 'default';
-    }
     my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
     unless( $testPlanPackage ) {
         fatal( 'Cannot find test plan', $testPlanName );
@@ -92,9 +93,9 @@ sub run {
     
     my $ret = 1;
 
-    my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage     . '->new' );
+    my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage     . '->new', $testPlanOptions );
 
-    my $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', \@scaffoldOptions );
+    my $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
     if( $scaffold && $scaffold->isOk ) {
         foreach my $appTest ( @appTestsToRun ) {
             if( @appTestsToRun > 1 ) {
@@ -135,11 +136,35 @@ SSS
     --interactive: stop at important points and wait for user input
     --verbose: print more information about how the test progresses
     <scaffold>: use this named scaffold instead of the default. If given as
-                "abc:def:ghi", "abc" represents the name of the scaffold, and
-                "def" and "ghi" are scaffold-specific options
-    <testplan>: use this named testplan instead of the default
+                "abc:def=ghi:jkl=mno", "abc" represents the name of the scaffold,
+                and "def" and "jkl" are scaffold-specific options
+    <testplan>: use this named testplan instead of the default. If given as
+                "abc:def=ghi:jkl=mno", "abc" represents the name of the testplan,
+                and "def" and "jkl" are scaffold-specific options
 HHH
     };
 }
 
+##
+# Decode a structured argument
+sub decode {
+    my $string = shift;
+
+    my @parts = split( ':', $string );
+
+    my $name    = shift @parts;
+    my $options = {};
+
+    foreach my $part ( @parts ) {
+        if( $part =~ m!^(.*?)=(.*)$! ) {
+            $options->{lc( $1 )} = $2;
+        } else {
+            $options->{lc( $part )} = '';
+        }
+    }
+
+    return( $name, $options );
+}
+
 1;
+
