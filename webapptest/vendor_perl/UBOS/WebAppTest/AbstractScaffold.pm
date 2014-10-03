@@ -85,7 +85,8 @@ sub update {
 }
 
 ##
-# Backup a site.
+# Backup a site. This does not move the backup from the target to
+# the local machine if the target is remote.
 # $site: site JSON
 # return: identifier of the backup, e.g. filename
 sub backup {
@@ -96,11 +97,29 @@ sub backup {
     
     my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.ubos-backup); sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$file );
     if( !$exit ) {
+        $file =~ s!^\s+!!;
+        $file =~ s!\s+$!!;
         return $file;
     } else {
+        error( 'Backup failed' );
         return 0;
     }
 }
+
+##
+# Backup a site to a local file on the local machine.
+# $site: $site JSON
+# $filename: the local backup file name
+# return: if successful, $filename
+sub backupToLocal {
+    my $self     = shift;
+    my $site     = shift;
+    my $filename = shift;
+
+    error( 'Must override Scaffold::backupToLocal' );
+
+    return undef;
+}    
 
 ##
 # Restore a site

@@ -26,9 +26,20 @@ use warnings;
 package UBOS::WebAppTest;
 
 use UBOS::App;
+use UBOS::Host;
 use UBOS::Logging;
 
-use fields qw( name description packageName siteId appConfigId testContext hostname customizationPointValues statesTransitions );
+use fields qw(
+        name
+        description
+        packageName
+        packageVersion
+        siteId
+        appConfigId
+        testContext
+        hostname
+        customizationPointValues
+        statesTransitions );
 
 ##
 # Constructor.
@@ -104,6 +115,7 @@ sub new {
     $self->{name}                     = $name;
     $self->{description}              = $description;
     $self->{packageName}              = $packageName;
+    $self->{packageVersion}           = UBOS::Host::packageVersion( $packageName );
     $self->{testContext}              = $testContext;
     $self->{hostname}                 = $hostname;
     $self->{customizationPointValues} = $custPointValues;
@@ -136,12 +148,21 @@ sub setName {
 }
 
 ##
-# Obtain the package name
+# Obtain the name of the package being tested
 # return: the package name
 sub packageName {
     my $self = shift;
 
     return $self->{packageName};
+}
+
+##
+# Obtain the version of the package being tested
+# return: the package version
+sub packageVersion {
+    my $self = shift;
+
+    return $self->{packageVersion};
 }
 
 ##
@@ -187,6 +208,14 @@ sub hostname {
     my $self = shift;
 
     return $self->{hostname};
+}
+
+##
+# Determine the apache context directory of the application being tested.
+sub apache2ContextDir {
+    my $self = shift;
+
+    return '/srv/http/sites/' . $self->siteId . $self->getTestContext;
 }
 
 ##

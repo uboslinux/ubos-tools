@@ -25,9 +25,22 @@ use warnings;
 package UBOS::WebAppTest::TestContext;
 
 use fields qw( siteJson appConfigJson scaffold appTest testPlan ip curl cookieFile errors );
+
+use Fcntl;
 use UBOS::Logging qw( debug );
 use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
+
+#
+# This file is organized as follows:
+# (1) Constructor
+# (2) General methods
+# (3) HTTP testing methods
+# (4) File testing methods
+# (5) Utility methods
+# Sorry, it's long, but that makes the API a lot easier for the test developer
+
+##### (1) Constructor #####
 
 ##
 # Instantiate the TextContext.
@@ -61,6 +74,8 @@ sub new {
     return $self;
 }
 
+##### (2) General methods #####
+
 ##
 # Determine the hostname of the application being tested
 # return: hostname
@@ -89,7 +104,7 @@ sub context {
 }
 
 ##
-# Determine the fill context path of the application being tested
+# Determine the full context path of the application being tested
 # return: full context, e.g. http://example.com/foo
 sub fullContext {
     my $self = shift;
@@ -112,6 +127,8 @@ sub clearHttpSession {
     $self->{curl} = "curl -s -v --cookie-jar '$cookieFile' -b '$cookieFile' --resolve '$hostName:80:$ip' --resolve '$hostName:443:$ip'";
     # -v to get HTTP headers
 }
+
+##### (3) HTTP testing methods #####
 
 ##
 # Perform an HTTP GET request. If the URL does not contain a protocol and
@@ -681,6 +698,127 @@ sub notStatus {
     }
     return 1;
 }
+
+##### (4) File testing methods #####
+
+##
+# Test that a file exists and has certain content and properties
+# $fileName: name of the file
+# $fileUname: name of the file's owner, or undef if not to be checked
+# $fileGname: name of the file's group, or undef if not to be checked
+# $fileMode: number (per chmod) for file permissions, or undef if not the be checked
+# $testMethod: a method to invoke which will return 1 (ok) or 0 (fail), or undef
+#              if not to be checked. Parameters: 1: this TestContext, 2: fileName
+sub checkFile {
+    my $self       = shift;
+    my $fileName   = shift;
+    my $fileUname  = shift;
+    my $fileGname  = shift;
+    my $fileMode   = shift;
+    my $testMethod = shift;
+
+    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
+            = stat( $fileName);
+
+    unless( $dev ) {
+        $self->error( 'File does not exist:', $fileName );
+        return 0;
+    }
+
+    my $ret = 1;
+
+    unless( Fcntl::S_ISREG( $mode )) {
+        $self->error( 'Not a regular file:', $fileName );
+        $ret = 0;
+    }
+    
+    if( defined( $fileMode )) {
+        my $realFileMode = oct( $fileMode );
+        my $realMode     = $mode & 07777; # ignore special file bits
+        if( $realFileMode != $realMode ) {
+            $self->error( 'File', $fileName, 'has wrong permissions:', sprintf( '%o vs %o', $realFileMode, $realMode ));
+            $ret = 0;
+        }
+    }
+
+    if( defined( $fileUname )) {
+        my $fileUid = UBOS::Utils::getUid( $fileUname );
+        if( $fileUid != $uid ) {
+            $self->error( 'File', $fileName, 'has wrong owner:', $fileUid, 'vs.', $uid );
+            $ret = 0;
+        }
+    }
+    if( defined( $fileGname )) {
+        my $fileGid = UBOS::Utils::getGid( $fileGname );
+        if( $fileGid != $gid ) {
+            $self->error( 'File', $fileName, 'has wrong group:', $fileGid, 'vs.', $gid );
+            $ret = 0;
+        }
+    }
+    if( defined( $testMethod )) {
+        $ret &= $testMethod->( $self, $fileName );
+    }
+
+    return $ret;
+}
+
+##
+# Test that a directory exists and has certain content and properties
+# $dirName: name of the directory
+# $dirUname: name of the directory's owner, or undef if not to be checked
+# $dirGname: name of the directory's group, or undef if not to be checked
+# $dirMode: number (per chmod) for directory permissions, or undef if not the be checked
+sub checkDir {
+    my $self      = shift;
+    my $dirName   = shift;
+    my $dirUname  = shift;
+    my $dirGname  = shift;
+    my $dirMode   = shift;
+
+    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
+            = stat( $dirName);
+
+    unless( $dev ) {
+        $self->error( 'Directory does not exist:', $dirName );
+        return 0;
+    }
+
+    my $ret = 1;
+
+    unless( Fcntl::S_ISDIR( $mode )) {
+        $self->error( 'Not a directory:', $dirName );
+        $ret = 0;
+    }
+
+    if( defined( $dirMode )) {
+        my $realDirMode = oct( $dirMode );
+        my $realMode    = $mode & 07777; # ignore special file bits
+        if( $realDirMode != $realMode ) {
+            $self->error( 'Directory', $dirName, 'has wrong permissions:', sprintf( '%o vs %o', $realDirMode, $realMode ));
+            $ret = 0;
+        }
+    }
+
+    if( defined( $dirUname )) {
+        my $dirUid = UBOS::Utils::getUid( $dirUname );
+        if( $dirUid != $uid ) {
+            $self->error( 'Directory', $dirName, 'has wrong owner:', $dirUid, 'vs.', $uid );
+            $ret = 0;
+        }
+    }
+    if( defined( $dirGname )) {
+        my $dirGid = UBOS::Utils::getGid( $dirGname );
+        if( $dirGid != $gid ) {
+            $self->error( 'Directory', $dirName, 'has wrong group:', $dirGid, 'vs.', $gid );
+            $ret = 0;
+        }
+    }
+
+    return $ret;
+}
+
+
+##### (5) Utility methods #####
 
 ##
 # Emit a response in the debug level of the log

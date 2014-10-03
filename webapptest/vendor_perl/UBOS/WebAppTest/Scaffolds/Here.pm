@@ -53,6 +53,26 @@ sub setup {
 }
 
 ##
+# Backup a site to a local file on the local machine.
+# $site: $site JSON
+# $filename: the local backup file name
+# return: if successful, $filename
+sub backupToLocal {
+    my $self     = shift;
+    my $site     = shift;
+    my $filename = shift;
+
+    my $exit = UBOS::Utils::myexec( 'sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out ' . $filename );
+    if( !$exit ) {
+        UBOS::Utils::myexec( 'sudo chown $(id -un):$(id -gn) ' . $filename );
+        return $filename;
+    } else {
+        error( 'Backup failed, exit', $exit );
+        return undef;
+    }
+}    
+
+##
 # Teardown this Scaffold.
 sub teardown {
     my $self = shift;
