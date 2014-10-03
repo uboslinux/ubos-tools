@@ -254,6 +254,34 @@ sub setup {
 }
 
 ##
+# Backup a site to a local file on the local machine.
+# $site: $site JSON
+# $filename: the local backup file name
+# return: if successful, $filename
+sub backupToLocal {
+    my $self     = shift;
+    my $site     = shift;
+    my $filename = shift;
+
+    my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.ubos-backup); sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$remoteFile );
+    if( $exit ) {
+        error( 'Remote backup failed' );
+        return undef;
+    }
+    $remoteFile =~ s!^\s+!!;
+    $remoteFile =~ s!\s+$!!;
+
+    $exit = $self->copyFromTarget( $remoteFile, $filename );
+    if( $exit ) {
+        error( 'Copying backup from remote to local failed' );
+        return undef;
+    }
+    $self->destroyBackup( $remoteFile );
+
+    return $filename;
+}    
+
+##
 # Teardown this Scaffold.
 sub teardown {
     my $self = shift;
@@ -373,6 +401,27 @@ sub waitUntilTargetReady {
     return $ret;
 }
 
+##
+# Copy a remote file to the local machine
+# $remoteFile: the name of the file on the remote machine
+# $localFile: the name of the file on the local machine
+sub copyFromTarget {
+    my $self       = shift;
+    my $remoteFile = shift;
+    my $localFile  = shift;
+
+    my $ip = $self->getTargetIp();
+    
+    my $scpCmd = 'scp';
+    $scpCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
+            # don't put into known_hosts file, and don't print resulting warnings
+    $scpCmd .= ' ubos-admin@' . $ip . ':' . $remoteFile;
+    $scpCmd .= ' ' . $localFile;
+    $scpCmd .= ' -i ' . $self->{ubosAdminKeyfile};
+    debug( 'scp command:', $scpCmd );
+
+    return UBOS::Utils::myexec( $scpCmd );
+}
 
 ##
 # Return help text.
