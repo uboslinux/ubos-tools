@@ -167,7 +167,9 @@ foreach my $dbFile ( @dbFiles ) {
     # Now let's do some matching. First: make sure all package files exist that are referenced in
     # the package database, and are consistent
     unless( $obsoleteOnly ) {
-        while( my( $definedPackageNameVersion, $definedPackageInfo ) = each %$definedPackages ) {
+        foreach my $definedPackageNameVersion ( keys %$definedPackages ) {
+            my $definedPackageInfo = $definedPackages->{$definedPackageNameVersion};
+
             my $foundPackageInfo = $foundPackages->{$definedPackageNameVersion};
             if( $foundPackageInfo ) {
                 compareFoundDefined( $definedPackageNameVersion, $foundPackageInfo, $definedPackageInfo );
@@ -179,7 +181,9 @@ foreach my $dbFile ( @dbFiles ) {
     
     # Now find package files that aren't in the database
     my $notInDb = {};
-    while( my( $foundPackageNameVersion, $foundPackageInfo ) = each %$foundPackages ) {
+    foreach my $foundPackageNameVersion ( keys %$foundPackages ) {
+        my $foundPackageInfo = $foundPackages->{$foundPackageNameVersion};
+
         unless( $definedPackages->{$foundPackageNameVersion} ) {
             # let's also report on alternate versions found of the same package
             if( $foundPackageNameVersion =~ m!^(.*)(-\d+:)?-([^-]+)-(\d+)$! ) {
@@ -201,7 +205,9 @@ foreach my $dbFile ( @dbFiles ) {
             }
         }
     }
-    while( my( $notInDbName, $notInDbPackageVersions ) = each %$notInDb ) {
+
+    foreach my $notInDbName ( keys %$notInDb ) {
+        my $notInDbPackageVersions = $notInDb->{$notInDbName};
 
         foreach my $notInDbPackageVersion ( @$notInDbPackageVersions ) {
             if( $obsoleteOnly ) {
@@ -209,8 +215,10 @@ foreach my $dbFile ( @dbFiles ) {
             } else {
                 info( 'Package', $notInDbPackageVersion, 'found, but not referenced in package database' );
             }
-            
-            while( my( $definedPackageVersion, $definedPackageInfo ) = each %$definedPackages ) {
+
+            foreach my $definedPackageVersion ( keys %$definedPackages ) {
+                my $definedPackageInfo = $definedPackages->{$definedPackageVersion};
+
                 if( $definedPackageVersion =~ m!^\Q$notInDbName\E(-\d+:)?-([^-]+)-(\d+)$! ) {
                     if( $obsoleteOnly ) {
                         if( $verbose ) {
@@ -262,7 +270,9 @@ sub compareFoundDefined {
     my $foundInfo   = shift;
     my $definedInfo = shift;
 
-    while( my( $foundKey, $definedKey ) = each %compareFields ) {
+    foreach my $foundKey ( keys %compareFields ) {
+        my $definedKey = $compareFields{$foundKey};
+
         if( defined( $foundInfo->{$foundKey} )) {
             if( defined( $definedInfo->{$definedKey} )) {
                 if( $foundInfo->{$foundKey} ne $definedInfo->{$definedKey} ) {
