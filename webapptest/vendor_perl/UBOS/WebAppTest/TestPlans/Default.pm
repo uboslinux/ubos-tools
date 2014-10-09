@@ -143,6 +143,7 @@ sub run {
                 info( 'Restoring state', $currentState->getName() );
 
                 do {
+                    $scaffold->undeploy( $siteJson );
                     $success = $scaffold->restore( $siteJson, $currentBackup );
                 
                     ( $repeat, $abort, $quit ) = $self->askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );
@@ -179,6 +180,7 @@ sub run {
                 info( 'Restoring (one more time) StateCheck', $currentState->getName() );
 
                 do {
+                    $scaffold->undeploy( $siteJson );
                     $success = $scaffold->restore( $siteJson, $currentBackup );
                 
                     ( $repeat, $abort, $quit ) = $self->askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );

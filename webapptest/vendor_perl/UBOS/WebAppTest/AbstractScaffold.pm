@@ -137,6 +137,21 @@ sub restore {
 }
 
 ##
+# Restore a site from a local file on the local machine
+# $site: $site JSON
+# $filename: the local backup file name
+# return: if successful, $filename
+sub restoreFromLocal {
+    my $self     = shift;
+    my $site     = shift;
+    my $filename = shift;
+
+    error( 'Must override Scaffold::restoreFromLocal' );
+
+    return undef;
+}
+
+##
 # Destroy a previously created backup
 sub destroyBackup {
     my $self       = shift;
