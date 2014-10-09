@@ -80,7 +80,9 @@ sub new {
         if( ref( $custPointValues ) ne 'HASH' ) {
             fatal( 'CustomizationPointValues must be a hash' );
         }
-        while( my( $name, $value ) = each %$custPointValues ) {
+        foreach my $name ( keys %$custPointValues ) {
+            my $value = $custPointValues->{$name};
+
             if( ref( $name ) || ref( $value )) {
                 fatal( 'CustomizationPointValues must be a hash with simple name-value pairs in it.' );
             }
@@ -122,8 +124,8 @@ sub new {
     $self->{statesTransitions}        = $statesTransitions;
 
     # generate random identifiers, so multiple tests can run at the same time
-    $self->{siteId}      = 's' . UBOS::Utils::randomHex( 40 );
-    $self->{appConfigId} = 'a' . UBOS::Utils::randomHex( 40 );
+    $self->{siteId}      = UBOS::Host::createNewSiteId();
+    $self->{appConfigId} = UBOS::Host::createNewAppConfigId();
 
     return $self;
 }
@@ -282,7 +284,9 @@ sub _createAppConfigurationJson {
         my $jsonHash = {};
         $appconfig->{customizationpoints}->{$self->{packageName}} = $jsonHash;
 
-        while( my( $name, $value ) = each %$custPointValues ) {
+        foreach my $name ( keys %$custPointValues ) {
+            my $value = $custPointValues->{$name};
+
             $jsonHash->{$name}->{value} = $value;
         }
     }

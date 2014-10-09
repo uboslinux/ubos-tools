@@ -43,7 +43,9 @@ sub run {
             if( !defined( $allAppTests )) {
                 $allAppTests = $appTests;
             } else {
-                while( my( $name, $value ) = each %$appTests ) {
+                foreach my $name ( keys %$appTests ) {
+                    my $value = $appTests->{$key};
+
                     $allAppTests->{$name} = $value;
                 }
             }

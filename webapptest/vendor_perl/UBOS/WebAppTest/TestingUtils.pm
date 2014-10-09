@@ -37,8 +37,10 @@ sub findAppTestsInDirectory {
     
     my $appTestCandidates = UBOS::Utils::readFilesInDirectory( $dir, 'Test.*\.pm$' );
     my $appTests = {};
-    
-    while( my( $fileName, $content ) = each %$appTestCandidates ) {
+
+    foreach my $fileName ( keys %$appTestCandidates ) {
+        my $content = $appTestCandidates->{$fileName};
+
         my $appTest = eval $content;
 
         if( defined( $appTest ) && ref( $appTest ) eq 'UBOS::WebAppTest' ) {

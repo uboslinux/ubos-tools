@@ -83,8 +83,10 @@ END
         if( !$helpFor || $command eq $helpFor ) {
             my $package      = $commands->{$command};
             my $synopsisHelp = UBOS::Utils::invokeMethod( $package . '::synopsisHelp' ) || '';
-            
-            while( my( $synopsis, $help ) = each %$synopsisHelp ) {
+
+            foreach my $synopsis ( sort keys %$synopsisHelp ) {
+                my $help = $synopsisHelp->{$synopsis};
+
                 $synopsis =~ s!^\s+!!;
                 $synopsis =~ s!\s+$!!;
 
