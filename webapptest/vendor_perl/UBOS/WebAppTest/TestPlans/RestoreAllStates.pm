@@ -72,6 +72,7 @@ sub run {
     my $repeat;
     my $abort;
     my $quit;
+    my $numberRestored = 0;
 
     my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
 
@@ -80,6 +81,7 @@ sub run {
         my $backupFile = $self->{backupFilePrefix} . $currentState->getName() . '.ubos-backup';
         if( -r $backupFile ) {
             info( 'Checking StateCheck', $currentState->getName() );
+            ++$numberRestored;
 
             do {
                 $success = $scaffold->restoreFromLocal( $siteJson, $backupFile );
@@ -103,20 +105,25 @@ sub run {
             info( 'Skipping StateCheck', $currentState->getName(), 'backup file not found' );
         }
 
+        unless( $abort ) {
+            $scaffold->undeploy( $siteJson );
+        }
+
         my( $transition, $nextState ) = $test->getTransitionFrom( $currentState );
         unless( $transition ) {
             last;
         }
 
-        unless( $abort ) {
-            $scaffold->undeploy( $siteJson );
-        }
-    
         # No point in taking the transition
 
         $currentState = $nextState;
     }
     $c->destroy();
+
+    if( $numberRestored == 0 ) {
+        error( "Not a single backup file found. Test run didn't do anything." );
+        $ret =0;
+    }
 
     info( 'End running TestPlan Simple' );
 

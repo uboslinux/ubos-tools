@@ -91,19 +91,12 @@ sub restoreFromLocal {
     $siteIdInBackup =~ s!^\s+!!g;
     $siteIdInBackup =~ s!\s+$!!g;
 
-    my $newSiteId;
     $exit = UBOS::Utils::myexec(
             'sudo ubos-admin restore'
-            . ' --showids '
             . ' --siteid '     . $siteIdInBackup
             . ' --hostname '   . $site->{hostname}
-            . ' --in '         . $filename,
-            undef,
-            \$newSiteId );
-    $newSiteId =~ s!^\s+!!;
-    $newSiteId =~ s!\s+$!!;
-    
-    $site->{siteid} = $newSiteId;
+            . ' --newsiteid '  . $site->{siteid}
+            . ' --in '         . $filename );
     
     if( !$exit ) {
         return 1;

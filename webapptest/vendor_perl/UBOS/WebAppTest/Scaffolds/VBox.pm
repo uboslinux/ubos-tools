@@ -291,14 +291,10 @@ sub restoreFromLocal {
 
     $exit = $self->invokeOnTarget(
             'sudo ubos-admin restore'
-            . ' --showids '
             . ' --siteid '     . $siteIdInBackup
             . ' --hostname '   . $site->{hostname}
+            . ' --newsiteid '  . $site->{siteid}
             . ' --in '         . $filename,
-    $newSiteId =~ s!^\s+!!;
-    $newSiteId =~ s!\s+$!!;
-    
-    $site->{siteid} = $newSiteId;
 
     if( !$exit ) {
         return 1;
