@@ -256,6 +256,59 @@ sub backupToLocal {
 }    
 
 ##
+# Restore a site from a local file on the local machine
+# $site: $site JSON
+# $filename: the local backup file name
+# return: if successful, $filename
+sub restoreFromLocal {
+    my $self     = shift;
+    my $site     = shift;
+    my $filename = shift;
+
+    my $siteIdInBackup;
+    my $exit = UBOS::Utils::myexec( 'sudo ubos-admin listsites --brief --backupfile ' . $filename, undef, \$siteIdInBackup );
+    if( $exit ) {
+        error( 'Cannot listsites in backup file, exit', $exit );
+        return 0;
+    }
+    $siteIdInBackup =~ s!^\s+!!g;
+    $siteIdInBackup =~ s!\s+$!!g;
+    
+    my $remoteFile;
+    my $exit = $self->invokeOnTarget( 'mktemp webapptest-XXXXX.ubos-backup', undef, \$remoteFile );
+    if( $exit ) {
+        error( 'Failed to create remote temp file' );
+        return 0;
+    }
+    $remoteFile =~ s!^\s+!!;
+    $remoteFile =~ s!\s+$!!;
+
+    $exit = $self->copyToTarget( $filename, $remoteFile );
+    if( $exit ) {
+        error( 'Failed to copy backup from local to remote ' );
+        return 0;
+    }
+
+    $exit = $self->invokeOnTarget(
+            'sudo ubos-admin restore'
+            . ' --showids '
+            . ' --siteid '     . $siteIdInBackup
+            . ' --hostname '   . $site->{hostname}
+            . ' --in '         . $filename,
+    $newSiteId =~ s!^\s+!!;
+    $newSiteId =~ s!\s+$!!;
+    
+    $site->{siteid} = $newSiteId;
+
+    if( !$exit ) {
+        return 1;
+    } else {
+        error( 'Restore failed, exit', $exit );
+        return 0;
+    }
+}
+
+##
 # Teardown this Scaffold.
 sub teardown {
     my $self = shift;

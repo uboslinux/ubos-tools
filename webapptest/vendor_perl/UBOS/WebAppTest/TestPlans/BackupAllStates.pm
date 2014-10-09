@@ -43,6 +43,7 @@ sub new {
         $self = fields::new( $self );
     }
     $self = $self->SUPER::new();
+    
     if( exists( $options->{backupfileprefix} )) {
         unless( $options->{backupfileprefix} ) {
             fatal( 'backupfileprefix cannot be empty' );
@@ -64,11 +65,8 @@ sub run {
     my $scaffold    = shift;
     my $interactive = shift;
 
-    my $backupFilePrefix;
-    if( exists( $self->{backupFilePrefix} )) {
-        $backupFilePrefix = $self->{backupFilePrefix};
-    } else {
-        $backupFilePrefix = $test->packageName() . '-' . $test->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
+    unless( exists( $self->{backupFilePrefix} )) {
+        $self->{backupFilePrefix} = $test->packageName() . '-' . $test->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
     }
 
     info( 'Running TestPlan BackupAllStates' );
@@ -108,7 +106,7 @@ sub run {
                 last;
             }
 
-            $scaffold->backupToLocal( $siteJson, $backupFilePrefix . $currentState->getName() . '.ubos-backup' );
+            $scaffold->backupToLocal( $siteJson, $self->{backupFilePrefix} . $currentState->getName() . '.ubos-backup' );
 
             my( $transition, $nextState ) = $test->getTransitionFrom( $currentState );
             unless( $transition ) {
