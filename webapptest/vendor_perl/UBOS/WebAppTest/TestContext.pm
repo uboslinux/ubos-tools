@@ -718,7 +718,7 @@ sub checkFile {
     my $testMethod = shift;
 
     my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
-            = stat( $fileName);
+            = lstat( $fileName);
 
     unless( $dev ) {
         $self->error( 'File does not exist:', $fileName );
@@ -776,7 +776,7 @@ sub checkDir {
     my $dirMode   = shift;
 
     my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
-            = stat( $dirName);
+            = lstat( $dirName);
 
     unless( $dev ) {
         $self->error( 'Directory does not exist:', $dirName );
@@ -817,6 +817,36 @@ sub checkDir {
     return $ret;
 }
 
+##
+# Tests that a symbolic link exists and points to a certain destination.
+# Think "ln -s $target $link"
+# $target: the destination of the symlink
+# $link: the symlink itself
+sub checkSymlink {
+    my $self   = shift;
+    my $target = shift;
+    my $link   = shift;
+
+    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
+            = lstat( $link);
+
+    unless( $dev ) {
+        $self->error( 'Symbolic link does not exist:', $link );
+        return 0;
+    }
+
+    my $ret = 1;
+    unless( Fcntl::S_ISLNK( $mode )) {
+        $self->error( 'Not a symlink:', $link );
+        $ret = 0;
+    }
+    my $content = readlink( $link );
+    if( $target ne $content ) {
+        $self->error( 'Wrong target for symbolic link:', $target, 'vs.', $content );
+        $ret = 0;
+    }
+    return $ret;
+}
 
 ##### (5) Utility methods #####
 
