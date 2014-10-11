@@ -90,6 +90,10 @@ sub run {
             } while( $repeat );
             $ret &= $success;
 
+            if( $abort || $quit ) {
+                last;
+            }
+
             do {
                 $success = $currentState->check( $c );
 
