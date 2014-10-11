@@ -70,10 +70,6 @@ sub setup {
     }
     $self->SUPER::setup();
 
-    my $vncSecret = undef;
-    my $ram       = 512; # default
-    my $vram      =  16; # default
-
     $self->{isOk} = 0; # until we decide otherwise
 
     unless( exists( $options->{vmdktemplate} )) {
@@ -111,9 +107,9 @@ sub setup {
         fatal( 'Vncsecret cannot be empty' );
     }
 
-    $self->{vmdkTemplate}     = $options->{vmdktemplate} );
+    $self->{vmdkTemplate}     = $options->{vmdktemplate};
     $self->{vmdkFile}         = $options->{vmdkfile};
-    $self->{ubosAdminKeyfile} = $options->{ubos-admin-keyfile};
+    $self->{ubosAdminKeyfile} = $options->{'ubos-admin-keyfile'};
     my $ram                   = $options->{ram};
     my $vncSecret             = $options->{vncsecret};
 
@@ -237,6 +233,7 @@ sub backupToLocal {
     my $site     = shift;
     my $filename = shift;
 
+    my $remoteFile;
     my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.ubos-backup); sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$remoteFile );
     if( $exit ) {
         error( 'Remote backup failed' );
@@ -275,7 +272,7 @@ sub restoreFromLocal {
     $siteIdInBackup =~ s!\s+$!!g;
     
     my $remoteFile;
-    my $exit = $self->invokeOnTarget( 'mktemp webapptest-XXXXX.ubos-backup', undef, \$remoteFile );
+    $exit = $self->invokeOnTarget( 'mktemp webapptest-XXXXX.ubos-backup', undef, \$remoteFile );
     if( $exit ) {
         error( 'Failed to create remote temp file' );
         return 0;
@@ -294,7 +291,7 @@ sub restoreFromLocal {
             . ' --siteid '     . $siteIdInBackup
             . ' --hostname '   . $site->{hostname}
             . ' --newsiteid '  . $site->{siteid}
-            . ' --in '         . $filename,
+            . ' --in '         . $filename );
 
     if( !$exit ) {
         return 1;
