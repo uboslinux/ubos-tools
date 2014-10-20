@@ -1,8 +1,20 @@
 RedirectMatch ^/$ http://ubos.net/
 
+SetEnv DATADIR /var/lib/ubos-repo/${appconfig.appconfigid}
+SetEnv CONTEXT "${appconfig.context}"
+AliasMatch ^${appconfig.context}/[a-zA-Z0-9_]+/images/$ ${package.codedir}/index.php
 Alias ${appconfig.contextorslash} /var/lib/ubos-repo/${appconfig.appconfigid}
+
+<Directory ${package.codedir}>
+    Require all granted
+
+    <IfModule php5_module>
+        php_admin_value open_basedir ${appconfig.apache2.dir}:/tmp/:${package.codedir}:${appconfig.datadir}
+    </IfModule>
+</Directory>
 
 <Directory /var/lib/ubos-repo/${appconfig.appconfigid}>
     Require all granted
     Options +Indexes
+
 </Directory>
