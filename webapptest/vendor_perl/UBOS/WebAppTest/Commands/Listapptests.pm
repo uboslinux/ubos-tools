@@ -44,7 +44,7 @@ sub run {
                 $allAppTests = $appTests;
             } else {
                 foreach my $name ( keys %$appTests ) {
-                    my $value = $appTests->{$key};
+                    my $value = $appTests->{$name};
 
                     $allAppTests->{$name} = $value;
                 }
