@@ -14,9 +14,10 @@
 #   not modified by tests
 # * vmdkfile (optional): name of the copy of the VMDK template file
 # * ram (optional): amount of RAM to allocate to the guest
-# * ubos-admin-keyfile (required): private ssh key for the
-#   ubos-admin user on the guest, so the scaffold can invoke
-#   'sudo ubos-admin' on the guest
+# * ubos-admin-private-key-file and ubos-admin-public-key-file (required):
+#   private and public ssh key for the ubos-admin user on the guest, so the
+#   scaffold can create an ubos-admin user and invoke 'sudo ubos-admin' on
+#   the guest
 # * vncsecret (optional): if provided, the guest will be instantiated
 #   with its display available via VNC, and this password
 #
@@ -43,7 +44,9 @@ use warnings;
 package UBOS::WebAppTest::Scaffolds::VBox;
 
 use base qw( UBOS::WebAppTest::AbstractScaffold );
-use fields qw( vmdkTemplate vmdkFile ubosAdminKeyfile vmName hostOnlyIp );
+use fields qw( vmdkTemplate vmdkFile ubosAdminPublicKeyFile ubosAdminPrivateKeyFile vmName hostOnlyIp configVmdkFile );
+
+use File::Temp;
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -92,11 +95,17 @@ sub setup {
         fatal( 'Vmdkfile file exists already:', $options->{vmdkfile} );
     }
 
-    unless( exists( $options->{'ubos-admin-keyfile'} ) && $options->{'ubos-admin-keyfile'} ) {
-        fatal( 'No value provided for ubos-admin-keyfile' );
+    unless( exists( $options->{'ubos-admin-public-key-file'} ) && $options->{'ubos-admin-public-key-file'} ) {
+        fatal( 'No value provided for ubos-admin-public-key-file' );
     }
-    unless( -r $options->{'ubos-admin-keyfile'} ) {
-        fatal( 'Cannot find or read file', $options->{'ubos-admin-keyfile'} );
+    unless( -r $options->{'ubos-admin-public-key-file'} ) {
+        fatal( 'Cannot find or read file', $options->{'ubos-admin-public-key-file'} );
+    }
+    unless( exists( $options->{'ubos-admin-private-key-file'} ) && $options->{'ubos-admin-private-key-file'} ) {
+        fatal( 'No value provided for ubos-admin-private-key-file' );
+    }
+    unless( -r $options->{'ubos-admin-private-key-file'} ) {
+        fatal( 'Cannot find or read file', $options->{'ubos-admin-private-key-file'} );
     }
 
     unless( exists( $options->{ram} ) && $options->{ram} ) {
@@ -107,11 +116,12 @@ sub setup {
         fatal( 'Vncsecret cannot be empty' );
     }
 
-    $self->{vmdkTemplate}     = $options->{vmdktemplate};
-    $self->{vmdkFile}         = $options->{vmdkfile};
-    $self->{ubosAdminKeyfile} = $options->{'ubos-admin-keyfile'};
-    my $ram                   = $options->{ram};
-    my $vncSecret             = $options->{vncsecret};
+    $self->{vmdkTemplate}            = $options->{vmdktemplate};
+    $self->{vmdkFile}                = $options->{vmdkfile};
+    $self->{ubosAdminPublicKeyFile}  = $options->{'ubos-admin-public-key-file'};
+    $self->{ubosAdminPrivateKeyFile} = $options->{'ubos-admin-private-key-file'};
+    my $ram                          = $options->{ram};
+    my $vncSecret                    = $options->{vncsecret};
 
     my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
     $self->{vmName} = $vmName;
@@ -202,6 +212,14 @@ sub setup {
         } else {
             info( 'You can access the VM via VNC at port 1501' );
         }
+    }
+
+    debug( 'Creating cloud-init config disk' );
+    $self->{configVmdkFile} = $options->{vmdkfile} . '-config.vmdk';
+    $self->createConfigDisk( $self->{configVmdkFile} );
+
+    if( UBOS::Utils::myexec( "VBoxManage storageattach '$vmName' --storagectl '$vmName' --port 2 --type hdd --medium " . $self->{configVmdkFile} )) {
+        fatal( 'VBoxManage storageattach failed' );
     }
 
     debug( 'Starting vm', $vmName );
@@ -334,7 +352,10 @@ sub teardown {
     if( -e $self->{vmdkFile} ) {
         UBOS::Utils::deleteFile( $self->{vmdkFile} );
     }
-        
+    if( -e $self->{configVmdkFile} ) {
+        UBOS::Utils::deleteFile( $self->{configVmdkFile} );
+    }
+
     return 1;
 }
 
@@ -357,7 +378,7 @@ sub invokeOnTarget {
     $sshCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
             # don't put into known_hosts file, and don't print resulting warnings
     $sshCmd .= ' ubos-admin@' . $ip;
-    $sshCmd .= ' -i ' . $self->{ubosAdminKeyfile};
+    $sshCmd .= ' -i ' . $self->{ubosAdminPrivateKeyFile};
     $sshCmd .= " '$cmd'";
     debug( 'ssh command:', $sshCmd );
 
@@ -437,10 +458,62 @@ sub copyFromTarget {
             # don't put into known_hosts file, and don't print resulting warnings
     $scpCmd .= ' ubos-admin@' . $ip . ':' . $remoteFile;
     $scpCmd .= ' ' . $localFile;
-    $scpCmd .= ' -i ' . $self->{ubosAdminKeyfile};
+    $scpCmd .= ' -i ' . $self->{ubosAdminPrivateKeyFile};
     debug( 'scp command:', $scpCmd );
 
     return UBOS::Utils::myexec( $scpCmd );
+}
+
+##
+# Create a cloud-init config disk in VMDK format
+# $vmdkImage: name of the vmdk image file to be created
+sub createConfigDisk {
+    my $self       = shift;
+    my $configFile = shift;
+
+    my $image = "$configFile.img";
+    my $mount = "$configFile.mount";
+
+    my $out;
+    my $err;
+    if( UBOS::Utils::myexec( "dd if=/dev/zero 'of=$image' bs=1 count=0 seek=2M", undef, \$out, \$err )) {
+        fatal( 'dd failed', $err );
+    }
+    if( UBOS::Utils::myexec( "mkfs.vfat -n cidata $image", undef, \$out, \$err )) {
+        fatal( 'mkfs.vfat failed', $err );
+    }
+    UBOS::Utils::mkdir( $mount );
+    if( UBOS::Utils::myexec( "sudo mount '$image' '$mount'", undef, \$out, \$err )) {
+        fatal( 'mount failed', $err );
+    }
+
+    my $vmName    = $self->{vmName};
+    my $sshPubKey = UBOS::Utils::slurpFile( $self->{ubosAdminPublicKeyFile} );
+    $sshPubKey =~ s!^\s+!!;
+    $sshPubKey =~ s!\s+$!!;
+
+    UBOS::Utils::saveFile( "$mount/user-data", <<USERDATA );
+#cloud-config
+users:
+ - name: ubos-admin
+   gecos: UBOS administrative user
+   ssh-authorized-keys:
+    - $sshPubKey
+   sudo: "ALL=(ALL) NOPASSWD: /usr/bin/ubos-admin *, /usr/bin/bash *"
+USERDATA
+
+    UBOS::Utils::saveFile( "$mount/meta-data", <<METADATA );
+instance-id: $vmName
+METADATA
+
+    if( UBOS::Utils::myexec( "sudo umount '$mount'", undef, \$out, \$err )) {
+        fatal( 'umount failed', $err );
+    }
+    if( UBOS::Utils::myexec( "VBoxManage convertfromraw '$image' '$configFile' --format VMDK", undef, \$out, \$err )) {
+        fatal( 'VBoxManage convertfromraw failed', $err );
+    }
+    UBOS::Utils::deleteFile( $image );
+    UBOS::Utils::deleteRecursively( $mount );
 }
 
 ##
@@ -450,11 +523,12 @@ sub help {
     return <<TXT;
 A scaffold that runs tests on the local machine in a VirtualBox virtual machine.
 Options:
-    vmdktemplate       (required) -- template for the VMDK file
-    vmdkfile           (required) -- local copy of the VMDK file on which tests is performed
-    ubos-admin-keyfile (required) -- name of the file that contains the private key for ssh access
-    ram                (optional) -- RAM in MB
-    vncsecret          (optional) -- if given, the virtual machine will be accessible over VNC with this password
+    vmdktemplate                (required) -- template for the VMDK file
+    vmdkfile                    (required) -- local copy of the VMDK file on which tests is performed
+    ubos-admin-public-key-file  (required) -- name of the file that contains the public key for ubos-admin ssh access
+    ubos-admin-private-key-file (required) -- name of the file that contains the private key for  ubos-adminssh access
+    ram                         (optional) -- RAM in MB
+    vncsecret                   (optional) -- if given, the virtual machine will be accessible over VNC with this password
 TXT
 }
                     
