@@ -108,8 +108,8 @@ sub setup {
         fatal( 'Cannot find or read file', $options->{'ubos-admin-private-key-file'} );
     }
 
-    unless( exists( $options->{ram} ) && $options->{ram} ) {
-        fatal( 'No value provided for ram' );
+    if( exists( $options->{ram} ) && $options->{ram} !~ m!^\d+$! ) {
+        fatal( 'Option ram must be an integer' );
     }
 
     if( exists( $options->{vncsecret} ) && !$options->{vncsecret} ) {
@@ -120,7 +120,7 @@ sub setup {
     $self->{vmdkFile}                = $options->{vmdkfile};
     $self->{ubosAdminPublicKeyFile}  = $options->{'ubos-admin-public-key-file'};
     $self->{ubosAdminPrivateKeyFile} = $options->{'ubos-admin-private-key-file'};
-    my $ram                          = $options->{ram};
+    my $ram                          = $options->{ram} || 512;
     my $vncSecret                    = $options->{vncsecret};
 
     my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
