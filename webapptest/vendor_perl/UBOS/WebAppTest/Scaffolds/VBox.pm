@@ -492,7 +492,7 @@ sub createConfigDisk {
     $sshPubKey =~ s!^\s+!!;
     $sshPubKey =~ s!\s+$!!;
 
-    UBOS::Utils::saveFile( "$mount/user-data", <<USERDATA );
+    UBOS::Utils::saveFile( "$mount/user-data", <<USERDATA, '0640', 'root', 'root' );
 #cloud-config
 users:
  - name: ubos-admin
@@ -502,7 +502,7 @@ users:
    sudo: "ALL=(ALL) NOPASSWD: /usr/bin/ubos-admin *, /usr/bin/bash *"
 USERDATA
 
-    UBOS::Utils::saveFile( "$mount/meta-data", <<METADATA );
+    UBOS::Utils::saveFile( "$mount/meta-data", <<METADATA, '0640', 'root', 'root' );
 instance-id: $vmName
 METADATA
 
