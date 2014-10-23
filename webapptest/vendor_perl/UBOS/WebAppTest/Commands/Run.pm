@@ -106,7 +106,7 @@ sub run {
             my $status = $testPlan->run( $appTest, $scaffold, $interactive );
             $ret &= $status;
 
-            unless( $ret ) {
+            unless( $status ) {
                 error( 'Test', $appTest->name, 'failed.' );
             } else {
                 print "Test passed.\n";
