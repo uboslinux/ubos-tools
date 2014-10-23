@@ -142,6 +142,40 @@ sub getTargetIp {
 }
 
 ##
+# Obtain information about a file on the target. This must be overridden by
+# subclasses.
+# $fileName: full path name of the file on the target
+# $makeContentAvailable: if true, also make the content available locally
+# return( $uname, $gname, $mode, $localContent ): localContent is the name
+#        if a locally available file with the same content, except that
+#        if the file turns out to be a symlink, it is the target of the symlink
+sub getFileInfo {
+    my $self                 = shift;
+    my $fileName             = shift;
+    my $makeContentAvailable = shift;
+
+    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
+            = lstat( $fileName );
+
+    unless( $dev ) {
+        $self->error( 'File does not exist:', $fileName );
+        return undef;
+    }
+    my $uname = UBOS::Utils::getUname( $uid );
+    my $gname = UBOS::Utils::getGname( $gid );
+
+    if( $makeContentAvailable ) {
+        if( Fcntl::S_ISLNK( $mode )) {
+            return( $uname, $gname, $mode, readlink( $fileName ));
+        } else {
+            return( $uname, $gname, $mode, $fileName );
+        }
+    } else {
+        return( $uname, $gname, $mode );
+    }
+}
+
+##
 # Return help text.
 # return: help text
 sub help {

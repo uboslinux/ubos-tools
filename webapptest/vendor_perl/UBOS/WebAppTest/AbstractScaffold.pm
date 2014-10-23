@@ -195,5 +195,23 @@ sub getTargetIp {
 
     return undef;
 }
-    
+
+##
+# Obtain information about a file on the target. This must be overridden by
+# subclasses.
+# $fileName: full path name of the file on the target
+# $makeContentAvailable: if true, also make the content available locally.
+# return( $uname, $gname, $mode, $localContent ): localContent is the name
+#        if a locally available file with the same content, except that
+#        if the file turns out to be a symlink, it is the target of the symlink
+sub getFileInfo {
+    my $self                 = shift;
+    my $fileName             = shift;
+    my $makeContentAvailable = shift;
+
+    error( 'Must override Scaffold::getFileInfo' );
+
+    return undef;
+}
+
 1;

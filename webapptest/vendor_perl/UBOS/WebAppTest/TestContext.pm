@@ -717,10 +717,8 @@ sub checkFile {
     my $fileMode   = shift;
     my $testMethod = shift;
 
-    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
-            = lstat( $fileName);
-
-    unless( $dev ) {
+    my( $uname, $gname, $mode, $localContent ) = $self->{scaffold}->getFileInfo( $fileName, defined( $testMethod ));
+    unless( defined( $uname )) {
         $self->error( 'File does not exist:', $fileName );
         return 0;
     }
@@ -731,32 +729,29 @@ sub checkFile {
         $self->error( 'Not a regular file:', $fileName );
         $ret = 0;
     }
-    
+
     if( defined( $fileMode )) {
-        my $realFileMode = oct( $fileMode );
+        my $realFileMode = ( $fileMode =~ m!^0! ) ? oct( $fileMode ) : $fileMode;
         my $realMode     = $mode & 07777; # ignore special file bits
         if( $realFileMode != $realMode ) {
-            $self->error( 'File', $fileName, 'has wrong permissions:', sprintf( '%o vs %o', $realFileMode, $realMode ));
+            $self->error( 'File', $fileName, 'has wrong permissions:', sprintf( '0%o vs 0%o', $realFileMode, $realMode ));
             $ret = 0;
         }
     }
-
     if( defined( $fileUname )) {
-        my $fileUid = UBOS::Utils::getUid( $fileUname );
-        if( $fileUid != $uid ) {
-            $self->error( 'File', $fileName, 'has wrong owner:', $fileUid, 'vs.', $uid );
+        if( $fileUname ne $uname ) {
+            $self->error( 'File', $fileName, 'has wrong owner:', $fileUname, 'vs.', $uname );
             $ret = 0;
         }
     }
     if( defined( $fileGname )) {
-        my $fileGid = UBOS::Utils::getGid( $fileGname );
-        if( $fileGid != $gid ) {
-            $self->error( 'File', $fileName, 'has wrong group:', $fileGid, 'vs.', $gid );
+        if( $fileGname ne $gname ) {
+            $self->error( 'File', $fileName, 'has wrong group:', $fileGname, 'vs.', $gname );
             $ret = 0;
         }
     }
     if( defined( $testMethod )) {
-        $ret &= $testMethod->( $self, $fileName );
+        $ret &= $testMethod->( $self, $localContent );
     }
 
     return $ret;
@@ -775,14 +770,11 @@ sub checkDir {
     my $dirGname  = shift;
     my $dirMode   = shift;
 
-    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
-            = lstat( $dirName);
-
-    unless( $dev ) {
+    my( $uname, $gname, $mode ) = $self->{scaffold}->getFileInfo( $dirName );
+    unless( defined( $uname )) {
         $self->error( 'Directory does not exist:', $dirName );
         return 0;
     }
-
     my $ret = 1;
 
     unless( Fcntl::S_ISDIR( $mode )) {
@@ -791,25 +783,22 @@ sub checkDir {
     }
 
     if( defined( $dirMode )) {
-        my $realDirMode = oct( $dirMode );
+        my $realDirMode = ( $dirMode =~ m!^0! ) ? oct( $dirMode ) : $dirMode;
         my $realMode    = $mode & 07777; # ignore special file bits
         if( $realDirMode != $realMode ) {
-            $self->error( 'Directory', $dirName, 'has wrong permissions:', sprintf( '%o vs %o', $realDirMode, $realMode ));
+            $self->error( 'Directory', $dirName, 'has wrong permissions:', sprintf( '0%o vs 0%o', $realDirMode, $realMode ));
             $ret = 0;
         }
     }
-
     if( defined( $dirUname )) {
-        my $dirUid = UBOS::Utils::getUid( $dirUname );
-        if( $dirUid != $uid ) {
-            $self->error( 'Directory', $dirName, 'has wrong owner:', $dirUid, 'vs.', $uid );
+        if( $dirUname ne $uname ) {
+            $self->error( 'Directory', $dirName, 'has wrong owner:', $dirUname, 'vs.', $uname );
             $ret = 0;
         }
     }
     if( defined( $dirGname )) {
-        my $dirGid = UBOS::Utils::getGid( $dirGname );
-        if( $dirGid != $gid ) {
-            $self->error( 'Directory', $dirName, 'has wrong group:', $dirGid, 'vs.', $gid );
+        if( $dirGname ne $gname ) {
+            $self->error( 'Directory', $dirName, 'has wrong group:', $dirGname, 'vs.', $gname );
             $ret = 0;
         }
     }
@@ -827,10 +816,8 @@ sub checkSymlink {
     my $target = shift;
     my $link   = shift;
 
-    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
-            = lstat( $link);
-
-    unless( $dev ) {
+    my( $uname, $gname, $mode, $localContent ) = $self->{scaffold}->getFileInfo( $link, 1 );
+    unless( defined( $uname )) {
         $self->error( 'Symbolic link does not exist:', $link );
         return 0;
     }
@@ -841,8 +828,8 @@ sub checkSymlink {
         $ret = 0;
     }
     my $content = readlink( $link );
-    if( $target ne $content ) {
-        $self->error( 'Wrong target for symbolic link:', $target, 'vs.', $content );
+    if( $target ne $localContent ) {
+        $self->error( 'Wrong target for symbolic link:', $target, 'vs.', $localContent );
         $ret = 0;
     }
     return $ret;
