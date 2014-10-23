@@ -465,6 +465,67 @@ sub copyFromTarget {
 }
 
 ##
+# Obtain information about a file on the target. This must be overridden by
+# subclasses.
+# $fileName: full path name of the file on the target
+# $makeContentAvailable: if true, also make the content available locally
+# return( $uname, $gname, $mode, $localContent ): localContent is the name
+#        if a locally available file with the same content, except that
+#        if the file turns out to be a symlink, it is the target of the symlink
+sub getFileInfo {
+    my $self                 = shift;
+    my $fileName             = shift;
+    my $makeContentAvailable = shift;
+
+    my $script = <<SCRIPT;
+use strict;
+use warnings;
+
+if( -e '$fileName' ) {
+    print( join( ',', lstat( '$fileName' )) . "\\n" );
+    if( -l '$fileName' ) {
+        print readlink( '$fileName' ) . "\\n";
+} else {
+    print( "---\n" );
+}
+1;
+SCRIPT
+    }
+
+    my $out;
+    my $err;
+    unless( $self->invokeOnTarget( 'perl', $script, \$out, \$err )) {
+        error( 'Failed to invoke remote perl command', $err );
+        return 0;
+    }
+
+    my @lines = split /\n/, @out;
+
+    if( $lines[0] eq '---' ) {
+        $self->error( 'File does not exist:', $fileName );
+        return undef;
+    }
+    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
+            = split( /,/, $lines[0] );
+
+    if( $makeContentAvailable ) {
+        if( Fcntl::S_ISLNK( $mode )) {
+            my $target = $lines[1];
+    
+            return( $uname, $gname, $mode, $content, $target );
+        } else {
+            my $localFile = tmpnam();
+            $self->copyFromTarget( $fileName, $localFile );
+
+            return( $uname, $gname, $mode, $localFile );
+        }
+
+    } else {
+        return( $uname, $gname, $mode );
+    }
+}
+
+##
 # Create a cloud-init config disk in VMDK format
 # $vmdkImage: name of the vmdk image file to be created
 sub createConfigDisk {
@@ -492,7 +553,7 @@ sub createConfigDisk {
     $sshPubKey =~ s!^\s+!!;
     $sshPubKey =~ s!\s+$!!;
 
-    UBOS::Utils::saveFile( "$mount/user-data", <<USERDATA, '0640', 'root', 'root' );
+    UBOS::Utils::saveFile( "$mount/user-data", <<USERDATA, 0640, 'root', 'root' );
 #cloud-config
 users:
  - name: ubos-admin
@@ -502,7 +563,7 @@ users:
    sudo: "ALL=(ALL) NOPASSWD: /usr/bin/ubos-admin *, /usr/bin/bash *"
 USERDATA
 
-    UBOS::Utils::saveFile( "$mount/meta-data", <<METADATA, '0640', 'root', 'root' );
+    UBOS::Utils::saveFile( "$mount/meta-data", <<METADATA, 0640, 'root', 'root' );
 instance-id: $vmName
 METADATA
 
