@@ -158,7 +158,6 @@ sub getFileInfo {
             = lstat( $fileName );
 
     unless( $dev ) {
-        $self->error( 'File does not exist:', $fileName );
         return undef;
     }
     my $uname = UBOS::Utils::getUname( $uid );

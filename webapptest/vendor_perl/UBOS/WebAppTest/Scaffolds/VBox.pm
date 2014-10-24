@@ -502,7 +502,6 @@ SCRIPT
     my @lines = split /\n/, @out;
 
     if( $lines[0] eq '---' ) {
-        $self->error( 'File does not exist:', $fileName );
         return undef;
     }
     my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
