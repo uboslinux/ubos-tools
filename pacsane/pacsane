@@ -123,7 +123,7 @@ foreach my $dbFile ( @dbFiles ) {
     } else {
         $dir = '';
     } # can't have trailing /, we wouldn't have been able to read file earlier
-    my @packageFiles = <$dir*.pkg.*>;
+    my @packageFiles = grep { ! m!\.sig$! } <$dir*.pkg.*>;
     my $foundPackages = {};
     foreach my $packageFile ( @packageFiles ) {
         my $shortPackageFile = $packageFile;
@@ -134,6 +134,9 @@ foreach my $dbFile ( @dbFiles ) {
         $packagePlusVersion =~ s!-[a-z0-9_]+\.pkg\..*!!;
 
         my $packageTar = readTar( $packageFile );
+        unless( $packageTar ) {
+            next;
+        }
         unless( $packageTar->contains_file( '.PKGINFO' )) {
             error( 'Supposed package file', $packageTar, 'does not contain required .PKGINFO entry' );
             next;
@@ -260,6 +263,9 @@ sub readTar {
         $tarFile = $file;
     }
     my $tar = Archive::Tar->new( $tarFile );
+    unless( $tar ) {
+        error( 'Failed to read tar file', $tarFile );
+    }
     return $tar;
 }
 

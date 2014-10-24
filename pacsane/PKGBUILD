@@ -2,14 +2,12 @@ developer=http://indiecomputing.com/
 url="https://github.com/indiebox/tools"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.7
+pkgver=0.8
 pkgrel=1
 pkgdesc="Check pacman database for internal consistency"
 arch=( 'any' )
 license=('GPL')
 depends=('perl' 'xz' )
-source=('pacsane')
-md5sums=('8499721ef0b6a409af6c8571586f3dad')
 
 package() {
     mkdir -m755 -p $pkgdir/usr/bin/
