@@ -108,7 +108,7 @@ sub run {
 
             unless( $status ) {
                 error( 'Test', $appTest->name, 'failed.' );
-            } else {
+            } elsif( $verbose > 0 ) {
                 print "Test passed.\n";
             }
         }
