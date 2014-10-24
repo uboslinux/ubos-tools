@@ -54,12 +54,12 @@ use UBOS::Utils;
 my $hostonlyInterface = 'vboxnet0';
 
 # how many seconds until we give up waiting for boot
-my $bootMaxSeconds = 120;
+my $bootMaxSeconds = 240;
 # how many seconds until we give up that pacman keys have been initialized
 my $keysMaxSeconds = 60;
 
 # how many seconds until we give up waiting for shutdown
-my $shutdownMaxSeconds = 30;
+my $shutdownMaxSeconds = 120;
 
 ##
 # Instantiate the Scaffold.
@@ -330,7 +330,7 @@ sub teardown {
     
     debug( 'Shutting down vm, unregistering, and deleting image file' );
     if( UBOS::Utils::myexec( "VBoxManage controlvm '$vmName' acpipowerbutton" )) {
-        error( 'VBoxManage unregistervm failed' );
+        error( 'VBoxManage controlvm failed' );
     }
 
     my $out;
