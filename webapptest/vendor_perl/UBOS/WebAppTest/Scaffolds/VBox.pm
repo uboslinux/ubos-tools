@@ -453,15 +453,16 @@ sub copyFromTarget {
 
     my $ip = $self->getTargetIp();
     
-    my $scpCmd = 'scp';
+    my $scpCmd = 'scp -q';
     $scpCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
             # don't put into known_hosts file, and don't print resulting warnings
+    $scpCmd .= ' -i ' . $self->{ubosAdminPrivateKeyFile};
     $scpCmd .= ' ubos-admin@' . $ip . ':' . $remoteFile;
     $scpCmd .= ' ' . $localFile;
-    $scpCmd .= ' -i ' . $self->{ubosAdminPrivateKeyFile};
     debug( 'scp command:', $scpCmd );
 
-    return UBOS::Utils::myexec( $scpCmd );
+    my $ret = UBOS::Utils::myexec( $scpCmd );
+    return $ret;
 }
 
 ##
@@ -477,44 +478,50 @@ sub getFileInfo {
     my $fileName             = shift;
     my $makeContentAvailable = shift;
 
+    # Perl inside Perl -- escaping is a bit tricky
     my $script = <<SCRIPT;
 use strict;
 use warnings;
 
 if( -e '$fileName' ) {
-    print( join( ',', lstat( '$fileName' )) . "\\n" );
+    my \@found = lstat( '$fileName' );
+    \$found[4] = getpwuid( \$found[4] );
+    \$found[5] = getgrgid( \$found[5] );
+    print( join( ',', \@found ) . "\\n" );
     if( -l '$fileName' ) {
         print readlink( '$fileName' ) . "\\n";
+    }
 } else {
     print( "---\n" );
 }
+exit 0;
 1;
 SCRIPT
-    }
 
     my $out;
     my $err;
-    unless( $self->invokeOnTarget( 'perl', $script, \$out, \$err )) {
+    if( $self->invokeOnTarget( 'perl', $script, \$out, \$err )) {
         error( 'Failed to invoke remote perl command', $err );
         return 0;
     }
 
-    my @lines = split /\n/, @out;
+    my @lines = split /\n/, $out;
 
     if( $lines[0] eq '---' ) {
         return undef;
     }
-    my( $dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
+    my( $dev, $ino, $mode, $nlink, $uname, $gname, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
             = split( /,/, $lines[0] );
 
     if( $makeContentAvailable ) {
         if( Fcntl::S_ISLNK( $mode )) {
             my $target = $lines[1];
-    
-            return( $uname, $gname, $mode, $content, $target );
+            return( $uname, $gname, $mode, $target );
+
         } else {
             my $localFile = tmpnam();
             $self->copyFromTarget( $fileName, $localFile );
+            chmod 0600, $localFile; # scp keeps permissions
 
             return( $uname, $gname, $mode, $localFile );
         }
