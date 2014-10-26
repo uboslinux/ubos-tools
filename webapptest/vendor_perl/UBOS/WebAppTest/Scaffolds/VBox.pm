@@ -78,6 +78,7 @@ sub setup {
     my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
     $self->{vmName} = $vmName;
 
+    debug( 'Creating VBox VM', $vmName );
 
     unless( exists( $options->{vmdktemplate} )) {
         fatal( 'No value provided for vmdktemplate' );
@@ -132,7 +133,7 @@ sub setup {
     my $out;
     my $err;
     
-    debug( 'Copying VMDK file' );
+    debug( 'Copying VMDK file to', $self->{vmdkFile} );
     if( UBOS::Utils::myexec( 'cp ' . $self->{vmdkTemplate} . ' ' . $self->{vmdkFile} )) {
         fatal( 'Copying VMDK file failed' );
     }
