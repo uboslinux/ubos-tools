@@ -75,6 +75,10 @@ sub setup {
 
     $self->{isOk} = 0; # until we decide otherwise
 
+    my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
+    $self->{vmName} = $vmName;
+
+
     unless( exists( $options->{vmdktemplate} )) {
         fatal( 'No value provided for vmdktemplate' );
     }
@@ -122,9 +126,6 @@ sub setup {
     $self->{ubosAdminPrivateKeyFile} = $options->{'ubos-admin-private-key-file'};
     my $ram                          = $options->{ram} || 512;
     my $vncSecret                    = $options->{vncsecret};
-
-    my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
-    $self->{vmName} = $vmName;
 
     info( 'Creating Scaffold VBox' );
 
