@@ -84,9 +84,9 @@ sub setup {
     unless( -r $options->{vmdktemplate} ) {
         fatal( 'Vmdktemplate file does not exist or cannot be read:', $options->{vmdktemplate} );
     }
-    
+
     unless( exists( $options->{vmdkfile} )) {
-        fatal( 'No value provided for vmdkfile' );
+        $options->{vmdkfile} = "$vmName.vmdk";
     }
     unless( $options->{vmdkfile} =~ m!\.vmdk$! ) {
         fatal( 'Vmdkfile file must have extension .vmdk, is:', $options->{vmdkfile} );
@@ -125,10 +125,6 @@ sub setup {
 
     my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
     $self->{vmName} = $vmName;
-
-    unless( $self->{vmdkFile} ) {
-        $self->{vmdkFile} = "$vmName.vmdk";
-    }
 
     info( 'Creating Scaffold VBox' );
 
@@ -591,7 +587,7 @@ sub help {
 A scaffold that runs tests on the local machine in a VirtualBox virtual machine.
 Options:
     vmdktemplate                (required) -- template for the VMDK file
-    vmdkfile                    (required) -- local copy of the VMDK file on which tests is performed
+    vmdkfile                    (optional) -- local copy of the VMDK file on which tests is performed
     ubos-admin-public-key-file  (required) -- name of the file that contains the public key for ubos-admin ssh access
     ubos-admin-private-key-file (required) -- name of the file that contains the private key for  ubos-adminssh access
     ram                         (optional) -- RAM in MB
