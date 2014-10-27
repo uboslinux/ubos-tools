@@ -95,6 +95,15 @@ sub getTest {
 }
 
 ##
+# Determine the scaffold being used.
+# return: the Scaffold
+sub getScaffold {
+    my $self = shift;
+
+    return $self->{scaffold};
+}
+
+##
 # Determine the context path of the application being tested
 # return: context, e.g. /foo
 sub context {

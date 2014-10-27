@@ -175,10 +175,14 @@ sub teardown {
 # Helper method to invoke a command on the target. This must be overridden by subclasses.
 # $cmd: command
 # $stdin: content to pipe into stdin
+# $stdout: content captured from stdout
+# $stderr: content captured from stderr
 sub invokeOnTarget {
-    my $self  = shift;
-    my $cmd   = shift;
-    my $stdin = shift;
+    my $self   = shift;
+    my $cmd    = shift;
+    my $stdin  = shift;
+    my $stdout = shift;
+    my $stderr = shift;
 
     error( 'Must override Scaffold::invokeOnTarget' );
 
