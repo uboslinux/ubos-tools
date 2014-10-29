@@ -236,6 +236,8 @@ sub setup {
         error( 'Virtual machine failed to start up in time' );
     }
 
+    $self->{isOk} &= $self->handleImpersonateDepot( $options, '127.0.0.1' );
+
     return $self;
 }
 
