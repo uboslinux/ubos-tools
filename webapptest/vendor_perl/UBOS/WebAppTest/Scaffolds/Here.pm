@@ -36,10 +36,6 @@ sub setup {
     my $self    = shift;
     my $options = shift;
 
-    if( defined( $options ) && %$options ) {
-        fatal( 'Scaffold', ref( $self ), 'does not support any options' );
-    }
-
     unless( ref $self ) {
         $self = fields::new( $self );
     }
@@ -47,7 +43,7 @@ sub setup {
 
     info( 'Creating Scaffold Here' );
 
-    $self->{isOk} = 1; # always
+    $self->{isOk} = $self->handleImpersonateDepot( $options, '127.0.0.1' );
 
     return $self;
 }

@@ -218,4 +218,77 @@ sub getFileInfo {
     return undef;
 }
 
+##
+# Handle the impersonatedepot option, if given
+# $options: the scaffold options
+# $ip: the IP address to use for depot.ubos.net
+sub handleImpersonateDepot {
+    my $self    = shift;
+    my $options = shift;
+    my $ip      = shift;
+
+    my $on;
+    if( exists( $options->{impersonatedepot} )) {
+        $on = 1;
+    } else {
+        $on = 0;
+    }
+
+    my $cmd = <<CMD;
+use strict;
+use warnings;
+
+use UBOS::Utils;
+
+my \$ip = '$ip';
+my \$on = $on;
+
+unless( -r '/etc/hosts' ) {
+    print STDERR "Cannot read /etc/hosts on target $ip\n";
+    exit 1;
+}
+CMD
+    $cmd .= <<'CMD';
+
+my $etchosts = UBOS::Utils::slurpFile( '/etc/hosts' );
+if( $etchosts ) {
+    if( $on ) {
+        unless( $etchosts =~ m!depot\.ubos\.net! ) {
+            $etchosts .= <<ADD;
+
+# webapptest added
+$ip depot.ubos.net
+ADD
+            UBOS::Utils::saveFile( '/etc/hosts', $etchosts, 0644, 'root', 'root' );
+        }
+    } else {
+        my $changed = 0;
+        if( $etchosts =~ s!# webapptest added\s*!! ) {
+            $changed = 1;
+        }
+        my $ipEsc = quotemeta( $ip );
+        if( $etchosts =~ s!$ipEsc\s+depot\.ubos\.net!! ) {
+            $changed = 1;
+        }
+        if( $changed ) {
+            UBOS::Utils::saveFile( '/etc/hosts', $etchosts, 0644, 'root', 'root' );
+        }
+    }
+    exit 0;
+
+} else {
+    print STDERR "/etc/hosts is empty on $ip. Not changing\n";
+    exit 1;
+}
+1;
+CMD
+    my $out;
+    my $err;
+    if( $self->invokeOnTarget( 'perl', $cmd, \$out, \$err )) {
+        error( "Failed to edit /etc/hosts file to add depot.ubos.net:", $out, $err );
+        return 0;
+    }
+    return 1;
+}
+
 1;
