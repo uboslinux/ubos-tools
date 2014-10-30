@@ -156,10 +156,13 @@ sub decode {
     my $options = {};
 
     foreach my $part ( @parts ) {
-        if( $part =~ m!^(.*?)=(.*)$! ) {
-            $options->{lc( $1 )} = $2;
-        } else {
-            $options->{lc( $part )} = '';
+        if( $part ) {
+            # sometimes we encounter :: in the argument list
+            if( $part =~ m!^(.*?)=(.*)$! ) {
+                $options->{lc( $1 )} = $2;
+            } else {
+                $options->{lc( $part )} = lc( $part );
+            }
         }
     }
 
