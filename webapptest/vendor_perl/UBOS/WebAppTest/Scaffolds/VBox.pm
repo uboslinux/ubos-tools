@@ -228,15 +228,13 @@ sub setup {
 
     info( 'Waiting until target is ready' );
     if( $self->waitUntilTargetReady() ) {
-        unless( $self->invokeOnTarget( "sudo ubos-admin update" )) { # get latest code; image may not be most current
-            $self->{isOk} = 1;
-        }
+        $self->{isOk} &= $self->handleImpersonateDepot( $options, '192.168.56.1' ); # FIXME
+
+        $self->{isOk} &= $self->invokeOnTarget( "sudo ubos-admin update" );
 
     } else {
         error( 'Virtual machine failed to start up in time' );
     }
-
-    $self->{isOk} &= $self->handleImpersonateDepot( $options, '127.0.0.1' );
 
     return $self;
 }
