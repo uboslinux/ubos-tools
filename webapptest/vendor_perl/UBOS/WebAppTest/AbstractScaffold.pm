@@ -244,7 +244,7 @@ my \$ip = '$ip';
 my \$on = $on;
 
 unless( -r '/etc/hosts' ) {
-    print STDERR "Cannot read /etc/hosts on target $ip\n";
+    print STDERR "Cannot read /etc/hosts on target $ip\\n";
     exit 1;
 }
 CMD
@@ -255,7 +255,6 @@ if( $etchosts ) {
     if( $on ) {
         unless( $etchosts =~ m!depot\.ubos\.net! ) {
             $etchosts .= <<ADD;
-
 # webapptest added
 $ip depot.ubos.net
 ADD
