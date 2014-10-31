@@ -228,8 +228,9 @@ sub setup {
 
     info( 'Waiting until target is ready' );
     if( $self->waitUntilTargetReady() ) {
-        $self->{isOk} &= $self->handleImpersonateDepot( $options, '192.168.56.1' ); # FIXME
+        $self->{isOk} = 1;
 
+        $self->{isOk} &= $self->handleImpersonateDepot( $options, '192.168.56.1' ); # FIXME
         $self->{isOk} &= $self->invokeOnTarget( "sudo ubos-admin update" );
 
     } else {
