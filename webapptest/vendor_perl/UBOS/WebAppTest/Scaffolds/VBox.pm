@@ -230,8 +230,8 @@ sub setup {
     if( $self->waitUntilTargetReady() ) {
         $self->{isOk} = 1;
 
-        $self->{isOk} &= $self->handleImpersonateDepot( $options, '192.168.56.1' ); # FIXME
-        $self->{isOk} &= $self->invokeOnTarget( "sudo ubos-admin update" );
+        $self->{isOk} &= $self->handleImpersonateDepot( $options, '192.168.56.1' ); # FIXME get IP address by lookup
+        $self->{isOk} &= ( $self->invokeOnTarget( "sudo ubos-admin update" ) == 0 );
 
     } else {
         error( 'Virtual machine failed to start up in time' );
