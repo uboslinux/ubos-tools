@@ -564,7 +564,7 @@ users:
    gecos: UBOS administrative user
    ssh-authorized-keys:
     - $sshPubKey
-   sudo: "ALL=(ALL) NOPASSWD: /usr/bin/ubos-admin *, /usr/bin/bash *"
+   sudo: "ALL=(ALL) NOPASSWD: /usr/bin/ubos-admin *, /usr/bin/bash *, /usr/bin/install *"
 USERDATA
 
     UBOS::Utils::saveFile( "$mount/meta-data", <<METADATA, 0640, 'root', 'root' );
