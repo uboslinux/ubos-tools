@@ -130,12 +130,12 @@ sub setup {
         fatal( 'Vncsecret cannot be empty' );
     }
 
-    $self->{vmdkTemplate}            = $options->{vmdktemplate};
-    $self->{vmdkFile}                = $options->{vmdkfile};
-    $self->{ubosAdminPublicKeyFile}  = $options->{'ubos-admin-public-key-file'};
-    $self->{ubosAdminPrivateKeyFile} = $options->{'ubos-admin-private-key-file'};
-    my $ram                          = $options->{ram} || 512;
-    my $vncSecret                    = $options->{vncsecret};
+    $self->{vmdkTemplate}      = $options->{vmdktemplate};
+    $self->{vmdkFile}          = $options->{vmdkfile};
+    $self->{sshPublicKeyFile}  = $options->{'ubos-admin-public-key-file'};
+    $self->{sshPrivateKeyFile} = $options->{'ubos-admin-private-key-file'};
+    my $ram                    = $options->{ram} || 512;
+    my $vncSecret              = $options->{vncsecret};
 
     info( 'Creating Scaffold VBox' );
 
