@@ -43,8 +43,8 @@ use warnings;
 
 package UBOS::WebAppTest::Scaffolds::VBox;
 
-use base qw( UBOS::WebAppTest::AbstractScaffold );
-use fields qw( vmdkTemplate vmdkFile ubosAdminPublicKeyFile ubosAdminPrivateKeyFile vmName hostOnlyIp configVmdkFile );
+use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
+use fields qw( vmdkTemplate vmdkFile sshPublicKeyFile vmName configVmdkFile );
 
 use File::Temp;
 use UBOS::Logging;
@@ -98,6 +98,15 @@ sub setup {
     }
     if( -e $options->{vmdkfile} ) {
         fatal( 'Vmdkfile file exists already:', $options->{vmdkfile} );
+    }
+
+    if( exists( $options->{'ubos-admin'} )) {
+        unless( $options->{'ubos-admin'} ) {
+            fatal( 'Value for ubos-admin cannot be empty' );
+        }
+        $self->{sshUser} = $options->{'ubos-admin'};
+    } else {
+        $self->{sshUser} = 'ubos-admin';
     }
 
     unless( exists( $options->{'ubos-admin-public-key-file'} ) && $options->{'ubos-admin-public-key-file'} ) {
@@ -241,84 +250,6 @@ sub setup {
 }
 
 ##
-# Backup a site to a local file on the local machine.
-# $site: $site JSON
-# $filename: the local backup file name
-# return: if successful, $filename
-sub backupToLocal {
-    my $self     = shift;
-    my $site     = shift;
-    my $filename = shift;
-
-    my $remoteFile;
-    my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.ubos-backup); sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$remoteFile );
-    if( $exit ) {
-        error( 'Remote backup failed' );
-        return undef;
-    }
-    $remoteFile =~ s!^\s+!!;
-    $remoteFile =~ s!\s+$!!;
-
-    $exit = $self->copyFromTarget( $remoteFile, $filename );
-    if( $exit ) {
-        error( 'Copying backup from remote to local failed' );
-        return undef;
-    }
-    $self->destroyBackup( $remoteFile );
-
-    return $filename;
-}    
-
-##
-# Restore a site from a local file on the local machine
-# $site: $site JSON
-# $filename: the local backup file name
-# return: if successful, $filename
-sub restoreFromLocal {
-    my $self     = shift;
-    my $site     = shift;
-    my $filename = shift;
-
-    my $siteIdInBackup;
-    my $exit = UBOS::Utils::myexec( 'sudo ubos-admin listsites --brief --backupfile ' . $filename, undef, \$siteIdInBackup );
-    if( $exit ) {
-        error( 'Cannot listsites in backup file, exit', $exit );
-        return 0;
-    }
-    $siteIdInBackup =~ s!^\s+!!g;
-    $siteIdInBackup =~ s!\s+$!!g;
-    
-    my $remoteFile;
-    $exit = $self->invokeOnTarget( 'mktemp webapptest-XXXXX.ubos-backup', undef, \$remoteFile );
-    if( $exit ) {
-        error( 'Failed to create remote temp file' );
-        return 0;
-    }
-    $remoteFile =~ s!^\s+!!;
-    $remoteFile =~ s!\s+$!!;
-
-    $exit = $self->copyToTarget( $filename, $remoteFile );
-    if( $exit ) {
-        error( 'Failed to copy backup from local to remote ' );
-        return 0;
-    }
-
-    $exit = $self->invokeOnTarget(
-            'sudo ubos-admin restore'
-            . ' --siteid '     . $siteIdInBackup
-            . ' --hostname '   . $site->{hostname}
-            . ' --newsiteid '  . $site->{siteid}
-            . ' --in '         . $filename );
-
-    if( !$exit ) {
-        return 1;
-    } else {
-        error( 'Restore failed, exit', $exit );
-        return 0;
-    }
-}
-
-##
 # Teardown this Scaffold.
 sub teardown {
     my $self = shift;
@@ -359,41 +290,6 @@ sub teardown {
 }
 
 ##
-# Helper method to invoke a command on the target. This must be overridden by subclasses.
-# $cmd: command
-# $stdin: content to pipe into stdin
-# $stdout: content captured from stdout
-# $stderr: content captured from stderr
-sub invokeOnTarget {
-    my $self   = shift;
-    my $cmd    = shift;
-    my $stdin  = shift;
-    my $stdout = shift;
-    my $stderr = shift;
-
-    my $ip = $self->getTargetIp();
-    
-    my $sshCmd = 'ssh';
-    $sshCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
-            # don't put into known_hosts file, and don't print resulting warnings
-    $sshCmd .= ' ubos-admin@' . $ip;
-    $sshCmd .= ' -i ' . $self->{ubosAdminPrivateKeyFile};
-    $sshCmd .= " '$cmd'";
-    debug( 'ssh command:', $sshCmd );
-
-    return UBOS::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
-}
-
-##
-# Obtain the IP address of the target.  This must be overridden by subclasses.
-# return: target IP
-sub getTargetIp {
-    my $self  = shift;
-
-    return $self->{hostOnlyIp};
-}
-
-##
 # Wait until target is ready.
 sub waitUntilTargetReady {
     my $self = shift;
@@ -411,8 +307,8 @@ sub waitUntilTargetReady {
         }
         # $out is something like "Value: 192.168.56.103"
         if( $out =~ m!Value: (\d+\.\d+\.\d+\.\d+)! ) {
-            $self->{hostOnlyIp} = $1;
-            info( 'The virtual machine is accessible, from this host only, at', $self->{hostOnlyIp} );
+            $self->{sshHost} = $1;
+            info( 'The virtual machine is accessible, from this host only, at', $self->{sshHost} );
             $ret = 1;
             last;
         }
@@ -442,95 +338,6 @@ sub waitUntilTargetReady {
 }
 
 ##
-# Copy a remote file to the local machine
-# $remoteFile: the name of the file on the remote machine
-# $localFile: the name of the file on the local machine
-sub copyFromTarget {
-    my $self       = shift;
-    my $remoteFile = shift;
-    my $localFile  = shift;
-
-    my $ip = $self->getTargetIp();
-    
-    my $scpCmd = 'scp -q';
-    $scpCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
-            # don't put into known_hosts file, and don't print resulting warnings
-    $scpCmd .= ' -i ' . $self->{ubosAdminPrivateKeyFile};
-    $scpCmd .= ' ubos-admin@' . $ip . ':' . $remoteFile;
-    $scpCmd .= ' ' . $localFile;
-    debug( 'scp command:', $scpCmd );
-
-    my $ret = UBOS::Utils::myexec( $scpCmd );
-    return $ret;
-}
-
-##
-# Obtain information about a file on the target. This must be overridden by
-# subclasses.
-# $fileName: full path name of the file on the target
-# $makeContentAvailable: if true, also make the content available locally
-# return( $uname, $gname, $mode, $localContent ): localContent is the name
-#        if a locally available file with the same content, except that
-#        if the file turns out to be a symlink, it is the target of the symlink
-sub getFileInfo {
-    my $self                 = shift;
-    my $fileName             = shift;
-    my $makeContentAvailable = shift;
-
-    # Perl inside Perl -- escaping is a bit tricky
-    my $script = <<SCRIPT;
-use strict;
-use warnings;
-
-if( -e '$fileName' ) {
-    my \@found = lstat( '$fileName' );
-    \$found[4] = getpwuid( \$found[4] );
-    \$found[5] = getgrgid( \$found[5] );
-    print( join( ',', \@found ) . "\\n" );
-    if( -l '$fileName' ) {
-        print readlink( '$fileName' ) . "\\n";
-    }
-} else {
-    print( "---\n" );
-}
-exit 0;
-1;
-SCRIPT
-
-    my $out;
-    my $err;
-    if( $self->invokeOnTarget( 'perl', $script, \$out, \$err )) {
-        error( 'Failed to invoke remote perl command', $err );
-        return 0;
-    }
-
-    my @lines = split /\n/, $out;
-
-    if( $lines[0] eq '---' ) {
-        return undef;
-    }
-    my( $dev, $ino, $mode, $nlink, $uname, $gname, $rdev, $size, $atime, $mtime, $ctime, $blksize, $blocks )
-            = split( /,/, $lines[0] );
-
-    if( $makeContentAvailable ) {
-        if( Fcntl::S_ISLNK( $mode )) {
-            my $target = $lines[1];
-            return( $uname, $gname, $mode, $target );
-
-        } else {
-            my $localFile = tmpnam();
-            $self->copyFromTarget( $fileName, $localFile );
-            chmod 0600, $localFile; # scp keeps permissions
-
-            return( $uname, $gname, $mode, $localFile );
-        }
-
-    } else {
-        return( $uname, $gname, $mode );
-    }
-}
-
-##
 # Create a cloud-init config disk in VMDK format
 # $vmdkImage: name of the vmdk image file to be created
 sub createConfigDisk {
@@ -554,7 +361,7 @@ sub createConfigDisk {
     }
 
     my $vmName    = $self->{vmName};
-    my $sshPubKey = UBOS::Utils::slurpFile( $self->{ubosAdminPublicKeyFile} );
+    my $sshPubKey = UBOS::Utils::slurpFile( $self->{sshPublicKeyFile} );
     $sshPubKey =~ s!^\s+!!;
     $sshPubKey =~ s!\s+$!!;
 
@@ -591,8 +398,9 @@ A scaffold that runs tests on the local machine in a VirtualBox virtual machine.
 Options:
     vmdktemplate                (required) -- template for the VMDK file
     vmdkfile                    (optional) -- local copy of the VMDK file on which tests is performed
+    ubos-admin                  (optional) -- name of the user on the virtual machine that can execute ubos-admin over ssh
     ubos-admin-public-key-file  (required) -- name of the file that contains the public key for ubos-admin ssh access
-    ubos-admin-private-key-file (required) -- name of the file that contains the private key for  ubos-adminssh access
+    ubos-admin-private-key-file (required) -- name of the file that contains the private key for ubos-admin ssh access
     ram                         (optional) -- RAM in MB
     vncsecret                   (optional) -- if given, the virtual machine will be accessible over VNC with this password
 TXT

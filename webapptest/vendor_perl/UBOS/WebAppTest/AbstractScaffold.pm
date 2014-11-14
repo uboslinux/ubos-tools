@@ -190,10 +190,10 @@ sub invokeOnTarget {
 }
 
 ##
-# Obtain the IP address of the target.  This must be overridden by subclasses.
-# return: target IP
+# Obtain the IP address of the target. This must be overridden by subclasses.
+# return: IP address
 sub getTargetIp {
-    my $self  = shift;
+    my $self = shift;
 
     error( 'Must override Scaffold::getTargetIp' );
 
