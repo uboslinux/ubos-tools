@@ -5,6 +5,8 @@
         "apache2" : {
             "defaultcontext" : "/dev",
             "apache2modules" : [
+                "php",
+                "php-apache",
                 "autoindex"
             ],
             "appconfigitems" : [
