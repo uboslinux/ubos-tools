@@ -4,10 +4,12 @@
     "roles" : {
         "apache2" : {
             "defaultcontext" : "/dev",
-            "apache2modules" : [
+            "depends" : [
                 "php",
-                "php-apache",
-                "autoindex"
+                "php-apache"
+            ],
+            "apache2modules" : [
+                "php5"
             ],
             "appconfigitems" : [
                 {
