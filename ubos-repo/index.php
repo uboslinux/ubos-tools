@@ -1,15 +1,15 @@
-<html>
- <head>
-  <title>Available images</title>
- </head>
- <body>
-  <h1>Available images</h1>
 <?php
-
 $dir     = NULL;
 $context = getenv( 'CONTEXT' );
 $uri     = $_SERVER['REQUEST_URI'];
-
+?>
+<html>
+ <head>
+  <title>Index of <?= $uri ?></title>
+ </head>
+ <body>
+  <h1>Index of <?= $uri ?></h1>
+<?php
 if( strpos( $uri, $context ) == 0 ) {
     $dir = getenv( 'DATADIR' ) . substr( $uri, strlen( $context ));
 }
@@ -36,7 +36,7 @@ if( $dir && is_dir( $dir )) {
             if( is_link( $fullFile )) {
                 $target = readlink( $fullFile );
                 if( strchr( $target, '/' ) === FALSE ) {
-                    print "$file &#10145; <a href='$target'>$target</a>";
+                    print "$file&nbsp;&nbsp;&nbsp;&nbsp;&#10145;&nbsp;&nbsp;&nbsp;&nbsp;<a href='$target'>$target</a>";
                 } else {
                     print $file; // not safe
                 }
