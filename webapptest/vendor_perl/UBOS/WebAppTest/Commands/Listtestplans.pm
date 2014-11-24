@@ -38,7 +38,8 @@ sub run {
     }
 
     my $testPlans = UBOS::WebAppTest::TestingUtils::findTestPlans();
-    UBOS::Utils::printHashAsColumns( $testPlans, sub { UBOS::Utils::invokeMethod( shift . '::help' ); } );
+
+    print UBOS::Utils::hashAsColumns( $testPlans, sub { UBOS::Utils::invokeMethod( shift . '::help' ); } );
 
     1;
 }

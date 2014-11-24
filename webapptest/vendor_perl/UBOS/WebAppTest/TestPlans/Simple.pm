@@ -54,11 +54,13 @@ sub new {
 # $test: the AppTest to run
 # $scaffold: the Scaffold to use
 # $interactive: if 1, ask the user what to do after each error
+# $verbose: verbosity level from 0 (not verbose) upwards
 sub run {
     my $self        = shift;
     my $test        = shift;
     my $scaffold    = shift;
     my $interactive = shift;
+    my $verbose     = shift;
 
     info( 'Running TestPlan Simple' );
 
@@ -79,7 +81,7 @@ sub run {
     $ret &= $success;
 
     if( !$abort && !$quit ) {
-        my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp() );
+        my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp(), $verbose );
 
         my $currentState = $test->getVirginStateTest();
         while( 1 ) {

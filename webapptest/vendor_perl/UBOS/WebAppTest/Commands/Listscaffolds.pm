@@ -38,7 +38,8 @@ sub run {
     }
 
     my $scaffolds = UBOS::WebAppTest::TestingUtils::findScaffolds();
-    UBOS::Utils::printHashAsColumns( $scaffolds, sub { UBOS::Utils::invokeMethod( shift . '::help' ); } );
+
+    print UBOS::Utils::hashAsColumns( $scaffolds, sub { UBOS::Utils::invokeMethod( shift . '::help' ); } );
 
     1;
 }
