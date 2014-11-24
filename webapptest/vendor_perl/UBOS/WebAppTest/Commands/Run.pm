@@ -103,7 +103,7 @@ sub run {
             }
             info( 'Running AppTest', $appTest->name );
 
-            my $status = $testPlan->run( $appTest, $scaffold, $interactive );
+            my $status = $testPlan->run( $appTest, $scaffold, $interactive, $verbose );
             $ret &= $status;
 
             unless( $status ) {

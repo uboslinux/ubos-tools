@@ -24,7 +24,7 @@ use warnings;
 
 package UBOS::WebAppTest::TestContext;
 
-use fields qw( siteJson appConfigJson scaffold appTest testPlan ip curl cookieFile errors );
+use fields qw( siteJson appConfigJson scaffold appTest testPlan ip verbose curl cookieFile errors );
 
 use Fcntl;
 use UBOS::Logging qw( debug );
@@ -48,6 +48,7 @@ use UBOS::Utils;
 # $appTest: the AppTest being executed
 # $testPlan: the TestPlan being execited
 # $ip: the IP address at which the application being tested can be accessed
+# $verbose: verbosity level from 0 (not verbose) upwards
 sub new {
     my $self          = shift;
     my $siteJson      = shift;
@@ -56,6 +57,7 @@ sub new {
     my $appTest       = shift;
     my $testPlan      = shift;
     my $ip            = shift;
+    my $verbose       = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
@@ -67,6 +69,7 @@ sub new {
     $self->{appTest}       = $appTest;
     $self->{testPlan}      = $testPlan;
     $self->{ip}            = $ip;
+    $self->{verbose}       = $verbose;
     $self->{errors}        = [];
 
     $self->clearHttpSession();
@@ -852,10 +855,7 @@ sub checkSymlink {
 sub debugResponse {
     my $response = shift;
 
-    my $msg = "Response:\n";
-    $msg .= UBOS::Utils::printHashAsColumns( $response );
-
-    debug( $msg );
+    debug( sub { "Response:\n" . UBOS::Utils::hashAsColumns( $response ) } );
 }
 
 ##
@@ -865,9 +865,12 @@ sub error {
     my $self = shift;
     my @args = @_;
 
-    my $msg = join( ' ', grep { !/^\s*$/ } @_ );
+    my $msg = join( ' ', grep { !/^\s*$/ } @args );
 
-    UBOS::Logging::error( $msg );
+    if( $self->{verbose} ) {
+        # Only report error at the end if not verbose at all
+        UBOS::Logging::error( $msg );
+    }
 
     push @{$self->{errors}}, $msg;
     
