@@ -252,6 +252,58 @@ sub post {
 }
 
 ##
+# Test that an HTTP GET on a relative URL returns certain content.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $content: the content to look for in the response
+# $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustBe {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $content     = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret      = $self->mustBe( $response, $content, $errorMsg );
+ 
+    if( defined( $status )) {
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
+    }
+    return $ret;
+}
+
+##
+# Test that an HTTP GET on a relative URL returns content that is not
+# certain content.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $content: the content to look for in the response
+# $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustNotBe {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $content     = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret      = $self->mustNotNe( $response, $content, $errorMsg );
+    if( defined( $status )) {
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
+    }
+    return $ret;
+}
+
+##
 # Test that an HTTP GET on a relative URL returns a page that contains certain content.
 # Convenience method to make tests more concise.
 # $relativeUrl: appended to the application's context URL
@@ -427,6 +479,43 @@ sub getMustStatus {
 # $response: the response
 # $content: the content to look for in the response
 # $errorMsg: if the test fails, report this error message
+sub mustBe {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+    my $errorMsg = shift;
+
+    my %ret = %$response; # make copy
+    unless( $self->is( $response, $content )) {
+        debugResponse( $response );
+        $ret{error} = $self->error( $errorMsg, 'Response content is not', $content );
+    }
+    return \%ret;
+}
+
+##
+# Check the content of a response for inequality.
+# $response: the response
+# $content: the content to look for in the response
+sub mustNotBe {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+    my $errorMsg = shift;
+
+    my %ret = %$response; # make copy
+    unless( $self->NotIs( $response, $content )) {
+        debugResponse( $response );
+        $ret{error} = $self->error( $errorMsg, 'Response content is', $content );
+    }
+    return \%ret;
+}
+
+##
+# Look for certain content in a response.
+# $response: the response
+# $content: the content to look for in the response
+# $errorMsg: if the test fails, report this error message
 sub mustContain {
     my $self     = shift;
     my $response = shift;
@@ -575,10 +664,39 @@ sub mustNotStatus {
 }
 
 ##
+# Check the content of a response for equality.
+# $response: the response
+# $content: the content to look for in the response
+sub is {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+
+    if( $response->{content} ne $content ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Check the content of a response for inequality.
+# $response: the response
+# $content: the content to look for in the response
+sub notIs {
+    my $self     = shift;
+    my $response = shift;
+    my $content  = shift;
+
+    if( $response->{content} eq $content ) {
+        return 0;
+    }
+    return 1;
+}
+
+##
 # Look for certain content in a response.
 # $response: the response
 # $content: the content to look for in the response
-# $errorMsg: if the test fails, report this error message
 sub contains {
     my $self     = shift;
     my $response = shift;

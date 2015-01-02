@@ -385,6 +385,8 @@ package UBOS::WebAppTest::StateCheck;
 
 use base qw( UBOS::WebAppTest::StatesTransitions );
 use fields;
+
+use MIME::Base64;
 use UBOS::Logging;
 
 ##
@@ -452,6 +454,46 @@ sub check {
     return $ret;
 }
 
+##
+# Check the well-known site fields in this state
+# $c: the TestContext
+# $siteJson: the site JSON that contains the values for the well-known site fields
+# return: 1 if check passed
+sub checkWellKnown {
+    my $self     = shift;
+    my $c        = shift;
+    my $siteJson = shift;
+
+    my $ret = 1;
+    my $response = $c->absGet( '/robots.txt' );
+    if( exists( $siteJson->{wellknown}->{robotstxt} )) {
+        $ret &= !exists( $c->mustStatus( $response, '200',                               'robots.txt' )->{error} );
+        $ret &= !exists( $c->mustBe(     $response, $siteJson->{wellknown}->{robotstxt}, 'robots.txt' )->{error} );
+    } else {
+        $ret &= !exists( $c->mustStatus( $response, '404', 'robots.txt' )->{error} );
+    }
+
+    $response = $c->absGet( '/sitemap.xml' );
+    if( exists( $siteJson->{wellknown}->{sitemapxml} )) {
+        $ret &= !exists( $c->mustStatus( $response, '200',                                'sitemap.xml' )->{error} );
+        $ret &= !exists( $c->mustBe(     $response, $siteJson->{wellknown}->{sitemapxml}, 'sitemap.xml' )->{error} );
+    } else {
+        $ret &= !exists( $c->mustStatus( $response, '404', 'sitemap.xml' )->{error} );
+    }
+
+    $response = $c->absGet( '/favicon.ico' );
+    if( exists( $siteJson->{wellknown}->{faviconicobase64} )) {
+        my $favicon = decode_base64( $siteJson->{wellknown}->{faviconicobase64} );
+        $ret &= !exists( $c->mustStatus( $response, '200',   'favicon.ico' )->{error} );
+        $ret &= !exists( $c->mustBe(     $response, $favicon, 'favicon.ico' )->{error} );
+    } else {
+        $ret &= !exists( $c->mustStatus( $response, '404', 'favicon.ico' )->{error} );
+    }
+
+    return $ret;
+}
+
+    
 ################################################################################
 
 package UBOS::WebAppTest::StateTransition;
