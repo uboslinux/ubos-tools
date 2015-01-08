@@ -42,8 +42,14 @@ sub backupToLocal {
     my $site     = shift;
     my $filename = shift;
 
+    my $cmd = 'F=$(mktemp webapptest-XXXXX.ubos-backup)';
+    $cmd .= ' sudo ubos-admin backup';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --siteid ' . $site->{siteid} . ' --out $F;';
+    $cmd .= ' echo $F';
+
     my $remoteFile;
-    my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.ubos-backup); sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$remoteFile );
+    my $exit = $self->invokeOnTarget( $cmd, undef, \$remoteFile );
     if( $exit ) {
         error( 'Remote backup failed' );
         return undef;
@@ -71,8 +77,12 @@ sub restoreFromLocal {
     my $site     = shift;
     my $filename = shift;
 
+    my $cmd = 'sudo ubos-admin listsites';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --brief --backupfile ' . $filename;
+    
     my $siteIdInBackup;
-    my $exit = UBOS::Utils::myexec( 'sudo ubos-admin listsites --brief --backupfile ' . $filename, undef, \$siteIdInBackup );
+    my $exit = UBOS::Utils::myexec( $cmd, undef, \$siteIdInBackup );
     if( $exit ) {
         error( 'Cannot listsites in backup file, exit', $exit );
         return 0;
@@ -95,12 +105,14 @@ sub restoreFromLocal {
         return 0;
     }
 
-    $exit = $self->invokeOnTarget(
-            'sudo ubos-admin restore'
-            . ' --siteid '     . $siteIdInBackup
-            . ' --hostname '   . $site->{hostname}
-            . ' --newsiteid '  . $site->{siteid}
-            . ' --in '         . $filename );
+    $cmd = 'sudo ubos-admin restore';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --siteid '     . $siteIdInBackup;
+    $cmd .= ' --hostname '   . $site->{hostname};
+    $cmd .= ' --newsiteid '  . $site->{siteid};
+    $cmd .= ' --in '         . $filename;
+
+    $exit = $self->invokeOnTarget( $cmd );
 
     if( !$exit ) {
         return 1;

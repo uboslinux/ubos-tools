@@ -24,7 +24,7 @@ use warnings;
 
 package UBOS::WebAppTest::AbstractScaffold;
 
-use fields qw( isOk );
+use fields qw( isOk verbose );
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -39,6 +39,12 @@ sub setup {
     unless( ref $self ) {
         fatal( 'Must override Scaffold' );
     }
+
+    if( exists( $options->{verbose} )) {
+        $self->{verbose} = $options->{verbose} || 0;
+    } else {
+        $self->{verbose} = 0;
+    }        
 
     return $self;
 }
@@ -62,7 +68,10 @@ sub deploy {
     my $jsonString = UBOS::Utils::writeJsonToString( $site );
     debug( 'Site JSON:', $jsonString );
 
-    my $exit = $self->invokeOnTarget( 'sudo ubos-admin deploy --stdin', $jsonString );
+    my $cmd = 'sudo ubos-admin deploy --stdin';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+
+    my $exit = $self->invokeOnTarget( $cmd, $jsonString );
     return !$exit;
 }
 
@@ -73,7 +82,11 @@ sub undeploy {
     my $self = shift;
     my $site = shift;
 
-    my $exit = $self->invokeOnTarget( 'sudo ubos-admin undeploy --siteid ' . $site->{siteid} );
+    my $cmd = 'sudo ubos-admin undeploy';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --siteid ' . $site->{siteid};
+
+    my $exit = $self->invokeOnTarget( $cmd );
     return !$exit;
 }
 
@@ -82,7 +95,10 @@ sub undeploy {
 sub update {
     my $self = shift;
 
-    my $exit = $self->invokeOnTarget( 'sudo ubos-admin update' );
+    my $cmd = 'sudo ubos-admin update';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    
+    my $exit = $self->invokeOnTarget( $cmd );
     return !$exit;
 }
 
@@ -96,8 +112,14 @@ sub backup {
     my $site = shift;
 
     my $file;
-    
-    my $exit = $self->invokeOnTarget( 'F=$(mktemp webapptest-XXXXX.ubos-backup); sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out $F; echo $F', undef, \$file );
+
+    my $cmd = 'F=$(mktemp webapptest-XXXXX.ubos-backup);';
+    $cmd .= ' sudo ubos-admin backup';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --siteid ' . $site->{siteid} . ' --out $F;';
+    $cmd .= ' echo $F';
+
+    my $exit = $self->invokeOnTarget( $cmd, undef, \$file );
     if( !$exit ) {
         $file =~ s!^\s+!!;
         $file =~ s!\s+$!!;
@@ -132,7 +154,11 @@ sub restore {
     my $site       = shift;
     my $identifier = shift;
 
-    my $exit = $self->invokeOnTarget( 'sudo ubos-admin restore --siteid ' . $site->{siteid} . ' --in ' . $identifier );
+    my $cmd = 'sudo ubos-admin restore';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --siteid ' . $site->{siteid} . ' --in ' . $identifier;
+
+    my $exit = $self->invokeOnTarget( $cmd );
     return !$exit;
 }
 

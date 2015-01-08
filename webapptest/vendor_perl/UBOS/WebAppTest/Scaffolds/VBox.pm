@@ -71,7 +71,7 @@ sub setup {
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self->SUPER::setup();
+    $self->SUPER::setup( $options );
 
     $self->{isOk} = 0; # until we decide otherwise
 
