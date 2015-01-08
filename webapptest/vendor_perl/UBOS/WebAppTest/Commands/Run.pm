@@ -41,14 +41,14 @@ sub run {
     my $verbose       = 0;
     my $logConfigFile = undef;
     my $scaffoldOpt;
-    my $testPlanOpt;
+    my @testPlanOpts;
     my $parseOk = GetOptionsFromArray(
             \@args,
             'interactive' => \$interactive,
             'verbose+'    => \$verbose,
             'logConfig=s' => \$logConfigFile,
             'scaffold=s'  => \$scaffoldOpt,
-            'testplan=s'  => \$testPlanOpt );
+            'testplan=s'  => \@testPlanOpts );
 
     UBOS::Logging::initialize( 'webapptest', 'run', $verbose, $logConfigFile );
 
@@ -62,21 +62,29 @@ sub run {
     unless( $scaffoldOpt ) {
         $scaffoldOpt = 'here';
     }
-    unless( $testPlanOpt ) {
-        $testPlanOpt = 'default';
-    }
 
     my( $scaffoldName, $scaffoldOptions ) = decode( $scaffoldOpt );
-    my( $testPlanName, $testPlanOptions ) = decode( $testPlanOpt );
     
     my $scaffoldPackageName = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
     unless( $scaffoldPackageName ) {
         fatal( 'Cannot find scaffold', $scaffoldName );
     }
 
-    my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
-    unless( $testPlanPackage ) {
-        fatal( 'Cannot find test plan', $testPlanName );
+    my %testPlanPackagesWithArgsToRun = ();
+    if( @testPlanOpts ) {
+        foreach my $testPlanOpt ( @testPlanOpts ) {
+            my( $testPlanName, $testPlanOptions ) = decode( $testPlanOpt );
+            my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
+            unless( $testPlanPackage ) {
+                fatal( 'Cannot find test plan', $testPlanName );
+            }
+            if( defined( $testPlanPackagesWithArgsToRun{$testPlanPackage} )) {
+                fatal( 'Cannot run the same test plan multiple times at this time' );
+            }
+            $testPlanPackagesWithArgsToRun{$testPlanPackage} = $testPlanOptions;
+        }
+    } else {
+        %testPlanPackagesWithArgsToRun = ( UBOS::WebAppTest::TestingUtils::findTestPlan( 'default' ) => undef );
     }
 
     my @appTestsToRun = ();
@@ -93,23 +101,34 @@ sub run {
     
     my $ret = 1;
 
-    my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage     . '->new', $testPlanOptions );
 
     my $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
     if( $scaffold && $scaffold->isOk ) {
+        my $printTest     = @appTestsToRun > 1;
+        my $printTestPlan = ( keys %testPlanPackagesWithArgsToRun ) > 1;
+
         foreach my $appTest ( @appTestsToRun ) {
-            if( @appTestsToRun > 1 ) {
+            if( $printTest ) {
                 print "Running AppTest " . $appTest->name . "\n";
             }
-            info( 'Running AppTest', $appTest->name );
+            foreach my $testPlanPackage ( keys %testPlanPackagesWithArgsToRun ) {
+                my $testPlanOptions = $testPlanPackagesWithArgsToRun{$testPlanPackage};
 
-            my $status = $testPlan->run( $appTest, $scaffold, $interactive, $verbose );
-            $ret &= $status;
+                if( $printTestPlan ) {
+                    print "Running TestPlan " . $testPlanPackage . "\n";
+                }
+                info( 'Running AppTest', $appTest->name, 'with test plan', $testPlanPackage );
+                
+                my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $testPlanOptions );
 
-            unless( $status ) {
-                error( 'Test', $appTest->name, 'failed.' );
-            } elsif( $verbose > 0 ) {
-                print "Test passed.\n";
+                my $status = $testPlan->run( $appTest, $scaffold, $interactive, $verbose );
+                $ret &= $status;
+
+                unless( $status ) {
+                    error( 'Test', $appTest->name, 'failed.' );
+                } elsif( $verbose > 0 ) {
+                    print "Test passed.\n";
+                }
             }
         }
     } else {
