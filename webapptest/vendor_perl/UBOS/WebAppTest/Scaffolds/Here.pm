@@ -39,7 +39,7 @@ sub setup {
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self->SUPER::setup();
+    $self->SUPER::setup( $options );
 
     info( 'Creating Scaffold Here' );
 
@@ -58,7 +58,11 @@ sub backupToLocal {
     my $site     = shift;
     my $filename = shift;
 
-    my $exit = UBOS::Utils::myexec( 'sudo ubos-admin backup --siteid ' . $site->{siteid} . ' --out ' . $filename );
+    my $cmd = 'sudo ubos-admin backup';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --siteid ' . $site->{siteid} . ' --out ' . $filename;
+
+    my $exit = UBOS::Utils::myexec( $cmd );
     if( !$exit ) {
         UBOS::Utils::myexec( 'sudo chown $(id -un):$(id -gn) ' . $filename );
         return $filename;
@@ -78,8 +82,12 @@ sub restoreFromLocal {
     my $site     = shift;
     my $filename = shift;
 
+    my $cmd = 'sudo ubos-admin listsites';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --brief --backupfile ' . $filename;
+
     my $siteIdInBackup;
-    my $exit = UBOS::Utils::myexec( 'sudo ubos-admin listsites --brief --backupfile ' . $filename, undef, \$siteIdInBackup );
+    my $exit = UBOS::Utils::myexec( $cmd, undef, \$siteIdInBackup );
     if( $exit ) {
         error( 'Cannot listsites in backup file, exit', $exit );
         return 0;
@@ -87,12 +95,14 @@ sub restoreFromLocal {
     $siteIdInBackup =~ s!^\s+!!g;
     $siteIdInBackup =~ s!\s+$!!g;
 
-    $exit = UBOS::Utils::myexec(
-            'sudo ubos-admin restore'
-            . ' --siteid '     . $siteIdInBackup
-            . ' --hostname '   . $site->{hostname}
-            . ' --newsiteid '  . $site->{siteid}
-            . ' --in '         . $filename );
+    $cmd = 'sudo ubos-admin restore';
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+    $cmd .= ' --siteid '     . $siteIdInBackup;
+    $cmd .= ' --hostname '   . $site->{hostname};
+    $cmd .= ' --newsiteid '  . $site->{siteid};
+    $cmd .= ' --in '         . $filename;
+
+    $exit = UBOS::Utils::myexec( $cmd );
     
     if( !$exit ) {
         return 1;

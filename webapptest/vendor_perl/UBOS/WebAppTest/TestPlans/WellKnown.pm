@@ -124,9 +124,8 @@ ICO
             $success = $scaffold->deploy( $thisSiteJson );
 
             ( $repeat, $abort, $quit ) = $self->askUser(
-                    'Performed deployment ' . ( $thisSiteJson == $siteJsonWithWellKnown ? ' with' : ' without' ) . ' well-known site fields',
+                    'Performed deployment ' . ( $thisSiteJson == $siteJsonWithWellKnown ? 'with' : 'without' ) . ' well-known site fields',
                     $interactive, $success, $ret );
-
         } while( $repeat );
         $ret &= $success;
 

@@ -149,11 +149,10 @@ sub run {
 sub synopsisHelp {
     return {
         <<SSS => <<HHH
-    [--interactive] [--verbose] [--scaffold <scaffold[:scaffoldoption]...>] [--testplan <testplan>] <apptest>...
+    [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold[:scaffoldoption]...>] [--testplan <testplan>] <apptest>...
 SSS
     Run the test apptest.
     --interactive: stop at important points and wait for user input
-    --verbose: print more information about how the test progresses
     <scaffold>: use this named scaffold instead of the default. If given as
                 "abc:def=ghi:jkl=mno", "abc" represents the name of the scaffold,
                 and "def" and "jkl" are scaffold-specific options
