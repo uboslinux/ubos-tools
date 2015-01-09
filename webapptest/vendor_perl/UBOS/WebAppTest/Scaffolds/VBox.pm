@@ -180,7 +180,8 @@ sub setup {
     if( UBOS::Utils::myexec( "VBoxManage storagectl '$vmName' --name '$vmName' --add sata --bootable on" )) {
         fatal( 'VBoxManage storagectl failed' );
     }
-    if( UBOS::Utils::myexec( "VBoxManage storageattach '$vmName' --storagectl '$vmName' --port 1 --type hdd --medium " . $self->{vmdkFile} )) {
+    # generate random uuid
+    if( UBOS::Utils::myexec( "VBoxManage storageattach '$vmName' --storagectl '$vmName' --setuuid '' --port 1 --type hdd --medium " . $self->{vmdkFile} )) {
         fatal( 'VBoxManage storageattach failed' );
     }
     if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --boot1 disk --boot2 none --boot3 none --boot4 none" )) {
