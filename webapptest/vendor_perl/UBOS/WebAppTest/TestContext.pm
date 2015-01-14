@@ -770,7 +770,7 @@ sub redirects {
         $target = $self->fullContext() . $target;
     }
 
-    if( $response->{headers} !~ m!Location: $target! ) {
+    if( $response->{headers} !~ m!^< Location: \Q$target\E\r?$!m ) {
         return 0;
     }
     return 1;
@@ -793,7 +793,7 @@ sub notRedirects {
         $target = $self->fullContext() . $target;
     }
 
-    if( $response->{headers} =~ m!Location: $target! ) {
+    if( $response->{headers} =~ m!^< Location: \Q$target\E\r?$!m ) {
         return 0;
     }
     return 1;
