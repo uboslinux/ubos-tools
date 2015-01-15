@@ -43,7 +43,7 @@ sub findAppTestsInDirectory {
 
         my $appTest = eval $content;
 
-        if( defined( $appTest ) && ref( $appTest ) eq 'UBOS::WebAppTest' ) {
+        if( defined( $appTest ) && $appTest->isa( 'UBOS::WebAppTest' )) {
             $appTests->{$fileName} = $appTest;
 
         } elsif( $@ ) {
@@ -132,7 +132,7 @@ sub findAppTestInDirectory {
         
         my $appTest = eval $content;
 
-        if( defined( $appTest ) && ref( $appTest ) eq 'UBOS::WebAppTest' ) {
+        if( defined( $appTest ) && $appTest->isa( 'UBOS::WebAppTest' )) {
             return $appTest;
 
         } elsif( $@ ) {
