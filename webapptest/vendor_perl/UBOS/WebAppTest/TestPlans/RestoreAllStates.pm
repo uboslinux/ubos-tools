@@ -42,12 +42,17 @@ sub new {
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self = $self->SUPER::new();
+    $self = $self->SUPER::new( $options );
 
     if( !exists( $options->{backupfileprefix} ) || !$options->{backupfileprefix} ) {
-        fatal( 'Must provide backupfileprefix' );
+        fatal( 'Must provide option backupfileprefix' );
     }
     $self->{backupFilePrefix} = $options->{backupfileprefix};
+    delete $options->{backupfileprefix};
+
+    if( defined( $options ) && %$options ) {
+        fatal( 'Unknown option(s) for TestPlan RestoreAllStates:', join( ', ', keys %$options ));
+    }
 
     return $self;
 }
@@ -67,7 +72,7 @@ sub run {
 
     info( 'Running TestPlan RestoreAllStates' );
 
-    my( $siteJson, $appConfigJson ) = $test->getSiteAndAppConfigJson();
+    my( $siteJson, $appConfigJson ) = $self->getSiteAndAppConfigJson( $test );
 
     my $ret = 1;
     my $success;

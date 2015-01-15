@@ -40,14 +40,14 @@ sub new {
     my $self    = shift;
     my $options = shift;
 
-    if( defined( $options ) && %$options ) {
-        fatal( 'TestPlan Wellknown does not support any options' );
-    }
-
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self = $self->SUPER::new();
+    $self = $self->SUPER::new( $options );
+
+    if( defined( $options ) && %$options ) {
+        fatal( 'Unknown option(s) for TestPlan Wellknown:', join( ', ', keys %$options ));
+    }
 
     return $self;
 }
@@ -67,7 +67,7 @@ sub run {
 
     info( 'Running TestPlan Wellknown' );
 
-    my( $siteJson, $appConfigJson ) = $test->getSiteAndAppConfigJson();
+    my( $siteJson, $appConfigJson ) = $self->getSiteAndAppConfigJson( $test);
     my $siteJsonWithWellKnown = { %$siteJson };
     $siteJsonWithWellKnown->{wellknown}->{robotstxt} = <<ROBOTS; # from robotstxt.org
 User-agent: *

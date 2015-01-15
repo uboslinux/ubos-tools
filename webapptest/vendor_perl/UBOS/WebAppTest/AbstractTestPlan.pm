@@ -28,8 +28,10 @@ use UBOS::Logging;
 
 ##
 # Instantiate the TestPlan.
+# $options: options for the test plan
 sub new {
-    my $self = shift;
+    my $self    = shift;
+    my $options = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
