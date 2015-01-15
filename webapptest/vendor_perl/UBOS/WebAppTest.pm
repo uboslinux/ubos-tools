@@ -26,7 +26,6 @@ use warnings;
 package UBOS::WebAppTest;
 
 use UBOS::App;
-use UBOS::Host;
 use UBOS::Logging;
 
 use fields qw(
@@ -34,10 +33,7 @@ use fields qw(
         description
         packageName
         packageVersion
-        siteId
-        appConfigId
         testContext
-        hostname
         customizationPointValues
         statesTransitions );
 
@@ -56,7 +52,6 @@ sub new {
     my $description       = $pars{description};
     my $custPointValues   = $pars{customizationPointValues};
     my $statesTransitions = $pars{checks};
-    my $hostname          = $pars{hostname};
 
     unless( $packageName ) {
         fatal( 'AppTest must identify the application package being tested. Use parameter named "appToTest".' );
@@ -118,13 +113,8 @@ sub new {
     $self->{packageName}              = $packageName;
     $self->{packageVersion}           = UBOS::Host::packageVersion( $packageName );
     $self->{testContext}              = $testContext;
-    $self->{hostname}                 = $hostname;
     $self->{customizationPointValues} = $custPointValues;
     $self->{statesTransitions}        = $statesTransitions;
-
-    # generate random identifiers, so multiple tests can run at the same time
-    $self->{siteId}      = UBOS::Host::createNewSiteId();
-    $self->{appConfigId} = UBOS::Host::createNewAppConfigId();
 
     return $self;
 }
@@ -203,15 +193,6 @@ sub getTestContext {
 }
 
 ##
-# Obtain the desired hostname at which to test.
-# return: hostname
-sub hostname {
-    my $self = shift;
-
-    return $self->{hostname};
-}
-
-##
 # Determine the apache context directory of the application being tested.
 sub apache2ContextDir {
     my $self = shift;
@@ -252,97 +233,6 @@ sub getTransitionFrom {
     }
     return undef;
 }
-
-##
-# Obtain the site JSON for this test. In the second return value, point to
-# the AppConfiguration in the JSON that is being tested
-sub getSiteAndAppConfigJson {
-    my $self = shift;
-
-    my $appConfigJson = $self->_createAppConfigurationJson();
-    my $siteJson      = $self->_createSiteJson( $appConfigJson );
-    
-    return( $siteJson, $appConfigJson );
-}
-
-##
-# Helper to create the AppConfiguration JSON fragment for this test
-# $test: the AppTest
-# return: the AppConfiguration JSON fragment
-sub _createAppConfigurationJson {
-    my $self = shift;
-
-    my $appconfig = {
-        'context'     => $self->getTestContext(),
-        'appconfigid' => $self->{appConfigId},
-        'appid'       => $self->{packageName}
-    };
-
-    my $custPointValues = $self->getCustomizationPointValues();
-    if( $custPointValues ) {
-        my $jsonHash = {};
-        $appconfig->{customizationpoints}->{$self->{packageName}} = $jsonHash;
-
-        foreach my $name ( keys %$custPointValues ) {
-            my $value = $custPointValues->{$name};
-
-            $jsonHash->{$name}->{value} = $value;
-        }
-    }
-    return $appconfig;
-}
-
-##
-# Helper to create the Site JSON for this test.
-# $appConfigJson: the AppConfiguration JSON fragment for this test
-# return: the site JSON
-sub _createSiteJson {
-    my $self          = shift;
-    my $appConfigJson = shift;
-
-    my $hostname = $self->hostname();
-    unless( $hostname ) {
-        $hostname = ref $self;
-        $hostname =~ s!^.*::!!;
-        $hostname = 'testhost-' . lc( $hostname ) . UBOS::Utils::randomHex( 8 );    
-    }
-
-    my $admin = $self->getAdminData();
-    unless( $admin ) {
-        fatal( ref( $self ), 'method getAdminData() returned undef value' );
-    }
-    foreach my $field ( qw( userid username credential email )) {
-        unless( defined( $admin->{$field} )) {
-            fatal( ref( $self ), 'method getAdminData() returned hash that does not contain field', $field );
-        }
-    }
-    
-    my $site = {
-        'siteid'     => $self->{siteId},
-        'hostname'   => $hostname,
-        'admin'      => $admin,
-        'appconfigs' => [ $appConfigJson ]
-    };
-
-    return $site;
-}
-
-##
-# Overridable method that returns the desired admin information for the Site JSON.
-# This needs to be a hash containing userid, username, credential and email.
-sub getAdminData {
-    my $self = shift;
-
-    return {
-        'userid'     => 'testuser',
-        'username'   => 'Test User',
-        'credential' => 's3cr3t', # This is of course not secure, but we're trying
-                                  # to be memorable here so the user can easily log
-                                  # on in interactive mode. To be secure, override
-                                  # this method in your test.
-        'email'      => 'testing@ignore.ubos.net',
-    };
-}    
 
 ################################################################################
 

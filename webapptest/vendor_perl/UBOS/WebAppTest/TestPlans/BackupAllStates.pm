@@ -42,14 +42,19 @@ sub new {
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self = $self->SUPER::new();
+    $self = $self->SUPER::new( $options );
     
     if( exists( $options->{backupfileprefix} )) {
         unless( $options->{backupfileprefix} ) {
-            fatal( 'backupfileprefix cannot be empty' );
+            fatal( 'option backupfileprefix cannot be empty' );
         }
         $self->{backupFilePrefix} = $options->{backupfileprefix};
-    } # cannot calculcate the fallback yet
+        delete $options->{backupfileprefix};
+    } # cannot calculcate the fallback yet for backupfileprefix
+
+    if( defined( $options ) && %$options ) {
+        fatal( 'Unknown option(s) for TestPlan BackupAllStates:', join( ', ', keys %$options ));
+    }
 
     return $self;
 }
@@ -73,7 +78,7 @@ sub run {
 
     info( 'Running TestPlan BackupAllStates' );
 
-    my( $siteJson, $appConfigJson ) = $test->getSiteAndAppConfigJson();
+    my( $siteJson, $appConfigJson ) = $self->getSiteAndAppConfigJson( $test );
 
     my $ret = 1;
     my $success;

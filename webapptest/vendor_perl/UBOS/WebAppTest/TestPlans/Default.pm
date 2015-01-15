@@ -37,14 +37,14 @@ sub new {
     my $self    = shift;
     my $options = shift;
 
-    if( defined( $options ) && %$options ) {
-        fatal( 'TestPlan Default does not support any options' );
-    }
-
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self = $self->SUPER::new();
+    $self = $self->SUPER::new( $options );
+
+    if( defined( $options ) && %$options ) {
+        fatal( 'Unknown option(s) for TestPlan Default:', join( ', ', keys %$options ));
+    }
 
     return $self;
 }
@@ -64,7 +64,7 @@ sub run {
 
     info( 'Running TestPlan Default' );
 
-    my( $siteJson, $appConfigJson ) = $test->getSiteAndAppConfigJson();
+    my( $siteJson, $appConfigJson ) = $self->getSiteAndAppConfigJson( $test );
 
     my $ret = 1;
     my $success;
