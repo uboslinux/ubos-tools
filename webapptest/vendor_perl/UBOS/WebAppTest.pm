@@ -94,13 +94,12 @@ sub new {
 
     my $i = 0;
     foreach my $candidate ( @$statesTransitions ) {
-        my $candidateRef = ref( $candidate );
         if( $i % 2 ) {
-            unless( $candidateRef eq 'UBOS::WebAppTest::StateTransition' ) {
+            if( !ref( $candidate ) || !$candidate->isa( 'UBOS::WebAppTest::StateTransition' )) {
                 fatal( 'Array of StateChecks and StateTransitions must alternate: expected StateTransition' );
             }
         } else {
-            unless( $candidateRef eq 'UBOS::WebAppTest::StateCheck' ) {
+            if( !ref( $candidate ) || !$candidate->isa( 'UBOS::WebAppTest::StateCheck' )) {
                 fatal( 'Array of StateChecks and StateTransitions must alternate: expected StateCheck' );
             }
         }
