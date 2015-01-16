@@ -59,14 +59,16 @@ sub new {
     if( ref( $name )) {
         fatal( 'AppTest name name must be a string.' );
     }
-    unless( defined( $testContext )) {
-        fatal( 'AppTest testContext must be provided.' );
+    if( defined( $testContext )) {
+        if( ref( $testContext )) {
+            fatal( 'AppTest testContext name must be a string.' );
+        }
+        unless( $testContext eq '' || $testContext =~ m!^/[-_.a-z0-9%]+$! ) {
+            fatal( 'AppTest testContext must be a single-level relative path starting with a slash, or be empty' );
+        }
     }
-    if( ref( $testContext )) {
-        fatal( 'AppTest testContext name must be a string.' );
-    }
-    unless( $testContext eq '' || $testContext =~ m!^/[-_.a-z0-9%]+$! ) {
-        fatal( 'AppTest testContext must be a single-level relative path starting with a slash, or be empty' );
+    if( defined( $pars{hostname} )) {
+        fatal( 'AppTest must not specify a hostname any more; use parameter to TestPlan instead' );
     }
     if( ref( $description )) {
         fatal( 'AppTest description name must be a string.' );
