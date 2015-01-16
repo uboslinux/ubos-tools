@@ -74,6 +74,9 @@ sub run {
     if( @testPlanOpts ) {
         foreach my $testPlanOpt ( @testPlanOpts ) {
             my( $testPlanName, $testPlanOptions ) = decode( $testPlanOpt );
+            unless( $testPlanName ) {
+                $testPlanName = 'default';
+            }
             my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
             unless( $testPlanPackage ) {
                 fatal( 'Cannot find test plan', $testPlanName );
@@ -170,7 +173,7 @@ sub decode {
 
     my @parts = split( ':', $string );
 
-    my $name    = shift @parts;
+    my $name    = shift @parts; # name may be empty, in which case the default kicks in later
     my $options = {};
 
     foreach my $part ( @parts ) {
@@ -188,4 +191,3 @@ sub decode {
 }
 
 1;
-

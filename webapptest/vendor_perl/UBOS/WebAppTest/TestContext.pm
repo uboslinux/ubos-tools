@@ -121,7 +121,7 @@ sub getTestPlan {
 sub context {
     my $self = shift;
 
-    return $self->{appTest}->getTestContext();
+    return $self->{appConfigJson}->{context};
 }
 
 ##

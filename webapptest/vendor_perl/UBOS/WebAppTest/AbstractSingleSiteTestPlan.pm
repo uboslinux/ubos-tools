@@ -43,10 +43,18 @@ sub new {
     $self->SUPER::new( $options );
 
     if( exists( $options->{hostname} )) {
+        unless( $options->{hostname} eq '*' || $options->{hostname} =~ m!^[-.a-z0-9_]+$! ) {
+            fatal( 'Test plan hostname parameter must be a valid hostname, or *' );
+        }
+        
         $self->{hostname} = $options->{hostname};
         delete $options->{hostname};
     }
     if( exists( $options->{context} )) {
+        unless( $options->{context} eq '' || $options->{context} =~ m!^/[-_.a-z0-9%]+$! ) {
+            fatal( 'Test plan context parameter must be a single-level relative path starting with a slash, or be empty' );
+        }
+
         $self->{context} = $options->{context};
         delete $options->{context};
     }
@@ -103,8 +111,14 @@ sub _createAppConfigurationJson {
     my $test = shift;
 
     my $testContext = $test->getTestContext(); # if there is any
-    unless( defined( $testContext )) {
-        $testContext = 'ctxt-' . UBOS::Utils::randomHex( 8 );    
+    if( defined( $testContext )) {
+        if( defined( $self->{context} )) {
+            error( 'Context', $self->{context}, 'provided as argument to test plan ignored: WebAppTest already defines context', $testContext );
+        }
+    } elsif( defined( $self->{context} )) {
+        $testContext = $self->{context};
+    } else {
+        $testContext = '/ctxt-' . UBOS::Utils::randomHex( 8 );    
     }
 
     my $appconfig = {
