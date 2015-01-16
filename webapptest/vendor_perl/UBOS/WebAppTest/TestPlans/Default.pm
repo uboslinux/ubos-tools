@@ -32,15 +32,17 @@ use UBOS::Utils;
 
 ##
 # Instantiate the TestPlan.
+# $test: the test to run
 # $options: options for the test plan
 sub new {
     my $self    = shift;
+    my $test    = shift;
     my $options = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self = $self->SUPER::new( $options );
+    $self = $self->SUPER::new( $test, $options );
 
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for TestPlan Default:', join( ', ', keys %$options ));
@@ -51,20 +53,18 @@ sub new {
 
 ##
 # Run this TestPlan
-# $test: the AppTest to run
 # $scaffold: the Scaffold to use
 # $interactive: if 1, ask the user what to do after each error
 # $verbose: verbosity level from 0 (not verbose) upwards
 sub run {
     my $self        = shift;
-    my $test        = shift;
     my $scaffold    = shift;
     my $interactive = shift;
     my $verbose     = shift;
 
     info( 'Running TestPlan Default' );
 
-    my( $siteJson, $appConfigJson ) = $self->getSiteAndAppConfigJson( $test );
+    my $siteJson = $self->getSiteJson();
 
     my $ret = 1;
     my $success;
@@ -85,9 +85,9 @@ sub run {
     my @statesBackupsReverse = ();
 
     if( !$abort && !$quit ) {
-        my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp(), $verbose );
+        my $c = new UBOS::WebAppTest::TestContext( $scaffold, $self, $verbose );
 
-        my $currentState = $test->getVirginStateTest();
+        my $currentState = $self->getTest()->getVirginStateTest();
 
         # March forward, and create backups
         my $done = 0;
@@ -109,7 +109,7 @@ sub run {
             my $backup = $scaffold->backup( $siteJson );
             unshift @statesBackupsReverse, [ $currentState, $backup ]; # insert at the beginning
 
-            my( $transition, $nextState ) = $test->getTransitionFrom( $currentState );
+            my( $transition, $nextState ) = $self->getTest()->getTransitionFrom( $currentState );
             if( $transition ) {
 
                 info( 'Taking StateTransition', $transition->getName() );

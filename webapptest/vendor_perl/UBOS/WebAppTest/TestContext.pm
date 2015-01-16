@@ -24,7 +24,7 @@ use warnings;
 
 package UBOS::WebAppTest::TestContext;
 
-use fields qw( siteJson appConfigJson scaffold appTest testPlan ip verbose curl cookieFile errors );
+use fields qw( scaffold testPlan ip verbose curl cookieFile errors );
 
 use Fcntl;
 use UBOS::Logging qw( debug );
@@ -45,30 +45,22 @@ use UBOS::Utils;
 ##
 # Instantiate the TextContext.
 # $scaffold: the scaffold used for the test
-# $appTest: the AppTest being executed
 # $testPlan: the TestPlan being execited
 # $ip: the IP address at which the application being tested can be accessed
 # $verbose: verbosity level from 0 (not verbose) upwards
 sub new {
     my $self          = shift;
-    my $siteJson      = shift;
-    my $appConfigJson = shift;
     my $scaffold      = shift;
-    my $appTest       = shift;
     my $testPlan      = shift;
-    my $ip            = shift;
     my $verbose       = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
     }
 
-    $self->{siteJson}      = $siteJson;
-    $self->{appConfigJson} = $appConfigJson;
     $self->{scaffold}      = $scaffold;
-    $self->{appTest}       = $appTest;
     $self->{testPlan}      = $testPlan;
-    $self->{ip}            = $ip;
+    $self->{ip}            = $scaffold->getTargetIp();
     $self->{verbose}       = $verbose;
     $self->{errors}        = [];
 
@@ -82,10 +74,10 @@ sub new {
 ##
 # Determine the hostname of the application being tested
 # return: hostname
-sub hostName {
+sub hostname {
     my $self = shift;
 
-    return $self->{siteJson}->{hostname};
+    return $self->{testPlan}->hostname();
 }
 
 ##
@@ -94,7 +86,7 @@ sub hostName {
 sub getTest {
     my $self = shift;
     
-    return $self->{appTest};
+    return $self->{testPlan}->getTest();
 }
 
 ##
@@ -121,7 +113,7 @@ sub getTestPlan {
 sub context {
     my $self = shift;
 
-    return $self->{appConfigJson}->{context};
+    return $self->{testPlan}->context();
 }
 
 ##
@@ -130,8 +122,16 @@ sub context {
 sub fullContext {
     my $self = shift;
 
-    my $url = 'http://' . $self->hostName . $self->context();
+    my $url = 'http://' . $self->hostname . $self->context();
     return $url;
+}
+
+##
+# Determine the apache context directory of the application being tested.
+sub apache2ContextDir {
+    my $self = shift;
+
+    return '/srv/http/sites/' . $self->{testPlan}->siteId() . $self->context();
 }
 
 ##
@@ -139,7 +139,7 @@ sub fullContext {
 sub clearHttpSession {
     my $self = shift;
 
-    my $hostName   = $self->hostName;
+    my $hostName   = $self->hostname;
     my $ip         = $self->{ip};
     my $cookieFile = File::Temp->new();
 
@@ -167,7 +167,7 @@ sub absGet {
                 'error' => $self->error( 'Cannot access URL without protocol or leading slash:', $url )
             };
         }
-        $url = 'http://' . $self->hostName . $url;
+        $url = 'http://' . $self->hostname . $url;
     }
 
     debug( 'Accessing url', $url );
@@ -217,7 +217,7 @@ sub absPost {
             $self->error( 'Cannot access URL without protocol or leading slash:', $url );
             return {};
         }
-        $url = 'http://' . $self->hostName . $url;
+        $url = 'http://' . $self->hostname . $url;
     }
 
     debug( 'Posting to url', $url );

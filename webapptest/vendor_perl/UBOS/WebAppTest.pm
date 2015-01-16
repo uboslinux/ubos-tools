@@ -4,7 +4,7 @@
 # UBOS web app tests.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015= Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ use fields qw(
         description
         packageName
         packageVersion
-        testContext
+        fixedTestContext
         customizationPointValues
         statesTransitions );
 
@@ -48,7 +48,7 @@ sub new {
     
     my $packageName       = $pars{appToTest};
     my $name              = $pars{name};
-    my $testContext       = $pars{testContext};
+    my $fixedTestContext  = $pars{fixedTestContext};
     my $description       = $pars{description};
     my $custPointValues   = $pars{customizationPointValues};
     my $statesTransitions = $pars{checks};
@@ -59,12 +59,12 @@ sub new {
     if( ref( $name )) {
         fatal( 'AppTest name name must be a string.' );
     }
-    if( defined( $testContext )) {
-        if( ref( $testContext )) {
+    if( defined( $fixedTestContext )) {
+        if( ref( $fixedTestContext )) {
             fatal( 'AppTest testContext name must be a string.' );
         }
-        unless( $testContext eq '' || $testContext =~ m!^/[-_.a-z0-9%]+$! ) {
-            fatal( 'AppTest testContext must be a single-level relative path starting with a slash, or be empty' );
+        if( $fixedTestContext ne '' && $fixedTestContext !~ m!^/[-_.a-z0-9%]+$! ) {
+            fatal( 'AppTest fixedTestContext must be a single-level relative path starting with a slash, or be empty' );
         }
     }
     if( defined( $pars{hostname} )) {
@@ -114,7 +114,7 @@ sub new {
     $self->{description}              = $description;
     $self->{packageName}              = $packageName;
     $self->{packageVersion}           = UBOS::Host::packageVersion( $packageName );
-    $self->{testContext}              = $testContext;
+    $self->{fixedTestContext}         = $fixedTestContext;
     $self->{customizationPointValues} = $custPointValues;
     $self->{statesTransitions}        = $statesTransitions;
 
@@ -168,38 +168,13 @@ sub description {
 }
 
 ##
-# Obtain the siteId of the site currently being tested.
-# return: the siteId
-sub siteId {
-    my $self = shift;
-
-    return $self->{siteId};
-}
-
-##
-# Obtain the appconfigid of the AppConfiguration currently being tested.
-# return the appconfigid
-sub appConfigId {
-    my $self = shift;
-
-    return $self->{appConfigId};
-}
-
-##
-# Obtain the relative context at which the app will be installed and tested
+# Obtain the relative context at which the app must be installed and tested
+# for this test, regardless of what is specified in the TestPlan.
 # return: the context
-sub getTestContext {
+sub getFixedTestContext {
     my $self = shift;
 
-    return $self->{testContext};
-}
-
-##
-# Determine the apache context directory of the application being tested.
-sub apache2ContextDir {
-    my $self = shift;
-
-    return '/srv/http/sites/' . $self->siteId . $self->getTestContext;
+    return $self->{fixedTestContext};
 }
 
 ##

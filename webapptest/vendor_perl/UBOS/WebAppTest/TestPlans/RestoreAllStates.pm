@@ -35,14 +35,16 @@ use UBOS::Utils;
 ##
 # Instantiate the TestPlan.
 # $options: options for the test plan
+# $test: the test to run
 sub new {
     my $self    = shift;
+    my $test    = shift;
     my $options = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self = $self->SUPER::new( $options );
+    $self = $self->SUPER::new( $test, $options );
 
     if( !exists( $options->{backupfileprefix} ) || !$options->{backupfileprefix} ) {
         fatal( 'Must provide option backupfileprefix' );
@@ -59,20 +61,18 @@ sub new {
 
 ##
 # Run this TestPlan
-# $test: the AppTest to run
 # $scaffold: the Scaffold to use
 # $interactive: if 1, ask the user what to do after each error
 # $verbose: verbosity level from 0 (not verbose) upwards
 sub run {
     my $self        = shift;
-    my $test        = shift;
     my $scaffold    = shift;
     my $interactive = shift;
     my $verbose     = shift;
 
     info( 'Running TestPlan RestoreAllStates' );
 
-    my( $siteJson, $appConfigJson ) = $self->getSiteAndAppConfigJson( $test );
+    my $siteJson = $self->getSiteJson();
 
     my $ret = 1;
     my $success;
@@ -81,9 +81,9 @@ sub run {
     my $quit;
     my $numberRestored = 0;
 
-    my $c = new UBOS::WebAppTest::TestContext( $siteJson, $appConfigJson, $scaffold, $test, $self, $scaffold->getTargetIp(), $verbose );
+    my $c = new UBOS::WebAppTest::TestContext( $scaffold, $self, $verbose );
 
-    my $currentState = $test->getVirginStateTest();
+    my $currentState = $self->getTest()->getVirginStateTest();
     while( 1 ) {
         my $backupFile = $self->{backupFilePrefix} . $currentState->getName() . '.ubos-backup';
         if( -r $backupFile ) {
@@ -120,7 +120,7 @@ sub run {
             $scaffold->undeploy( $siteJson );
         }
 
-        my( $transition, $nextState ) = $test->getTransitionFrom( $currentState );
+        my( $transition, $nextState ) = $self->getTest()->getTransitionFrom( $currentState );
         unless( $transition ) {
             last;
         }
