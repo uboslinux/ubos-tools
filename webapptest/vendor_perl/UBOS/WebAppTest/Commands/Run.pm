@@ -122,9 +122,9 @@ sub run {
                 }
                 info( 'Running AppTest', $appTest->name, 'with test plan', $testPlanPackage );
                 
-                my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $testPlanOptions );
+                my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $appTest, $testPlanOptions );
 
-                my $status = $testPlan->run( $appTest, $scaffold, $interactive, $verbose );
+                my $status = $testPlan->run( $scaffold, $interactive, $verbose );
                 $ret &= $status;
 
                 unless( $status ) {

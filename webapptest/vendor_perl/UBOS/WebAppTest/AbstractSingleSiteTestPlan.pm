@@ -25,43 +25,108 @@ use warnings;
 package UBOS::WebAppTest::AbstractSingleSiteTestPlan;
 
 use base   qw( UBOS::WebAppTest::AbstractTestPlan );
-use fields qw( hostname context siteId appConfigId );
+use fields qw( hostname context siteJson appConfigJson );
 
 use UBOS::Host;
 use UBOS::Logging;
 
 ##
 # Instantiate the TestPlan.
+# $test: the test to run
 # $options: options for the test plan
 sub new {
     my $self    = shift;
+    my $test    = shift;
     my $options = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self->SUPER::new( $options );
+    $self->SUPER::new( $test, $options );
 
-    if( exists( $options->{hostname} )) {
-        unless( $options->{hostname} eq '*' || $options->{hostname} =~ m!^[-.a-z0-9_]+$! ) {
-            fatal( 'Test plan hostname parameter must be a valid hostname, or *' );
+    if( exists( $options->{siteJson} )) {
+        unless( exists( $options->{appConfigJson} )) {
+            fatal( 'If specifying siteJson, you also need to specify appConfigJson' );
         }
-        
-        $self->{hostname} = $options->{hostname};
-        delete $options->{hostname};
-    }
-    if( exists( $options->{context} )) {
-        unless( $options->{context} eq '' || $options->{context} =~ m!^/[-_.a-z0-9%]+$! ) {
-            fatal( 'Test plan context parameter must be a single-level relative path starting with a slash, or be empty' );
+        if( exists( $options->{hostname} )) {
+            fatal( 'If specifying siteJson, you must not specify hostname' );
+        }
+        if( exists( $options->{context} )) {
+            fatal( 'If specifying siteJson, you must not specify context' );
+        }
+        $self->{siteJson}      = $options->{siteJson};
+        $self->{appConfigJson} = $options->{appConfigJson};
+        delete $options->{siteJson};
+        delete $options->{appConfigJson};
+
+    } elsif( exists( $options->{appConfigJson} )) {
+        fatal( 'If specifying appConfigJson, you also need to specify siteJson' );
+
+    } else {
+        if( exists( $options->{hostname} )) {
+            if( $options->{hostname} ne '*' && $options->{hostname} !~ m!^[-.a-z0-9_]+$! ) {
+                fatal( 'Test plan hostname parameter must be a valid hostname, or *' );
+            }
+            
+            $self->{hostname} = $options->{hostname};
+            delete $options->{hostname};
+        }
+        unless( $self->{hostname} ) {
+            my $temp = ref $self;
+            $temp =~ s!^.*::!!;
+            $self->{hostname} = 'testhost-' . lc( $temp ) . UBOS::Utils::randomHex( 8 );    
         }
 
-        $self->{context} = $options->{context};
-        delete $options->{context};
-    }
+        $self->{context} = $test->getFixedTestContext();
+        if( defined( $self->{context} )) {
+            if( defined( $options->{context} )) {
+                error( 'Context', $options->{context}, 'provided as argument to test plan ignored: WebAppTest already defines context', $self->{context} );
+            }
+        } elsif( defined( $options->{context} )) {
+            $self->{context} = $options->{context};
+            delete $options->{context};
+        } else {
+            $self->{context} = '/ctxt-' . UBOS::Utils::randomHex( 8 );    
+        }
+        if( $self->{context} ne '' && $self->{context} !~ m!^/[-_.a-z0-9%]+$! ) {
+            fatal( 'Context parameter must be a single-level relative path starting with a slash, or be empty' );
+        }
 
-    # generate random identifiers, so multiple tests can run at the same time
-    $self->{siteId}      = UBOS::Host::createNewSiteId();
-    $self->{appConfigId} = UBOS::Host::createNewAppConfigId();
+        $self->{appConfigJson} = {
+            'context'     => $self->{context},
+            'appconfigid' => UBOS::Host::createNewAppConfigId(),
+            'appid'       => $test->packageName()
+        };
+
+        my $custPointValues = $test->getCustomizationPointValues();
+        if( $custPointValues ) {
+            my $jsonHash = {};
+            $self->{appConfigJson}->{customizationpoints}->{$test->{packageName}} = $jsonHash;
+
+            foreach my $name ( keys %$custPointValues ) {
+                my $value = $custPointValues->{$name};
+
+                $jsonHash->{$name}->{value} = $value;
+            }
+        }
+
+        my $admin = {
+                'userid'     => 'testuser',
+                'username'   => 'Test User',
+                'credential' => 's3cr3t', # This is of course not secure, but we're trying
+                                          # to be memorable here so the user can easily log
+                                          # on in interactive mode. To be secure, override
+                                          # this method in your test.
+                'email'      => 'testing@ignore.ubos.net'
+        };
+
+        $self->{siteJson} = {
+                'siteid'     => UBOS::Host::createNewSiteId(),
+                'hostname'   => $self->{hostname},
+                'admin'      => $admin,
+                'appconfigs' => [ $self->{appConfigJson} ]
+        };
+    }
 
     return $self;
 }
@@ -69,18 +134,19 @@ sub new {
 ##
 # Run this TestPlan
 # $scaffold: the Scaffold to use
-# $test: the AppTest to run
+# $interactive: if 1, ask the user what to do after each error
+# $verbose: verbosity level from 0 (not verbose) upwards
 sub run {
-    my $self     = shift;
-    my $scaffold = shift;
-    my $test     = shift;
-    
-    error( 'Must override AbstractTestPlan::run' );
-    return 0;
+    my $self        = shift;
+    my $scaffold    = shift;
+    my $interactive = shift;
+    my $verbose     = shift;
+
+    error( 'Must override UBOS::WebAppTest::AbstractSingleSiteTestPlan::run' );
 }
 
 ##
-# Obtain the desired hostname at which to test.
+# Obtain the hostname at which the test is performed.
 # return: hostname
 sub hostname {
     my $self = shift;
@@ -89,111 +155,57 @@ sub hostname {
 }
 
 ##
-# Obtain the site JSON for this test. In the second return value, point to
-# the AppConfiguration in the JSON that is being tested
-# $test: the AppTest
-sub getSiteAndAppConfigJson {
+# Obtain the context at which the test is performed.
+# return: context
+sub context {
     my $self = shift;
-    my $test = shift;
 
-    my $appConfigJson = $self->_createAppConfigurationJson( $test );
-    my $siteJson      = $self->_createSiteJson( $test, $appConfigJson );
-    
-    return( $siteJson, $appConfigJson );
+    return $self->{context};
 }
 
 ##
-# Helper to create the AppConfiguration JSON fragment for this test
-# $test: the AppTest
-# return: the AppConfiguration JSON fragment
-sub _createAppConfigurationJson {
+# Obtain the siteId of the site currently being tested.
+# return: the siteId
+sub siteId {
     my $self = shift;
-    my $test = shift;
 
-    my $testContext = $test->getTestContext(); # if there is any
-    if( defined( $testContext )) {
-        if( defined( $self->{context} )) {
-            error( 'Context', $self->{context}, 'provided as argument to test plan ignored: WebAppTest already defines context', $testContext );
-        }
-    } elsif( defined( $self->{context} )) {
-        $testContext = $self->{context};
-    } else {
-        $testContext = '/ctxt-' . UBOS::Utils::randomHex( 8 );    
-    }
-
-    my $appconfig = {
-        'context'     => $testContext,
-        'appconfigid' => $self->{appConfigId},
-        'appid'       => $test->packageName()
-    };
-
-    my $custPointValues = $test->getCustomizationPointValues();
-    if( $custPointValues ) {
-        my $jsonHash = {};
-        $appconfig->{customizationpoints}->{$test->{packageName}} = $jsonHash;
-
-        foreach my $name ( keys %$custPointValues ) {
-            my $value = $custPointValues->{$name};
-
-            $jsonHash->{$name}->{value} = $value;
-        }
-    }
-    return $appconfig;
+    return $self->{siteJson}->{siteid};
 }
 
 ##
-# Helper to create the Site JSON for this test.
-# $test: the AppTest
-# $appConfigJson: the AppConfiguration JSON fragment for this test
-# return: the site JSON
-sub _createSiteJson {
-    my $self          = shift;
-    my $test          = shift;
-    my $appConfigJson = shift;
+# Obtain the appconfigid of the AppConfiguration currently being tested.
+# return the appconfigid
+sub appConfigId {
+    my $self = shift;
 
-    my $hostname = $self->hostname();
-    unless( $hostname ) {
-        $hostname = ref $self;
-        $hostname =~ s!^.*::!!;
-        $hostname = 'testhost-' . lc( $hostname ) . UBOS::Utils::randomHex( 8 );    
-    }
-
-    my $admin = $self->getAdminData();
-    unless( $admin ) {
-        fatal( ref( $self ), 'method getAdminData() returned undef value' );
-    }
-    foreach my $field ( qw( userid username credential email )) {
-        unless( defined( $admin->{$field} )) {
-            fatal( ref( $self ), 'method getAdminData() returned hash that does not contain field', $field );
-        }
-    }
-    
-    my $site = {
-        'siteid'     => $self->{siteId},
-        'hostname'   => $hostname,
-        'admin'      => $admin,
-        'appconfigs' => [ $appConfigJson ]
-    };
-
-    return $site;
+    return $self->{appConfigJson}->{appconfigid};
 }
 
 ##
-# Overridable method that returns the desired admin information for the Site JSON.
-# This needs to be a hash containing userid, username, credential and email.
+# Obtain the Site JSON for this test.
+# return the Site JSON
+sub getSiteJson {
+    my $self = shift;
+
+    return $self->{siteJson};
+}
+
+##
+# Obtain the AppConfig JSON for this test.
+# return: the AppConfig JSON
+sub getAppConfigJson {
+    my $self = shift;
+
+    return $self->{appConfigJson};
+}
+
+##
+# Returns the admin information for the Site.
+# return: hash
 sub getAdminData {
     my $self = shift;
 
-    return {
-        'userid'     => 'testuser',
-        'username'   => 'Test User',
-        'credential' => 's3cr3t', # This is of course not secure, but we're trying
-                                  # to be memorable here so the user can easily log
-                                  # on in interactive mode. To be secure, override
-                                  # this method in your test.
-        'email'      => 'testing@ignore.ubos.net',
-    };
+    return $self->{siteJson}->{admin};
 }
-
 
 1;
