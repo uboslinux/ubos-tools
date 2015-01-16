@@ -62,7 +62,7 @@ sub run {
     my $interactive = shift;
     my $verbose     = shift;
 
-    info( 'Running TestPlan DeployOnly' );
+    info( 'Running testplan deploy-only' );
 
     my $siteJson = $self->getSiteJson();
 

@@ -62,7 +62,7 @@ sub run {
     my $interactive = shift;
     my $verbose     = shift;
 
-    info( 'Running TestPlan Default' );
+    info( 'Running testplan default' );
 
     my $siteJson = $self->getSiteJson();
 

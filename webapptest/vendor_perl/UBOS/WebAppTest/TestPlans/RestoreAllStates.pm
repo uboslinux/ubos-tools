@@ -70,7 +70,7 @@ sub run {
     my $interactive = shift;
     my $verbose     = shift;
 
-    info( 'Running TestPlan RestoreAllStates' );
+    info( 'Running testplan restore-all-states' );
 
     my $siteJson = $self->getSiteJson();
 
