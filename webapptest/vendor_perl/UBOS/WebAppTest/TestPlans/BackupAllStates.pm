@@ -76,7 +76,7 @@ sub run {
         $self->{backupFilePrefix} = $c->getTest()->packageName() . '-' . $c->getTest()->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
     }
 
-    info( 'Running TestPlan BackupAllStates' );
+    info( 'Running testplan backup-all-states' );
 
     my $siteJson = $self->getSiteJson();
 
