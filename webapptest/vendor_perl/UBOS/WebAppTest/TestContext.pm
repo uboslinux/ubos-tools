@@ -139,13 +139,13 @@ sub apache2ContextDir {
 sub clearHttpSession {
     my $self = shift;
 
-    my $hostName   = $self->hostname;
+    my $hostname   = $self->hostname;
     my $ip         = $self->{ip};
     my $cookieFile = File::Temp->new();
 
     $self->{cookieFile} = $cookieFile->filename;
     
-    $self->{curl} = "curl -s -v --cookie-jar '$cookieFile' -b '$cookieFile' --resolve '$hostName:80:$ip' --resolve '$hostName:443:$ip'";
+    $self->{curl} = "curl -s -v --cookie-jar '$cookieFile' -b '$cookieFile' --resolve '$hostname:80:$ip' --resolve '$hostname:443:$ip'";
     # -v to get HTTP headers
 }
 
