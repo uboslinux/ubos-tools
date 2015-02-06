@@ -80,8 +80,9 @@ sub new {
         $self->{context} = $test->getFixedTestContext();
         if( defined( $self->{context} )) {
             if( defined( $options->{context} )) {
-                error( 'Context', $options->{context}, 'provided as argument to test plan ignored: WebAppTest already defines context', $self->{context} );
+                warning( 'Context', $options->{context}, 'provided as argument to test plan ignored: WebAppTest requires fixed test context', $self->{context} );
             }
+            delete $options->{context};
         } elsif( defined( $options->{context} )) {
             $self->{context} = $options->{context};
             delete $options->{context};
