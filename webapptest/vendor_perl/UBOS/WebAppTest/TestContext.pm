@@ -992,7 +992,7 @@ sub error {
     my $self = shift;
     my @args = @_;
 
-    my $msg = join( ' ', grep { !/^\s*$/ } @args );
+    my $msg = join( ' ', grep { defined( $_ ) && !/^\s*$/ } @args );
 
     if( $self->{verbose} ) {
         # Only report error at the end if not verbose at all
