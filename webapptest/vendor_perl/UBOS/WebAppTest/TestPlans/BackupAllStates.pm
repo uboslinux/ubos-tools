@@ -73,7 +73,7 @@ sub run {
     my $verbose     = shift;
 
     unless( exists( $self->{backupFilePrefix} )) {
-        $self->{backupFilePrefix} = $c->getTest()->packageName() . '-' . $c->getTest()->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
+        $self->{backupFilePrefix} = $self->getTest()->packageName() . '-' . $self->getTest()->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
     }
 
     info( 'Running testplan backup-all-states' );
