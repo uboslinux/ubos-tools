@@ -22,7 +22,7 @@
 #   with its display available via VNC, and this password
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,26 +100,26 @@ sub setup {
         fatal( 'Vmdkfile file exists already:', $options->{vmdkfile} );
     }
 
-    if( exists( $options->{'ubos-admin'} )) {
-        unless( $options->{'ubos-admin'} ) {
-            fatal( 'Value for ubos-admin cannot be empty' );
+    if( exists( $options->{'shepherd'} )) {
+        unless( $options->{'shepherd'} ) {
+            fatal( 'Value for shepherd cannot be empty' );
         }
-        $self->{sshUser} = $options->{'ubos-admin'};
+        $self->{sshUser} = $options->{'shepherd'};
     } else {
-        $self->{sshUser} = 'ubos-admin';
+        $self->{sshUser} = 'shepherd';
     }
 
-    unless( exists( $options->{'ubos-admin-public-key-file'} ) && $options->{'ubos-admin-public-key-file'} ) {
-        fatal( 'No value provided for ubos-admin-public-key-file' );
+    unless( exists( $options->{'shepherd-public-key-file'} ) && $options->{'shepherd-public-key-file'} ) {
+        fatal( 'No value provided for shepherd-public-key-file' );
     }
-    unless( -r $options->{'ubos-admin-public-key-file'} ) {
-        fatal( 'Cannot find or read file', $options->{'ubos-admin-public-key-file'} );
+    unless( -r $options->{'shepherd-public-key-file'} ) {
+        fatal( 'Cannot find or read file', $options->{'shepherd-public-key-file'} );
     }
-    unless( exists( $options->{'ubos-admin-private-key-file'} ) && $options->{'ubos-admin-private-key-file'} ) {
-        fatal( 'No value provided for ubos-admin-private-key-file' );
+    unless( exists( $options->{'shepherd-private-key-file'} ) && $options->{'shepherd-private-key-file'} ) {
+        fatal( 'No value provided for shepherd-private-key-file' );
     }
-    unless( -r $options->{'ubos-admin-private-key-file'} ) {
-        fatal( 'Cannot find or read file', $options->{'ubos-admin-private-key-file'} );
+    unless( -r $options->{'shepherd-private-key-file'} ) {
+        fatal( 'Cannot find or read file', $options->{'shepherd-private-key-file'} );
     }
 
     if( exists( $options->{ram} ) && $options->{ram} !~ m!^\d+$! ) {
@@ -132,8 +132,8 @@ sub setup {
 
     $self->{vmdkTemplate}      = $options->{vmdktemplate};
     $self->{vmdkFile}          = $options->{vmdkfile};
-    $self->{sshPublicKeyFile}  = $options->{'ubos-admin-public-key-file'};
-    $self->{sshPrivateKeyFile} = $options->{'ubos-admin-private-key-file'};
+    $self->{sshPublicKeyFile}  = $options->{'shepherd-public-key-file'};
+    $self->{sshPrivateKeyFile} = $options->{'shepherd-private-key-file'};
     my $ram                    = $options->{ram} || 512;
     my $vncSecret              = $options->{vncsecret};
 
@@ -222,7 +222,7 @@ sub setup {
         }
     }
 
-    debug( 'Creating cloud-init config disk' );
+    debug( 'Creating ubos-staff config disk' );
     $self->{configVmdkFile} = $options->{vmdkfile} . '-config.vmdk';
     $self->createConfigDisk( $self->{configVmdkFile} );
 
@@ -353,7 +353,7 @@ sub createConfigDisk {
     if( UBOS::Utils::myexec( "dd if=/dev/zero 'of=$image' bs=1 count=0 seek=2M", undef, \$out, \$err )) {
         fatal( 'dd failed', $err );
     }
-    if( UBOS::Utils::myexec( "mkfs.vfat -n cidata $image", undef, \$out, \$err )) {
+    if( UBOS::Utils::myexec( "mkfs.vfat -n UBOS-STAFF $image", undef, \$out, \$err )) {
         fatal( 'mkfs.vfat failed', $err );
     }
     UBOS::Utils::mkdir( $mount );
@@ -366,19 +366,9 @@ sub createConfigDisk {
     $sshPubKey =~ s!^\s+!!;
     $sshPubKey =~ s!\s+$!!;
 
-    UBOS::Utils::saveFile( "$mount/user-data", <<USERDATA, 0640, 'root', 'root' );
-#cloud-config
-users:
- - name: ubos-admin
-   gecos: UBOS administrative user
-   ssh-authorized-keys:
-    - $sshPubKey
-   sudo: "ALL=(ALL) NOPASSWD: /usr/bin/ubos-admin *, /usr/bin/bash *, /usr/bin/install *"
-USERDATA
+    UBOS::Utils::mkdirDashP( "$mount/shepherd/ssh/" );
 
-    UBOS::Utils::saveFile( "$mount/meta-data", <<METADATA, 0640, 'root', 'root' );
-instance-id: $vmName
-METADATA
+    UBOS::Utils::saveFile( "$mount/shepherd/ssh/id_rsa.pub", $sshPubKey, 0640, 'root', 'root' );
 
     if( UBOS::Utils::myexec( "sudo umount '$mount'", undef, \$out, \$err )) {
         fatal( 'umount failed', $err );
@@ -397,13 +387,13 @@ sub help {
     return <<TXT;
 A scaffold that runs tests on the local machine in a VirtualBox virtual machine.
 Options:
-    vmdktemplate                (required) -- template for the VMDK file
-    vmdkfile                    (optional) -- local copy of the VMDK file on which tests is performed
-    ubos-admin                  (optional) -- name of the user on the virtual machine that can execute ubos-admin over ssh
-    ubos-admin-public-key-file  (required) -- name of the file that contains the public key for ubos-admin ssh access
-    ubos-admin-private-key-file (required) -- name of the file that contains the private key for ubos-admin ssh access
-    ram                         (optional) -- RAM in MB
-    vncsecret                   (optional) -- if given, the virtual machine will be accessible over VNC with this password
+    vmdktemplate              (required) -- template for the VMDK file
+    vmdkfile                  (optional) -- local copy of the VMDK file on which tests is performed
+    shepherd                  (optional) -- name of the user on the virtual machine that can execute ubos-admin over ssh
+    shepherd-public-key-file  (required) -- name of the file that contains the public key for ubos-admin ssh access
+    shepherd-private-key-file (required) -- name of the file that contains the private key for ubos-admin ssh access
+    ram                       (optional) -- RAM in MB
+    vncsecret                 (optional) -- if given, the virtual machine will be accessible over VNC with this password
 TXT
 }
                     
