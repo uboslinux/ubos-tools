@@ -8,19 +8,6 @@
 #    download new packages if the test requires that.
 # 2: uses hostonly, so the host can do HTTP get on web apps
 #
-# The following options can be provied:
-# * vmdktemplate (required): name of a VMDK file containing a VirtualBox
-#   virtual Indie Box. This file will only be copied as a template, and
-#   not modified by tests
-# * vmdkfile (optional): name of the copy of the VMDK template file
-# * ram (optional): amount of RAM to allocate to the guest
-# * ubos-admin-private-key-file and ubos-admin-public-key-file (required):
-#   private and public ssh key for the ubos-admin user on the guest, so the
-#   scaffold can create an ubos-admin user and invoke 'sudo ubos-admin' on
-#   the guest
-# * vncsecret (optional): if provided, the guest will be instantiated
-#   with its display available via VNC, and this password
-#
 # This file is part of webapptest.
 # (C) 2012-2015 Indie Computing Corp.
 #
@@ -366,7 +353,7 @@ sub createConfigDisk {
     $sshPubKey =~ s!^\s+!!;
     $sshPubKey =~ s!\s+$!!;
 
-    UBOS::Utils::mkdirDashP( "$mount/shepherd/ssh/" );
+    UBOS::Utils::myexec( "sudo mkdir -p $mount/shepherd/ssh/" );
 
     UBOS::Utils::saveFile( "$mount/shepherd/ssh/id_rsa.pub", $sshPubKey, 0640, 'root', 'root' );
 
