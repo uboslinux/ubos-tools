@@ -3,15 +3,8 @@
 # A scaffold for running tests on a remote machine accessible via ssh.
 # This test neither sets up, nor tears down, the remote machine.
 #
-# The following options can be provied:
-# * host (required): hostname or IP address of the machine that will run the tests
-# * user (required): user name of the administrative user that will invoke
-#   'sudo ubos-admin'
-# * privatekeyfile (optional): name of a file that contains the private ssh key
-#   to use
-#
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -61,20 +54,20 @@ sub setup {
     }
     $self->{sshHost} = $options->{host};
 
-    if( exists( $options->{'ubos-admin'} )) {
-        unless( $options->{'ubos-admin'} ) {
-            fatal( 'Value for ubos-admin cannot be empty' );
+    if( exists( $options->{'shepherd'} )) {
+        unless( $options->{'shepherd'} ) {
+            fatal( 'Value for shepherd cannot be empty' );
         }
-        $self->{sshUser} = $options->{'ubos-admin'};
+        $self->{sshUser} = $options->{'shepherd'};
     } else {
-        $self->{sshUser} = 'ubos-admin';
+        $self->{sshUser} = 'shepherd';
     }
 
-    if( exists( $options->{'ubos-admin-private-key-file'} )) {
-        unless( -r $options->{'ubos-admin-private-key-file'} ) {
-            fatal( 'Cannot read file', $options->{'ubos-admin-private-key-file'} );
+    if( exists( $options->{'shepherd-private-key-file'} )) {
+        unless( -r $options->{'shepherd-private-key-file'} ) {
+            fatal( 'Cannot read file', $options->{'shepherd-private-key-file'} );
         }
-        $self->{sshPrivateKeyFile} = $options->{'ubos-admin-private-key-file'};
+        $self->{sshPrivateKeyFile} = $options->{'shepherd-private-key-file'};
     }
 
     info( 'Creating Scaffold Ssh' );
@@ -101,9 +94,9 @@ sub help {
     return <<TXT;
 A scaffold that runs tests on the remote machine that is already set up, and accessible via ssh.
 Options:
-    host                        (required) -- hostname or IP address of the remote machine on which tests are run
-    ubos-admin                  (optional) -- name of the user on the remote machine that can execute ubos-admin over ssh
-    ubos-admin-private-key-file (optional) -- name of the file that contains the private key for  ubos-adminssh access
+    host                      (required) -- hostname or IP address of the remote machine on which tests are run
+    shepherd                  (optional) -- name of the user on the remote machine that can execute ubos-admin over ssh
+    shepherd-private-key-file (optional) -- name of the file that contains the private key for  ubos-adminssh access
 TXT
 }
 
