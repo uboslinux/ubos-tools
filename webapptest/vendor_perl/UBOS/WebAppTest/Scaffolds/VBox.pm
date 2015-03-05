@@ -121,7 +121,7 @@ sub setup {
     $self->{vmdkFile}          = $options->{vmdkfile};
     $self->{sshPublicKeyFile}  = $options->{'shepherd-public-key-file'};
     $self->{sshPrivateKeyFile} = $options->{'shepherd-private-key-file'};
-    my $ram                    = $options->{ram} || 512;
+    my $ram                    = $options->{ram} || 1024;
     my $vncSecret              = $options->{vncsecret};
 
     info( 'Creating Scaffold VBox' );
