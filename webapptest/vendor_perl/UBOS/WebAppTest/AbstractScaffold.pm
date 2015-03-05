@@ -309,8 +309,12 @@ ADD
 CMD
     my $out;
     my $err;
-    if( $self->invokeOnTarget( 'perl', $cmd, \$out, \$err )) {
+    if( $self->invokeOnTarget( 'sudo /bin/bash -c /usr/bin/perl', $cmd, \$out, \$err )) {
         error( "Failed to edit /etc/hosts file to add depot.ubos.net:", $out, $err );
+        return 0;
+
+    } elsif( $err =~ /Respect the privacy of others/ ) {
+        error( "Failed to edit /etc/hosts file to add depot.ubos.net. sudo problem:", $out, $err );
         return 0;
     }
     return 1;
