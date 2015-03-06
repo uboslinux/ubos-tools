@@ -162,8 +162,8 @@ sub setup {
     debug( 'Configuring hostonly if' );
     # VBoxManage hostonlyif remove vboxnet0 manages to hang the machine! So we try not to do that any more.
     
-    UBOS::Utils::myexec( "ip link show vboxnet0 > /dev/null || VBoxManage hostonlyif create" );
-    if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig $hostonlyInterface --ip 192.168.56.1" )) {
+    UBOS::Utils::myexec( "ip link show " . $self->{hostonlyInterface} . " > /dev/null || VBoxManage hostonlyif create" );
+    if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig " . $self->{hostonlyInterface} . " --ip 192.168.56.1" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
@@ -191,16 +191,16 @@ sub setup {
     }
 
     debug( 'Setting up host-only networking' );
-    if( UBOS::Utils::myexec( "ip link show dev $hostonlyInterface", undef, \$out, \$err )) {
+    if( UBOS::Utils::myexec( "ip link show dev " . $self->{hostonlyInterface}, undef, \$out, \$err )) {
         # doesn't exist
         if( UBOS::Utils::myexec( "VBoxManage hostonlyif create" )) {
             error( 'VBoxManage hostonlyif create failed' );
         }
-        if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig $hostonlyInterface --ip 192.168.56.1" )) {
+        if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig " . $self->{hostonlyInterface} . " --ip 192.168.56.1" )) {
             error( 'VBoxManage hostonlyif ipconfig failed' );
         }
     }
-    if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --hostonlyadapter2 $hostonlyInterface" )) {
+    if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --hostonlyadapter2 " . $self->{hostonlyInterface} )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
