@@ -3,7 +3,7 @@
 # Default test plan: walks through the states and transitions, and attempts to restore.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,8 +26,10 @@ package UBOS::WebAppTest::TestPlans::Default;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
 use fields;
+
 use UBOS::Logging;
 use UBOS::WebAppTest::TestContext;
+use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
 
 ##
@@ -76,7 +78,7 @@ sub run {
     do {
         $success = $scaffold->deploy( $siteJson );
 
-        ( $repeat, $abort, $quit ) = $self->askUser( 'Performed deployment', $interactive, $success, $ret );
+        ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed deployment', $interactive, $success, $ret );
 
     } while( $repeat );
     $ret      &= $success;
@@ -97,7 +99,7 @@ sub run {
             do {
                 $success = $currentState->check( $c );
 
-                ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
+                ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
 
             } while( $repeat );
             $ret &= $success;
@@ -117,7 +119,7 @@ sub run {
                 do {
                     $success = $transition->execute( $c );
 
-                    ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateTransition ' . $transition->getName(), $interactive, $success, $ret );
+                    ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateTransition ' . $transition->getName(), $interactive, $success, $ret );
 
                 } while( $repeat );
                 $ret &= $success;
@@ -148,7 +150,7 @@ sub run {
                     $scaffold->undeploy( $siteJson );
                     $success = $scaffold->restore( $siteJson, $currentBackup );
                 
-                    ( $repeat, $abort, $quit ) = $self->askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );
+                    ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );
 
                 } while( $repeat );
                 $ret &= $success;
@@ -161,7 +163,7 @@ sub run {
                 do {
                     $success = $currentState->check( $c );
 
-                    ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
+                    ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
 
                 } while( $repeat );
                 $ret &= $success;
@@ -185,7 +187,7 @@ sub run {
                     $scaffold->undeploy( $siteJson );
                     $success = $scaffold->restore( $siteJson, $currentBackup );
                 
-                    ( $repeat, $abort, $quit ) = $self->askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );
+                    ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );
 
                 } while( $repeat );
                 $ret &= $success;
@@ -195,7 +197,7 @@ sub run {
                     do {
                         $success = $currentState->check( $c );
 
-                        ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
+                        ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
 
                     } while( $repeat );
                     $ret &= $success;

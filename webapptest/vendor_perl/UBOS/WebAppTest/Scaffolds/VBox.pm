@@ -31,22 +31,13 @@ use warnings;
 package UBOS::WebAppTest::Scaffolds::VBox;
 
 use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
-use fields qw( vmdkTemplate vmdkFile sshPublicKeyFile vmName configVmdkFile );
+use fields qw( vmdkTemplate vmdkFile sshPublicKeyFile vmName configVmdkFile
+               bootMaxSeconds keysMaxSeconds shutdownMaxSeconds
+               hostonlyInterface );
 
 use File::Temp;
 use UBOS::Logging;
 use UBOS::Utils;
-
-# name of the hostonly interface
-my $hostonlyInterface = 'vboxnet0';
-
-# how many seconds until we give up waiting for boot
-my $bootMaxSeconds = 240;
-# how many seconds until we give up that pacman keys have been initialized
-my $keysMaxSeconds = 60;
-
-# how many seconds until we give up waiting for shutdown
-my $shutdownMaxSeconds = 120;
 
 ##
 # Instantiate the Scaffold.
@@ -115,6 +106,30 @@ sub setup {
 
     if( exists( $options->{vncsecret} ) && !$options->{vncsecret} ) {
         fatal( 'Vncsecret cannot be empty' );
+    }
+
+    if( exists( $options->{'hostonly-interface'} )) {
+        $self->{hostonlyInterface} = $options->{'hostonly-interface'};
+    } else {
+        $self->{hostonlyInterface} = 'vboxnet0';
+    }
+
+    if( exists( $options->{'boot-max-seconds'} )) {
+        $self->{bootMaxSeconds} = $options->{'boot-max-seconds'};
+    } else {
+        $self->{bootMaxSeconds} = 240;
+    }
+
+    if( exists( $options->{'keys-max-seconds'} )) {
+        $self->{keysMaxSeconds} = $options->{'keys-max-seconds'};
+    } else {
+        $self->{keysMaxSeconds} = 240;
+    }
+
+    if( exists( $options->{'shutdown-max-seconds'} )) {
+        $self->{shutdownMaxSeconds} = $options->{'shutdown-max-seconds'};
+    } else {
+        $self->{shutdownMaxSeconds} = 240;
     }
 
     $self->{vmdkTemplate}      = $options->{vmdktemplate};
@@ -253,7 +268,7 @@ sub teardown {
 
     my $out;
     my $err;
-    for( my $count = 0 ; $count < $shutdownMaxSeconds ; ++$count ) {
+    for( my $count = 0 ; $count < $self->{shutdownMaxSeconds} ; ++$count ) {
         if( UBOS::Utils::myexec( "VBoxManage showvminfo '$vmName' --machinereadable", undef, \$out )) {
             error( 'VBoxManage showvminfo failed' );
         }
@@ -287,7 +302,7 @@ sub waitUntilTargetReady {
 
     my $vmName = $self->{vmName};
     my $ret    = 0;
-    for( my $count = 0 ; $count < $bootMaxSeconds ; $count += 5 ) {
+    for( my $count = 0 ; $count < $self->{bootMaxSeconds} ; $count += 5 ) {
         # This is on the hostonly interface
         my $out;
         if( UBOS::Utils::myexec( "VBoxManage guestproperty get '$vmName' /VirtualBox/GuestInfo/Net/1/V4/IP", undef, \$out )) {
@@ -305,7 +320,7 @@ sub waitUntilTargetReady {
     unless( $ret ) {
         return $ret;
     }
-    for( my $count = 0 ; $count < $keysMaxSeconds ; $count += 5  ) {
+    for( my $count = 0 ; $count < $self->{keysMaxSeconds} ; $count += 5  ) {
         my $out;
         $self->invokeOnTarget( 'ls -l /etc/pacman.d/gnupg/pubring.gpg', undef, \$out );
         # format: -rw-r--r-- 1 root root 450806 Aug 31 20:26 /etc/pacman.d/gnupg/pubring.gpg
@@ -381,6 +396,10 @@ Options:
     shepherd-private-key-file (required) -- name of the file that contains the private key for ubos-admin ssh access
     ram                       (optional) -- RAM in MB
     vncsecret                 (optional) -- if given, the virtual machine will be accessible over VNC with this password
+    hostonly-interface        (optional) -- name of the "hostonly" networking interface to connect the VM to
+    boot-max-seconds          (optional) -- the maximum number of seconds to wait for the boot to complete
+    keys-max-seconds          (optional) -- the maximum number of seconds to wait until keys have been generated
+    shutdown-max-seconds      (optional) -- the maximum number of seconds to wait until shutdown is complete
 TXT
 }
                     

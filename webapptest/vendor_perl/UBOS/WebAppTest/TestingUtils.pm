@@ -3,7 +3,7 @@
 # Collection of utility methods for web app testing.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -143,6 +143,65 @@ sub findAppTestInDirectory {
         }
     }        
     return undef;
+}
+
+##
+# If interactive, ask the user what to do next. If non-interactive, proceed.
+# $question: the question to ask
+# $interactive: if false, continue and do not ask
+# $successOfLastStep: did the most recent step succeed?
+# $successOfPlanSoFar: if true, all steps have been successful so far
+sub askUser {
+    my $question           = shift;
+    my $interactive        = shift;
+    my $successOfLastStep  = shift;
+    my $successOfPlanSoFar = shift;
+
+    my $repeat = 0;
+    my $abort  = 0;   
+    my $quit   = !$successOfLastStep;
+
+    if( $interactive ) {
+        my $fullQuestion;
+        if( $question ) {
+            $fullQuestion = $question . ' (' . ( $successOfLastStep ? 'success' : 'failure' ) . ').';
+        } else {
+            $fullQuestion = 'Last step ' . ( $successOfLastStep ? 'succeeded' : 'failed' ) . '.';
+        }
+        $fullQuestion .= " C(ontinue)/R(epeat)/A(bort)/Q(uit)? ";
+        
+        while( 1 ) {
+            print STDERR $fullQuestion;
+
+            my $userinput = <STDIN>;
+            if( $userinput =~ /^\s*c\s*$/i ) {
+                $repeat = 0;
+                $abort  = 0;
+                $quit   = 0;
+                last;
+            }
+            if( $userinput =~ /^\s*r\s*$/i ) {
+                $repeat = 1;
+                $abort  = 0;
+                $quit   = 0;
+                last;
+            }
+            if( $userinput =~ /^\s*a\s*$/i ) {
+                $repeat = 0;
+                $abort  = 1;
+                $quit   = 0;
+                last;
+            }
+            if( $userinput =~ /^\s*q\s*$/i ) {
+                $repeat = 0;
+                $abort  = 0;
+                $quit   = 1;
+                last;
+            }
+        }
+    }
+
+    return( $repeat, $abort, $quit );
 }
 
 1;

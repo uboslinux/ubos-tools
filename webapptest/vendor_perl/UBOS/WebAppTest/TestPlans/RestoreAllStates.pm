@@ -5,7 +5,7 @@
 # typically created by BackupAllStates.pm.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,8 +28,10 @@ package UBOS::WebAppTest::TestPlans::RestoreAllStates;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
 use fields qw( backupFilePrefix );
+
 use UBOS::Logging;
 use UBOS::WebAppTest::TestContext;
+use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
 
 ##
@@ -92,7 +94,7 @@ sub run {
 
             do {
                 $success = $scaffold->restoreFromLocal( $siteJson, $backupFile );
-                ( $repeat, $abort, $quit ) = $self->askUser( 'Restored backup for ' . $currentState->getName(), $interactive, $success, $ret );
+                ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Restored backup for ' . $currentState->getName(), $interactive, $success, $ret );
 
             } while( $repeat );
             $ret &= $success;
@@ -104,7 +106,7 @@ sub run {
             do {
                 $success = $currentState->check( $c );
 
-                ( $repeat, $abort, $quit ) = $self->askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
+                ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
 
             } while( $repeat );
             $ret &= $success;
