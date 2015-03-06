@@ -29,8 +29,10 @@ package UBOS::WebAppTest::TestPlans::WellKnown;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
 use fields;
+
 use UBOS::Logging;
 use UBOS::WebAppTest::TestContext;
+use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
 
 ##
@@ -124,7 +126,7 @@ ICO
         do {
             $success = $scaffold->deploy( $thisSiteJson );
 
-            ( $repeat, $abort, $quit ) = $self->askUser(
+            ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser(
                     'Performed deployment ' . ( $thisSiteJson == $siteJsonWithWellKnown ? 'with' : 'without' ) . ' well-known site fields',
                     $interactive, $success, $ret );
         } while( $repeat );
@@ -140,7 +142,7 @@ ICO
             do {
                 $success = $currentState->checkWellKnown( $c, $thisSiteJson );
 
-                ( $repeat, $abort, $quit ) = $self->askUser(
+                ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser(
                     'Performed check ' . ( $thisSiteJson == $siteJsonWithWellKnown ? 'with' : 'without' ) . ' well-known site fields',
                     $interactive, $success, $ret );
 

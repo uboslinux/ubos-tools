@@ -3,7 +3,7 @@
 # Command that runs a TestSuite.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ use Getopt::Long qw( GetOptionsFromArray );
 use UBOS::Host;
 use UBOS::Logging;
 use UBOS::Utils;
+use UBOS::WebAppTest::TestingUtils;
 
 ##
 # Execute this command.
@@ -103,10 +104,28 @@ sub run {
     }
     
     my $ret = 1;
+    my $success;
+    my $repeat;
+    my $abort;
+    my $quit;
+    my $scaffold;
 
+    do {
+        $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
+        if( $scaffold && $scaffold->isOk ) {
+            $success = 1;
 
-    my $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
-    if( $scaffold && $scaffold->isOk ) {
+        } else {
+            $success = 0;
+
+            error( 'Setting up scaffold failed.' );
+
+        }
+        ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Setting up scaffold', $interactive, $success, $ret );
+
+    } while( $repeat );
+
+    if( $success && !$abort && !$quit ) {
         my $printTest     = @appTestsToRun > 1;
         my $printTestPlan = ( keys %testPlanPackagesWithArgsToRun ) > 1;
 
@@ -129,17 +148,15 @@ sub run {
 
                 unless( $status ) {
                     error( 'Test', $appTest->name, 'failed.' );
+
                 } elsif( $verbose > 0 ) {
                     print "Test passed.\n";
                 }
             }
         }
-    } else {
-        error( 'Setting up scaffold failed.' );
-        $ret = 0;
     }
 
-    if( $scaffold ) {
+    if( $scaffold && !$abort ) {
         $scaffold->teardown();
     }
 
