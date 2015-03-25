@@ -31,6 +31,8 @@ use UBOS::Logging qw( debug );
 use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
 
+my $maxWaitTillReady = 60; # Number of seconds to wait until 503 goes away
+
 #
 # This file is organized as follows:
 # (1) Constructor
@@ -838,6 +840,44 @@ sub notStatus {
     return 1;
 }
 
+##
+# Wait for an HTTP status other than 503 -- service unavailable
+# $url: URL to access
+# return: 1 if successful
+sub absWaitForReady {
+    my $self = shift;
+    my $url  = shift;
+
+    debug( 'Waiting until ready' );
+
+    my $until = time() + $maxWaitTillReady;
+    while( 1 ) {
+        my $response = $self->get( $url );   
+        if( !$self->status( $response, '503' )) {
+            debug( 'Done waiting' );
+            return 1;
+        }
+        debug( 'Still 503, continuing to wait' );
+
+        if( time() >= $until ) {
+            last;
+        }
+        sleep 5;
+    }
+    return 0;
+}
+
+##
+# Wait for an HTTP status other than 503 -- service unavailable
+# $relativeUrl: appended to the application's context URL
+# return: 1 if successful
+sub waitForReady {
+    my $self        = shift;
+    my $relativeUrl = shift;
+
+    return $self->absWaitForReady( $self->context() . $relativeUrl );
+}
+    
 ##### (4) File testing methods #####
 
 ##
