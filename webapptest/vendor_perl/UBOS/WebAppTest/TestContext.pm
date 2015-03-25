@@ -848,23 +848,25 @@ sub absWaitForReady {
     my $self = shift;
     my $url  = shift;
 
-    debug( 'Waiting until ready' );
-
     my $until = time() + $maxWaitTillReady;
+    debug( 'Waiting until ready: ', $maxWaitTillReady, 'sec' );
+
     while( 1 ) {
         my $response = $self->get( $url );   
+        my $delta = $until - time();
+
         if( !$self->status( $response, '503' )) {
-            debug( 'Done waiting' );
+            debug( 'Done waiting at:', $delta, 'sec' );
             return 1;
         }
-        debug( 'Still 503, continuing to wait' );
 
-        if( time() >= $until ) {
-            last;
+        if( $delta < 0 ) {
+            debug( 'Returning at: ', $delta, 'sec' );
+            return 0;
         }
+        debug( 'Still 503, continuing to wait: ', $delta, 'sec' );
         sleep 5;
     }
-    return 0;
 }
 
 ##
