@@ -3,7 +3,7 @@
 # Factors out operations common to many kinds of TestPlans that use a single site.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,10 +34,12 @@ use UBOS::Logging;
 # Instantiate the TestPlan.
 # $test: the test to run
 # $options: options for the test plan
+# $tlsData: if given, the TLS section of the Site JSON to use
 sub new {
     my $self    = shift;
     my $test    = shift;
     my $options = shift;
+    my $tlsData = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
@@ -128,6 +130,9 @@ sub new {
                 'appconfigs' => [ $self->{appConfigJson} ]
         };
     }
+    if( defined( $tlsData )) {
+        $self->{siteJson}->{tls} = $tlsData;
+    }
 
     return $self;
 }
@@ -144,6 +149,19 @@ sub run {
     my $verbose     = shift;
 
     error( 'Must override UBOS::WebAppTest::AbstractSingleSiteTestPlan::run' );
+}
+
+##
+# Determine the protocol through which the test is performed.
+# return: http, or https
+sub protocol {
+    my $self = shift;
+
+    if( exists( $self->{siteJson}->{tls} )) {
+        return 'https';
+    } else {
+        return 'http';
+    }
 }
 
 ##

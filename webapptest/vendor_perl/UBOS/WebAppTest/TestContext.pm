@@ -74,15 +74,6 @@ sub new {
 ##### (2) General methods #####
 
 ##
-# Determine the hostname of the application being tested
-# return: hostname
-sub hostname {
-    my $self = shift;
-
-    return $self->{testPlan}->hostname();
-}
-
-##
 # Determine the test being run.
 # return: the test
 sub getTest {
@@ -110,6 +101,24 @@ sub getTestPlan {
 }
 
 ##
+# Determine the protocol of the application being tested
+# return: http, or https
+sub protocol {
+    my $self = shift;
+
+    return $self->{testPlan}->protocol();
+}
+
+##
+# Determine the hostname of the application being tested
+# return: hostname
+sub hostname {
+    my $self = shift;
+
+    return $self->{testPlan}->hostname();
+}
+
+##
 # Determine the context path of the application being tested
 # return: context, e.g. /foo
 sub context {
@@ -124,7 +133,7 @@ sub context {
 sub fullContext {
     my $self = shift;
 
-    my $url = 'http://' . $self->hostname . $self->context();
+    my $url = $self->protocol() . '://' . $self->hostname() . $self->context();
     return $url;
 }
 
@@ -147,7 +156,7 @@ sub clearHttpSession {
 
     $self->{cookieFile} = $cookieFile->filename;
     
-    $self->{curl} = "curl -s -v --cookie-jar '$cookieFile' -b '$cookieFile' --resolve '$hostname:80:$ip' --resolve '$hostname:443:$ip'";
+    $self->{curl} = "curl -s -v --cookie-jar '$cookieFile' -b '$cookieFile' --resolve '$hostname:80:$ip' --resolve '$hostname:443:$ip' --insecure";
     # -v to get HTTP headers
 }
 
@@ -169,7 +178,7 @@ sub absGet {
                 'error' => $self->error( 'Cannot access URL without protocol or leading slash:', $url )
             };
         }
-        $url = 'http://' . $self->hostname . $url;
+        $url = $self->protocol() . '://' . $self->hostname() . $url;
     }
 
     debug( 'Accessing url', $url );
@@ -219,7 +228,7 @@ sub absPost {
             $self->error( 'Cannot access URL without protocol or leading slash:', $url );
             return {};
         }
-        $url = 'http://' . $self->hostname . $url;
+        $url = $self->protocol() . '://' . $self->hostname() . $url;
     }
 
     debug( 'Posting to url', $url );
