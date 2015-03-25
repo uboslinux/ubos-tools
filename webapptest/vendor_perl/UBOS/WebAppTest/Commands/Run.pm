@@ -43,14 +43,22 @@ sub run {
     my $logConfigFile = undef;
     my $scaffoldOpt;
     my @testPlanOpts;
+    my $tlsKeyFile;
+    my $tlsCrtFile;
+    my $tlsCrtChainFile;
+    my $tlsData = undef;
+
     my $parseOk = GetOptionsFromArray(
             \@args,
-            'interactive' => \$interactive,
-            'verbose+'    => \$verbose,
-            'logConfig=s' => \$logConfigFile,
-            'scaffold=s'  => \$scaffoldOpt,
-            'testplan=s'  => \@testPlanOpts );
-
+            'interactive'       => \$interactive,
+            'verbose+'          => \$verbose,
+            'logConfig=s'       => \$logConfigFile,
+            'scaffold=s'        => \$scaffoldOpt,
+            'testplan=s'        => \@testPlanOpts,
+            'tlskeyfile=s'      => \$tlsKeyFile,
+            'tlscrtfile=s'      => \$tlsCrtFile,
+            'tlscrtchainfile=s' => \$tlsCrtChainFile );
+    
     UBOS::Logging::initialize( 'webapptest', 'run', $verbose, $logConfigFile );
 
     unless( $parseOk ) {
@@ -58,6 +66,27 @@ sub run {
     }
     unless( @args ) {
         fatal( 'Must provide name of at least one test suite.' );
+    }
+    my $tlsCount = 0;
+    foreach my $arg ( $tlsKeyFile, $tlsCrtFile, $tlsCrtChainFile ) {
+        if( $arg ) {
+            ++$tlsCount;
+            unless( -r $arg ) {
+                fatal( 'Cannot read file', $arg );
+            }
+        }
+    }
+    if( $tlsCount == 1 || $tlsCount == 2 ) {
+        fatal( 'If providing TLS options, must provide all three options: tlskeyfile, tlscrtfile, tlscrtchainfile' );
+    }
+    if( $tlsKeyFile ) {
+        $tlsData->{key} = UBOS::Utils::slurpFile( $tlsKeyFile );
+    }
+    if( $tlsCrtFile ) {
+        $tlsData->{crt} = UBOS::Utils::slurpFile( $tlsCrtFile );
+    }
+    if( $tlsCrtChainFile ) {
+        $tlsData->{crtchain} = UBOS::Utils::slurpFile( $tlsCrtChainFile );
     }
 
     unless( $scaffoldOpt ) {
@@ -141,7 +170,7 @@ sub run {
                 }
                 info( 'Running AppTest', $appTest->name, 'with test plan', $testPlanPackage );
                 
-                my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $appTest, $testPlanOptions );
+                my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $appTest, $testPlanOptions, $tlsData );
 
                 my $status = $testPlan->run( $scaffold, $interactive, $verbose );
                 $ret &= $status;
@@ -169,7 +198,7 @@ sub run {
 sub synopsisHelp {
     return {
         <<SSS => <<HHH
-    [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold[:scaffoldoption]...>] [--testplan <testplan>] <apptest>...
+    [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold>] [--testplan <testplan>] [--tlskeyfile <tlskeyfile> --tlscrtfile <tlscrtfile> --tlscrtchainfile <tlscrtchainfile> ] <apptest>...
 SSS
     Run the test apptest.
     --interactive: stop at important points and wait for user input
@@ -179,6 +208,9 @@ SSS
     <testplan>: use this named testplan instead of the default. If given as
                 "abc:def=ghi:jkl=mno", "abc" represents the name of the testplan,
                 and "def" and "jkl" are scaffold-specific options
+    <tlskeyfile>, <tlscrtfile>, <tlscrtchainfile>: files containing
+                TLS key, certificate, certicate chain, and client certificate chain
+                if test is supposed to be run with TLS
 HHH
     };
 }

@@ -38,15 +38,17 @@ use UBOS::Utils;
 # Instantiate the TestPlan.
 # $test: the test to run
 # $options: options for the test plan
+# $tlsData: if given, the TLS section of the Site JSON to use
 sub new {
     my $self    = shift;
     my $test    = shift;
     my $options = shift;
+    my $tlsData = shift;
 
     unless( ref $self ) {
         $self = fields::new( $self );
     }
-    $self = $self->SUPER::new( $test, $options );
+    $self = $self->SUPER::new( $test, $options, $tlsData );
     
     if( exists( $options->{backupfileprefix} )) {
         unless( $options->{backupfileprefix} ) {
