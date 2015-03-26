@@ -1,5 +1,5 @@
 developer=http://indiecomputing.com/
-url="https://github.com/indiebox/tools"
+url="https://github.com/uboslinux/tools"
 maintainer=$developer
 pkgname=$(basename $(pwd))
 pkgver=0.8
