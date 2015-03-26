@@ -156,8 +156,13 @@ sub clearHttpSession {
 
     $self->{cookieFile} = $cookieFile->filename;
     
-    $self->{curl} = "curl -s -v --cookie-jar '$cookieFile' -b '$cookieFile' --resolve '$hostname:80:$ip' --resolve '$hostname:443:$ip' --insecure";
-    # -v to get HTTP headers
+    $self->{curl} = "curl -s -v" # -v to get HTTP headers
+                  . " --cookie-jar '$cookieFile' -b '$cookieFile'"
+                  . " --resolve '$hostname:80:$ip'"
+                  . " --resolve '$hostname:443:$ip'"
+                  . " --insecure"
+                  . ' -A "Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0"';
+                  # some apps don't like to return content to curl; pretend to be Firefox
 }
 
 ##### (3) HTTP testing methods #####

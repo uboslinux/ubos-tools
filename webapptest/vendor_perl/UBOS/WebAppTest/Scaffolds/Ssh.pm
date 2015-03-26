@@ -53,12 +53,14 @@ sub setup {
         fatal( 'Not a valid IP address:', $options->{host} );
     }
     $self->{sshHost} = $options->{host};
+    delete $options->{'host'};
 
     if( exists( $options->{'shepherd'} )) {
         unless( $options->{'shepherd'} ) {
             fatal( 'Value for shepherd cannot be empty' );
         }
         $self->{sshUser} = $options->{'shepherd'};
+        delete $options->{'shepherd'};
     } else {
         $self->{sshUser} = 'shepherd';
     }
@@ -68,6 +70,11 @@ sub setup {
             fatal( 'Cannot read file', $options->{'shepherd-private-key-file'} );
         }
         $self->{sshPrivateKeyFile} = $options->{'shepherd-private-key-file'};
+        delete $options->{'shepherd-private-key-file'};
+    }
+
+    if( defined( $options ) && %$options ) {
+        fatal( 'Unknown option(s) for Scaffold Here:', join( ', ', keys %$options ));
     }
 
     info( 'Creating Scaffold Ssh' );
