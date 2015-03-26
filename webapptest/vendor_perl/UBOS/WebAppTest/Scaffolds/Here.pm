@@ -41,6 +41,10 @@ sub setup {
     }
     $self->SUPER::setup( $options );
 
+    if( defined( $options ) && %$options ) {
+        fatal( 'Unknown option(s) for Scaffold Here:', join( ', ', keys %$options ));
+    }
+
     info( 'Creating Scaffold Here' );
 
     $self->{isOk} = $self->handleImpersonateDepot( $options, '127.0.0.1' );

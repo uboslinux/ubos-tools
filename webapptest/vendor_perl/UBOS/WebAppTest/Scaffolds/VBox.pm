@@ -77,12 +77,14 @@ sub setup {
     if( -e $options->{vmdkfile} ) {
         fatal( 'Vmdkfile file exists already:', $options->{vmdkfile} );
     }
+    delete $options->{'vmdkfile'};
 
     if( exists( $options->{'shepherd'} )) {
         unless( $options->{'shepherd'} ) {
             fatal( 'Value for shepherd cannot be empty' );
         }
         $self->{sshUser} = $options->{'shepherd'};
+        delete $options->{'shepherd'};
     } else {
         $self->{sshUser} = 'shepherd';
     }
@@ -110,34 +112,42 @@ sub setup {
 
     if( exists( $options->{'hostonly-interface'} )) {
         $self->{hostonlyInterface} = $options->{'hostonly-interface'};
+        delete $options->{'hostonly-interface'};
     } else {
         $self->{hostonlyInterface} = 'vboxnet0';
     }
 
     if( exists( $options->{'boot-max-seconds'} )) {
         $self->{bootMaxSeconds} = $options->{'boot-max-seconds'};
+        delete $options->{'boot-max-seconds'};
     } else {
         $self->{bootMaxSeconds} = 240;
     }
 
     if( exists( $options->{'keys-max-seconds'} )) {
         $self->{keysMaxSeconds} = $options->{'keys-max-seconds'};
+        delete $options->{'keys-max-seconds'};
     } else {
         $self->{keysMaxSeconds} = 240;
     }
 
     if( exists( $options->{'shutdown-max-seconds'} )) {
         $self->{shutdownMaxSeconds} = $options->{'shutdown-max-seconds'};
+        delete $options->{'shutdown-max-seconds'};
     } else {
         $self->{shutdownMaxSeconds} = 240;
     }
 
-    $self->{vmdkTemplate}      = $options->{vmdktemplate};
-    $self->{vmdkFile}          = $options->{vmdkfile};
-    $self->{sshPublicKeyFile}  = $options->{'shepherd-public-key-file'};
-    $self->{sshPrivateKeyFile} = $options->{'shepherd-private-key-file'};
-    my $ram                    = $options->{ram} || 1024;
-    my $vncSecret              = $options->{vncsecret};
+    $self->{vmdkTemplate}      = delete $options->{vmdktemplate};
+    $self->{vmdkFile}          = delete $options->{vmdkfile};
+    $self->{sshPublicKeyFile}  = delete $options->{'shepherd-public-key-file'};
+    $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
+    my $ram                    = delete $options->{ram} || 1024;
+    my $vncSecret              = delete $options->{vncsecret};
+
+    if( defined( $options ) && %$options ) {
+        fatal( 'Unknown option(s) for Scaffold Here:', join( ', ', keys %$options ));
+    }
 
     info( 'Creating Scaffold VBox' );
 
