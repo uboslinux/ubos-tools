@@ -77,7 +77,6 @@ sub setup {
     if( -e $options->{vmdkfile} ) {
         fatal( 'Vmdkfile file exists already:', $options->{vmdkfile} );
     }
-    delete $options->{'vmdkfile'};
 
     if( exists( $options->{'shepherd'} )) {
         unless( $options->{'shepherd'} ) {
