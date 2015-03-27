@@ -41,7 +41,7 @@ sub setup {
     }
     $self->SUPER::setup( $options );
 
-    my $impersonateDepot = delete $options->{impersonateDepot} || 0;
+    my $impersonateDepot = delete $options->{impersonatedepot} || 0;
     
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for Scaffold here:', join( ', ', keys %$options ));
