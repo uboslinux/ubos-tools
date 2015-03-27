@@ -144,12 +144,13 @@ sub setup {
     $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
     my $ram                    = delete $options->{ram} || 1024;
     my $vncSecret              = delete $options->{vncsecret};
+    my $impersonateDepot       = delete $options->{impersonateDepot} || 0;
 
     if( defined( $options ) && %$options ) {
-        fatal( 'Unknown option(s) for Scaffold Here:', join( ', ', keys %$options ));
+        fatal( 'Unknown option(s) for Scaffold v-box:', join( ', ', keys %$options ));
     }
 
-    info( 'Creating Scaffold VBox' );
+    info( 'Creating Scaffold v-box' );
 
     my $out;
     my $err;
@@ -235,7 +236,7 @@ sub setup {
     }
 
     debug( 'Creating ubos-staff config disk' );
-    $self->{configVmdkFile} = $options->{vmdkfile} . '-config.vmdk';
+    $self->{configVmdkFile} = $self->{vmdkFile} . '-config.vmdk';
     $self->createConfigDisk( $self->{configVmdkFile} );
 
     if( UBOS::Utils::myexec( "VBoxManage storageattach '$vmName' --storagectl '$vmName' --port 2 --type hdd --medium " . $self->{configVmdkFile} )) {
@@ -252,7 +253,7 @@ sub setup {
     if( $self->waitUntilTargetReady() ) {
         $self->{isOk} = 1;
 
-        $self->{isOk} &= $self->handleImpersonateDepot( $options, '192.168.56.1' ); # FIXME get IP address by lookup
+        $self->{isOk} &= $self->handleImpersonateDepot( $impersonateDepot, '192.168.56.1' ); # FIXME get IP address by lookup
         $self->{isOk} &= ( $self->invokeOnTarget( "sudo ubos-admin update" ) == 0 );
 
     } else {

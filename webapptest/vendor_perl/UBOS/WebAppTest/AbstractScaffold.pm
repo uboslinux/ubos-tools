@@ -246,19 +246,12 @@ sub getFileInfo {
 
 ##
 # Handle the impersonatedepot option, if given
-# $options: the scaffold options
+# $impersonate: true or false
 # $ip: the IP address to use for depot.ubos.net
 sub handleImpersonateDepot {
-    my $self    = shift;
-    my $options = shift;
-    my $ip      = shift;
-
-    my $on;
-    if( exists( $options->{impersonatedepot} )) {
-        $on = 1;
-    } else {
-        $on = 0;
-    }
+    my $self        = shift;
+    my $impersonate = shift;
+    my $ip          = shift;
 
     my $cmd = <<CMD;
 use strict;
@@ -267,7 +260,7 @@ use warnings;
 use UBOS::Utils;
 
 my \$ip = '$ip';
-my \$on = $on;
+my \$on = $impersonate;
 
 unless( -r '/etc/hosts' ) {
     print STDERR "Cannot read /etc/hosts on target $ip\\n";

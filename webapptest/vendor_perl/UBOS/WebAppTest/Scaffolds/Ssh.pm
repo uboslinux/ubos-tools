@@ -29,6 +29,8 @@ use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
 use fields qw();
 
 use File::Temp;
+use Socket;
+use Sys::Hostname;
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -73,13 +75,16 @@ sub setup {
         delete $options->{'shepherd-private-key-file'};
     }
 
+    my $impersonateDepot = delete $options->{impersonateDepot} || 0;
+
     if( defined( $options ) && %$options ) {
-        fatal( 'Unknown option(s) for Scaffold Here:', join( ', ', keys %$options ));
+        fatal( 'Unknown option(s) for Scaffold ssh:', join( ', ', keys %$options ));
     }
 
-    info( 'Creating Scaffold Ssh' );
-
-    $self->{isOk} = 1;
+    info( 'Creating Scaffold ssh' );
+    
+    my( $addr ) = inet_ntoa( ( gethostbyname(hostname) )[4] );
+    $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot, $addr );
 
     return $self;
 }
