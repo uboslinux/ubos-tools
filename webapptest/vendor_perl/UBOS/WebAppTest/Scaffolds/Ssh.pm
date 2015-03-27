@@ -75,7 +75,7 @@ sub setup {
         delete $options->{'shepherd-private-key-file'};
     }
 
-    my $impersonateDepot = delete $options->{impersonateDepot} || 0;
+    my $impersonateDepot = delete $options->{impersonatedepot} || 0;
 
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for Scaffold ssh:', join( ', ', keys %$options ));

@@ -144,7 +144,7 @@ sub setup {
     $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
     my $ram                    = delete $options->{ram} || 1024;
     my $vncSecret              = delete $options->{vncsecret};
-    my $impersonateDepot       = delete $options->{impersonateDepot} || 0;
+    my $impersonateDepot       = delete $options->{impersonatedepot} || 0;
 
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for Scaffold v-box:', join( ', ', keys %$options ));
