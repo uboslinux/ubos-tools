@@ -32,6 +32,7 @@ use File::Temp;
 use Socket;
 use Sys::Hostname;
 use UBOS::Logging;
+use UBOS::Host;
 use UBOS::Utils;
 
 ##
@@ -83,8 +84,7 @@ sub setup {
 
     info( 'Creating Scaffold ssh' );
     
-    my( $addr ) = inet_ntoa( ( gethostbyname(hostname) )[4] );
-    $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot, $addr );
+    $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot, UBOS::Host::ip() );
 
     return $self;
 }
