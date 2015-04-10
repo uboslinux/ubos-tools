@@ -184,6 +184,7 @@ sub run {
             }
         }
     }
+    $ret &= $success;
 
     if( $scaffold && !$abort ) {
         $scaffold->teardown();
