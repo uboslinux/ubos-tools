@@ -253,6 +253,13 @@ sub handleImpersonateDepot {
     my $impersonate = shift;
     my $ip          = shift;
 
+    # clean up parameter
+    if( $impersonate ) {
+        $impersonate = 1;
+    } else {
+        $impersonate = 0;
+    }
+
     my $cmd = <<CMD;
 use strict;
 use warnings;
