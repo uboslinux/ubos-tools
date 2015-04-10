@@ -303,7 +303,7 @@ CMD
     my $out;
     my $err;
     if( $self->invokeOnTarget( 'sudo /bin/bash -c /usr/bin/perl', $cmd, \$out, \$err )) {
-        error( "Failed to edit /etc/hosts file to add depot.ubos.net:", $out, $err );
+        error( "Failed to edit /etc/hosts file to add depot.ubos.net:\nout:$out\nerr:$err\ncmd:$cmd" );
         return 0;
 
     } elsif( $err =~ /Respect the privacy of others/ ) {
