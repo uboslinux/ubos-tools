@@ -142,6 +142,7 @@ sub run {
 
     # deploy and check wildcard site
     if( !$abort && !$quit ) {
+        $self->setSiteJson( $siteJsonAtWildcard );
         do {
             info( 'Deploying to wildcard host' );
 
@@ -196,6 +197,7 @@ sub run {
 
     # redeploy and check regular site
     if( !$abort && !$quit ) {
+        $self->setSiteJson( $siteJson );
         do {
             info( 'Re-deploying' );
 

@@ -25,7 +25,7 @@ use warnings;
 package UBOS::WebAppTest::AbstractSingleSiteTestPlan;
 
 use base   qw( UBOS::WebAppTest::AbstractTestPlan );
-use fields qw( hostname context siteJson appConfigJson );
+use fields qw( siteJson appConfigJson );
 
 use UBOS::Host;
 use UBOS::Logging;
@@ -45,6 +45,9 @@ sub new {
         $self = fields::new( $self );
     }
     $self->SUPER::new( $test, $options );
+
+    my $hostname;
+    my $context;
 
     if( exists( $options->{siteJson} )) {
         unless( exists( $options->{appConfigJson} )) {
@@ -70,33 +73,33 @@ sub new {
                 fatal( 'Test plan hostname parameter must be a valid hostname, or *' );
             }
             
-            $self->{hostname} = $options->{hostname};
+            $hostname = $options->{hostname};
             delete $options->{hostname};
         }
-        unless( $self->{hostname} ) {
+        unless( $hostname ) {
             my $temp = ref $self;
             $temp =~ s!^.*::!!;
-            $self->{hostname} = 'testhost-' . lc( $temp ) . UBOS::Utils::randomHex( 8 );    
+            $hostname = 'testhost-' . lc( $temp ) . UBOS::Utils::randomHex( 8 );
         }
 
-        $self->{context} = $test->getFixedTestContext();
-        if( defined( $self->{context} )) {
+        $context = $test->getFixedTestContext();
+        if( defined( $context )) {
             if( defined( $options->{context} )) {
                 warning( 'Context', $options->{context}, 'provided as argument to test plan ignored: WebAppTest requires fixed test context', $self->{context} );
             }
             delete $options->{context};
         } elsif( defined( $options->{context} )) {
-            $self->{context} = $options->{context};
+            $context = $options->{context};
             delete $options->{context};
         } else {
-            $self->{context} = '/ctxt-' . UBOS::Utils::randomHex( 8 );    
+            $context = '/ctxt-' . UBOS::Utils::randomHex( 8 );
         }
-        if( $self->{context} ne '' && $self->{context} !~ m!^/[-_.a-z0-9%]+$! ) {
+        if( $context ne '' && $context !~ m!^/[-_.a-z0-9%]+$! ) {
             fatal( 'Context parameter must be a single-level relative path starting with a slash, or be empty' );
         }
 
         $self->{appConfigJson} = {
-            'context'     => $self->{context},
+            'context'     => $context,
             'appconfigid' => UBOS::Host::createNewAppConfigId(),
             'appid'       => $test->packageName()
         };
@@ -125,7 +128,7 @@ sub new {
 
         $self->{siteJson} = {
                 'siteid'     => UBOS::Host::createNewSiteId(),
-                'hostname'   => $self->{hostname},
+                'hostname'   => $hostname,
                 'admin'      => $admin,
                 'appconfigs' => [ $self->{appConfigJson} ]
         };
@@ -170,7 +173,7 @@ sub protocol {
 sub hostname {
     my $self = shift;
 
-    return $self->{hostname};
+    return $self->{siteJson}->{hostname};
 }
 
 ##
@@ -179,7 +182,7 @@ sub hostname {
 sub context {
     my $self = shift;
 
-    return $self->{context};
+    return $self->{appConfigJson}->{context};
 }
 
 ##
@@ -210,12 +213,32 @@ sub getSiteJson {
 }
 
 ##
+# Some test plans need to change the Site JSON
+# $json: the new Site JSON
+sub setSiteJson {
+    my $self = shift;
+    my $json = shift;
+
+    $self->{siteJson} = $json;
+}
+
+##
 # Obtain the AppConfig JSON for this test.
 # return: the AppConfig JSON
 sub getAppConfigJson {
     my $self = shift;
 
     return $self->{appConfigJson};
+}
+
+##
+# Some test plans need to change the AppConfig JSON
+# $json: the new AppConfig JSON
+sub setAppConfigJson {
+    my $self = shift;
+    my $json = shift;
+
+    $self->{appConfigJson} = $json;
 }
 
 ##
