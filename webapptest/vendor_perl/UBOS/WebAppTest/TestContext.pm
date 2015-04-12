@@ -119,6 +119,19 @@ sub hostname {
 }
 
 ##
+# Determine a valid virtual hostname for the application being tested.
+# return: hostname, or if hostname is '*', the IP address
+sub hostnameOrIp {
+    my $self = shift;
+
+    my $hostname = $self->hostname();
+    if( $hostname eq '*' ) {
+        $hostname = $self->{ip};
+    }
+    return $hostname;
+}
+
+##
 # Determine the context path of the application being tested
 # return: context, e.g. /foo
 sub context {
@@ -133,7 +146,7 @@ sub context {
 sub fullContext {
     my $self = shift;
 
-    my $url = $self->protocol() . '://' . $self->hostname() . $self->context();
+    my $url = $self->protocol() . '://' . $self->hostnameOrIp() . $self->context();
     return $url;
 }
 
@@ -158,11 +171,13 @@ sub clearHttpSession {
     
     $self->{curl} = "curl -s -v" # -v to get HTTP headers
                   . " --cookie-jar '$cookieFile' -b '$cookieFile'"
-                  . " --resolve '$hostname:80:$ip'"
-                  . " --resolve '$hostname:443:$ip'"
                   . " --insecure"
                   . ' -A "Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0"';
                   # some apps don't like to return content to curl; pretend to be Firefox
+    unless( $hostname eq '*' ) {
+        $self->{curl} .= " --resolve '$hostname:80:$ip'";
+        $self->{curl} .= " --resolve '$hostname:443:$ip'";
+    }
 }
 
 ##### (3) HTTP testing methods #####
@@ -183,7 +198,7 @@ sub absGet {
                 'error' => $self->error( 'Cannot access URL without protocol or leading slash:', $url )
             };
         }
-        $url = $self->protocol() . '://' . $self->hostname() . $url;
+        $url = $self->protocol() . '://' . $self->hostnameOrIp() . $url;
     }
 
     debug( 'Accessing url', $url );
@@ -233,7 +248,7 @@ sub absPost {
             $self->error( 'Cannot access URL without protocol or leading slash:', $url );
             return {};
         }
-        $url = $self->protocol() . '://' . $self->hostname() . $url;
+        $url = $self->protocol() . '://' . $self->hostnameOrIp() . $url;
     }
 
     debug( 'Posting to url', $url );

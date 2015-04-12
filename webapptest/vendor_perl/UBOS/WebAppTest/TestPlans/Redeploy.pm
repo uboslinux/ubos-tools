@@ -231,7 +231,7 @@ sub run {
         $scaffold->undeploy( $siteJson );
     }
     
-    info( 'End running TestPlan DeployOnly' );
+    info( 'End running TestPlan Redeploy' );
 
     return $ret;
 }

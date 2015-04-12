@@ -147,7 +147,7 @@ sub run {
         $scaffold->undeploy( $siteJson );
     }
     
-    info( 'End running TestPlan Simple' );
+    info( 'End running TestPlan BackupAllStates' );
 
     return $ret;
 }

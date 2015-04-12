@@ -162,7 +162,7 @@ sub run {
             if( $printTest ) {
                 print "Running AppTest " . $appTest->name . "\n";
             }
-            foreach my $testPlanPackage ( keys %testPlanPackagesWithArgsToRun ) {
+            foreach my $testPlanPackage ( sort keys %testPlanPackagesWithArgsToRun ) { # consistent sequence
                 my $testPlanOptions = $testPlanPackagesWithArgsToRun{$testPlanPackage};
 
                 if( $printTestPlan ) {

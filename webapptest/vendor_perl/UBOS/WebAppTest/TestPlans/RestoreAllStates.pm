@@ -140,7 +140,7 @@ sub run {
         $ret =0;
     }
 
-    info( 'End running TestPlan Simple' );
+    info( 'End running TestPlan RestoreAllStates' );
 
     return $ret;
 }
