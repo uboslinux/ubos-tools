@@ -44,9 +44,14 @@ public class PacmanPkgMavenPlugin
         throws
             MojoExecutionException
     {
-        getLog().info( "Generating PKGBUILD" );
+        MavenProject project   = (MavenProject) getPluginContext().get( "project" );
+        String       packaging = project.getPackaging();
         
-        MavenProject project = (MavenProject) getPluginContext().get( "project" );
+        if( !"jar".equals( packaging ) && !"ear".equals( packaging ) && !"war".equals( packaging )) {
+            return;
+        }
+
+        getLog().info( "Generating PKGBUILD" );
 
         // pull stuff out of MavenProject
         String        artifactId   = project.getArtifactId();
@@ -56,6 +61,11 @@ public class PacmanPkgMavenPlugin
         Set<Artifact> dependencies = project.getDependencyArtifacts();
         File          artifactFile = project.getArtifact().getFile();
 
+        if( artifactFile == null || !artifactFile.exists() ) {
+            throw new MojoExecutionException(
+                    "pacmanpkg must be executed as part of a build, not standalone,"
+                    + " otherwise it can't find the main JAR file" );
+        }
         // translate to PKGBUILD fields
         String pkgname = artifactId;
         String pkgver  = version.replaceAll( "-SNAPSHOT", "a" ); // alpha
@@ -76,7 +86,8 @@ public class PacmanPkgMavenPlugin
         }
         // write to PKGBUILD
         try {
-            File        pkgBuild = new File( "target/PKGBUILD" );
+            File        baseDir  = project.getBasedir();
+            File        pkgBuild = new File( baseDir, "target/PKGBUILD" );
             PrintWriter out      = new PrintWriter( pkgBuild );
 
             getLog().debug( "Writing PKGBUILD to " + pkgBuild.getAbsolutePath() );
