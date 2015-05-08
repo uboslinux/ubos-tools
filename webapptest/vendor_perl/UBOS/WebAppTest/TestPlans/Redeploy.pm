@@ -240,7 +240,7 @@ sub run {
 # Return help text.
 # return: help text
 sub help {
-    return 'Only tests whether the application can be installed.';
+    return 'Tests that the application can be re-deployed after install at different hostnames.';
 }
 
 ##
