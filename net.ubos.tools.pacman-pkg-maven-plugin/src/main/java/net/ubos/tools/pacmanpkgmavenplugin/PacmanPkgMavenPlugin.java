@@ -40,6 +40,13 @@ public class PacmanPkgMavenPlugin
     extends
         AbstractMojo
 {
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @throws MojoExecutionException
+     */
+    @Override
     public void execute()
         throws
             MojoExecutionException
@@ -51,7 +58,7 @@ public class PacmanPkgMavenPlugin
             return;
         }
 
-        getLog().info( "Generating PKGBUILD" );
+        getLog().info( "Generating PKGBUILD @ " + project.getName() );
 
         // pull stuff out of MavenProject
         String        artifactId   = project.getArtifactId();
