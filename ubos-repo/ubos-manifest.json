@@ -26,14 +26,6 @@
                 },
                 {
                     "type"         : "directory",
-                    "name"         : "${appconfig.datadir}/arm",
-                    "uname"          : "buildmaster",
-                    "gname"          : "buildmaster",
-                    "retentionpolicy" : "keep",
-                    "retentionbucket" : "arm"
-                },
-                {
-                    "type"         : "directory",
                     "name"         : "${appconfig.datadir}/armv6h",
                     "uname"          : "buildmaster",
                     "gname"          : "buildmaster",
