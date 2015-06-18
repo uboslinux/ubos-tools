@@ -76,7 +76,7 @@ sub setup {
         delete $options->{'shepherd-private-key-file'};
     }
 
-    my $impersonateDepot = delete $options->{impersonatedepot} || 0;
+    my $impersonateDepot = delete $options->{impersonatedepot};
 
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for Scaffold ssh:', join( ', ', keys %$options ));
@@ -84,7 +84,7 @@ sub setup {
 
     info( 'Creating Scaffold ssh' );
     
-    $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot, UBOS::Host::ip() );
+    $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot );
 
     return $self;
 }

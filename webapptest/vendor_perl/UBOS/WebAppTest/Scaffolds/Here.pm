@@ -41,7 +41,7 @@ sub setup {
     }
     $self->SUPER::setup( $options );
 
-    my $impersonateDepot = delete $options->{impersonatedepot} || 0;
+    my $impersonateDepot = delete $options->{impersonatedepot};
     
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for Scaffold here:', join( ', ', keys %$options ));
@@ -49,7 +49,7 @@ sub setup {
 
     info( 'Creating Scaffold here' );
 
-    $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot, '127.0.0.1' );
+    $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot );
 
     return $self;
 }
