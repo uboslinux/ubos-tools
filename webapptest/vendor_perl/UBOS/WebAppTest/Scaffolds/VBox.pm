@@ -143,7 +143,7 @@ sub setup {
     $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
     my $ram                    = delete $options->{ram} || 1024;
     my $vncSecret              = delete $options->{vncsecret};
-    my $impersonateDepot       = delete $options->{impersonatedepot} || 0;
+    my $impersonateDepot       = delete $options->{impersonatedepot};
 
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for Scaffold v-box:', join( ', ', keys %$options ));
@@ -252,7 +252,7 @@ sub setup {
     if( $self->waitUntilTargetReady() ) {
         $self->{isOk} = 1;
 
-        $self->{isOk} &= $self->handleImpersonateDepot( $impersonateDepot, '192.168.56.1' ); # FIXME get IP address by lookup
+        $self->{isOk} &= $self->handleImpersonateDepot( $impersonateDepot );
         $self->{isOk} &= ( $self->invokeOnTarget( "sudo ubos-admin update" ) == 0 );
 
     } else {
@@ -351,7 +351,7 @@ sub waitUntilTargetReady {
 }
 
 ##
-# Create a cloud-init config disk in VMDK format
+# Create a UBOS staff config disk in VMDK format
 # $vmdkImage: name of the vmdk image file to be created
 sub createConfigDisk {
     my $self       = shift;
@@ -378,7 +378,7 @@ sub createConfigDisk {
     $sshPubKey =~ s!^\s+!!;
     $sshPubKey =~ s!\s+$!!;
 
-    UBOS::Utils::myexec( "sudo mkdir -p $mount/shepherd/ssh/" );
+    UBOS::Utils::myexec( "sudo mkdir -p '$mount/shepherd/ssh/'" );
 
     UBOS::Utils::saveFile( "$mount/shepherd/ssh/id_rsa.pub", $sshPubKey, 0640, 'root', 'root' );
 

@@ -246,31 +246,21 @@ sub getFileInfo {
 
 ##
 # Handle the impersonatedepot option, if given
-# $impersonate: true or false
-# $ip: the IP address to use for depot.ubos.net
+# $ip: the IP address to use for depot.ubos.net, or undef if using the real one
 sub handleImpersonateDepot {
-    my $self        = shift;
-    my $impersonate = shift;
-    my $ip          = shift;
+    my $self = shift;
+    my $ip   = shift;
 
-    # clean up parameter
-    if( $impersonate ) {
-        $impersonate = 1;
-    } else {
-        $impersonate = 0;
-    }
-
-    my $cmd = <<CMD;
+    my $cmd = <<'CMD';
 use strict;
 use warnings;
 
 use UBOS::Utils;
-
-my \$ip = '$ip';
-my \$on = $impersonate;
-
+CMD
+    $cmd .= 'my $ip = ' . ( defined( $ip ) ? "'$ip'" : "undef" ) . ";\n";
+    $cmd .= <<CMD;
 unless( -r '/etc/hosts' ) {
-    print STDERR "Cannot read /etc/hosts on target $ip\\n";
+    print STDERR "Cannot read /etc/hosts\\n";
     exit 1;
 }
 CMD
@@ -278,7 +268,7 @@ CMD
 
 my $etchosts = UBOS::Utils::slurpFile( '/etc/hosts' );
 if( $etchosts ) {
-    if( $on ) {
+    if( defined( $ip )) {
         unless( $etchosts =~ m!depot\.ubos\.net! ) {
             $etchosts .= <<ADD;
 # webapptest added
@@ -302,7 +292,7 @@ ADD
     exit 0;
 
 } else {
-    print STDERR "/etc/hosts is empty on $ip. Not changing\n";
+    print STDERR "/etc/hosts is empty. Not changing\n";
     exit 1;
 }
 1;
