@@ -4,7 +4,7 @@
 # host via ssh.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

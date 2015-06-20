@@ -27,7 +27,6 @@ package UBOS::WebAppTest::AbstractSingleSiteTestPlan;
 use base   qw( UBOS::WebAppTest::AbstractTestPlan );
 use fields qw( siteJson appConfigJson );
 
-use UBOS::Host;
 use UBOS::Logging;
 
 ##
@@ -100,7 +99,7 @@ sub new {
 
         $self->{appConfigJson} = {
             'context'     => $context,
-            'appconfigid' => UBOS::Host::createNewAppConfigId(),
+            'appconfigid' =>  'a' . UBOS::Utils::randomHex( 40 );
             'appid'       => $test->packageName()
         };
 
@@ -127,7 +126,7 @@ sub new {
         };
 
         $self->{siteJson} = {
-                'siteid'     => UBOS::Host::createNewSiteId(),
+                'siteid'     =>  's' . UBOS::Utils::randomHex( 40 );
                 'hostname'   => $hostname,
                 'admin'      => $admin,
                 'appconfigs' => [ $self->{appConfigJson} ]

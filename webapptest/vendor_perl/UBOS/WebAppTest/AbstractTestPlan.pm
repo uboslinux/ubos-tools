@@ -24,6 +24,7 @@ use warnings;
 package UBOS::WebAppTest::AbstractTestPlan;
 
 use fields qw( test );
+
 use UBOS::Logging;
 
 ##

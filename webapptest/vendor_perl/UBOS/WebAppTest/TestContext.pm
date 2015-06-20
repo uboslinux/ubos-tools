@@ -28,8 +28,8 @@ use fields qw( scaffold testPlan ip verbose curl cookieFile errors );
 
 use Fcntl;
 use UBOS::Logging qw( debug );
-use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
+use UBOS::WebAppTest::TestingUtils;
 
 my $maxWaitTillReady = 60; # Number of seconds to wait until 503 goes away
 

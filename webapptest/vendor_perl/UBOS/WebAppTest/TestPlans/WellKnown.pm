@@ -28,7 +28,6 @@ use warnings;
 package UBOS::WebAppTest::TestPlans::WellKnown;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
-use fields;
 
 use UBOS::Logging;
 use UBOS::WebAppTest::TestContext;

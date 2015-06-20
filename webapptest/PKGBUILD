@@ -2,13 +2,12 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.87
+pkgver=0.88
 pkgrel=1
-pkgdesc="Testing tools for web apps"
+pkgdesc="Testing tools for UBOS web apps"
 arch=('any')
 license=('GPL')
 depends=(
-        'ubos-admin'
         'perl-www-curl'
         'sudo'
 )

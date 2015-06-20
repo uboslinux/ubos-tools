@@ -32,7 +32,6 @@ use File::Temp;
 use Socket;
 use Sys::Hostname;
 use UBOS::Logging;
-use UBOS::Host;
 use UBOS::Utils;
 
 ##

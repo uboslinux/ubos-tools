@@ -35,7 +35,6 @@ use fields qw( directory name sshPublicKeyFile
                bootMaxSeconds keysMaxSeconds shutdownMaxSeconds );
 
 use File::Temp qw( tempdir );
-use UBOS::Host;
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -200,15 +199,6 @@ sub waitUntilTargetReady {
     my $ret  = 0;
     OUTER:
     for( my $count = 0 ; $count < $self->{bootMaxSeconds} ; $count += 5 ) {
-#        my $nics = UBOS::Host::nics( 1 );
-#        foreach my $nicName ( keys %$nics ) {
-#            # nic name is truncated compared to machine name
-#            if( "ve-$name" =~ m!^$nicName! ) {
-#                debug( 'Nic is available for', $name, ':', $nicName );
-#                $ret = 1;
-#                last OUTER;
-#            }
-#        }
         my $out;
         if( UBOS::Utils::myexec( "getent hosts '" . $self->{name} . "'", undef, \$out ) == 0 ) {            
             # 10.0.0.2        webapptest-20150617-025624

@@ -26,7 +26,6 @@ package UBOS::WebAppTest::Commands::Run;
 
 use Cwd;
 use Getopt::Long qw( GetOptionsFromArray );
-use UBOS::Host;
 use UBOS::Logging;
 use UBOS::Utils;
 use UBOS::WebAppTest::TestingUtils;

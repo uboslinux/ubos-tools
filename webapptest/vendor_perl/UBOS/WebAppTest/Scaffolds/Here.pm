@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 #
 # A trivial scaffold for running tests on the local machine without
-# any insulation.
+# any insulation. The local machine must run UBOS.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ use warnings;
 package UBOS::WebAppTest::Scaffolds::Here;
 
 use base qw( UBOS::WebAppTest::AbstractScaffold );
-use fields;
+
 use UBOS::Logging;
 
 ##

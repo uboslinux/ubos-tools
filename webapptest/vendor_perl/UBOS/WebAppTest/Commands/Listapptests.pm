@@ -3,7 +3,7 @@
 # Command that lists all available tests in the current directory.
 #
 # This file is part of webapptest.
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ use warnings;
 package UBOS::WebAppTest::Commands::Listapptests;
 
 use Cwd;
-use UBOS::Host;
 use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
 

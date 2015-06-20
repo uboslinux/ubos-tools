@@ -28,9 +28,9 @@ use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
 use fields;
 
 use UBOS::Logging;
+use UBOS::Utils;
 use UBOS::WebAppTest::TestContext;
 use UBOS::WebAppTest::TestingUtils;
-use UBOS::Utils;
 
 ##
 # Instantiate the TestPlan.
