@@ -51,6 +51,15 @@ sub setup {
     }
     $self->SUPER::setup( $options );
 
+    # make sure ip_forwarding is set on the host
+    my $out;
+    if( UBOS::Utils::myexec( 'sysctl net.ipv4.ip_forward', undef, \$out ) != 0 ) {
+        fatal( 'sysctl call failed' );
+    }
+    unless( $out =~ m!\Qnet.ipv4.ip_forward\E\s*=\s*1\s*! ) {
+        fatal( 'Cannot run Container scaffold without IPv4 forwarding:', $out );
+    }
+
     $self->{isOk} = 0; # until we decide otherwise
 
     my $name;
@@ -249,10 +258,10 @@ sub populateConfigDir {
     $sshPubKey =~ s!\s+$!!;
 
     unless( -d "$dir/shepherd/ssh" ) {
-        UBOS::Utils::myexec( "sudo mkdir -p '$dir/shepherd/ssh'" );
+        UBOS::Utils::myexec( "mkdir -p '$dir/shepherd/ssh'" );
     }
 
-    UBOS::Utils::saveFile( "$dir/shepherd/ssh/id_rsa.pub", $sshPubKey, 0640, 'root', 'root' );
+    UBOS::Utils::saveFile( "$dir/shepherd/ssh/id_rsa.pub", $sshPubKey );
 
 }
 
