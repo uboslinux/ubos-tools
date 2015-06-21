@@ -1,0 +1,125 @@
+#!/usr/bin/perl
+#
+# Central script for web application testing
+#
+# This file is part of webapptest.
+# (C) 2012-2014 Indie Computing Corp.
+#
+# webapptest is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# webapptest is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with webapptest.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+use strict;
+use warnings;
+
+use UBOS::WebAppTest::TestingUtils;
+use UBOS::Utils;
+
+my $commands = UBOS::WebAppTest::TestingUtils::findCommands();
+
+unless( @ARGV ) {
+    synopsisHelpQuit();
+}
+my $command = shift @ARGV;
+if( '--help' eq $command || '-h' eq $command ) {
+    synopsisHelpQuit( 1 );
+}
+
+my $commandPackage = $commands->{$command};
+if( $commandPackage ) {
+    foreach my $arg ( @ARGV ) {
+        if( '--help' eq $arg || '-h' eq $arg ) {
+            if( $commandPackage ) {
+                synopsisHelpQuit( 1, $command );
+            } else {
+                synopsisHelpQuit( 1 );
+            }
+        }
+    }
+    
+    my $result = UBOS::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
+
+    exit !$result;
+
+} else {
+    synopsisHelpQuit();
+}
+
+#####
+# Print synopsis or help
+# $long: if true, print long help
+# $helpFor: if given, only provide help on this command
+sub synopsisHelpQuit {
+    my $long    = shift;
+    my $helpFor = shift;
+
+    unless( $helpFor ) {
+        if( $long ) {
+            print <<END;
+The central testing script for UBOS web application testing.
+
+It may be invoked in the following ways:
+
+END
+        } else {
+            print "Synopsis:\n";
+        }
+    }
+
+	my $cmd = $0;
+	$cmd =~ s!.*/!!;
+
+    foreach my $command ( sort keys %$commands ) {
+        if( !$helpFor || $command eq $helpFor ) {
+            my $package      = $commands->{$command};
+            my $synopsisHelp = UBOS::Utils::invokeMethod( $package . '::synopsisHelp' ) || '';
+
+            foreach my $synopsis ( sort keys %$synopsisHelp ) {
+                my $help = $synopsisHelp->{$synopsis};
+
+                $synopsis =~ s!^\s+!!;
+                $synopsis =~ s!\s+$!!;
+
+                print "    $cmd $command" . ( $synopsis ? " $synopsis" : '' ) . "\n";
+                if( $long || $helpFor ) {
+                    $help =~ s!^\s+!!gm;
+                    $help =~ s!\s+$!!gm;
+                    $help =~ s!^!        !gm;
+
+                    print "$help\n\n";
+                }
+            }
+        }
+    }
+
+    unless( $helpFor ) {
+        print "    $cmd --help\n";
+        if( $long ) {
+            print <<END;
+        Display help text.
+
+END
+        }
+        print "    $cmd <command> [<args>...] --help\n";
+        if( $long ) {
+            print <<END;
+        Display help text for this command.
+
+END
+        }
+    }
+
+    exit 0;
+}
+
+1;
