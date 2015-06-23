@@ -76,10 +76,6 @@ sub run {
     my $interactive = shift;
     my $verbose     = shift;
 
-    unless( exists( $self->{backupFilePrefix} )) {
-        $self->{backupFilePrefix} = $self->getTest()->packageName() . '-' . $self->getTest()->packageVersion() . '-' . UBOS::Utils::time2string( time()) . '-';
-    }
-
     info( 'Running testplan backup-all-states' );
 
     my $siteJson = $self->getSiteJson();

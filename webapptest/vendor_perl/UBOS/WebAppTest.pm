@@ -4,7 +4,7 @@
 # UBOS web app tests.
 #
 # This file is part of webapptest.
-# (C) 2012-2015= Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@ use fields qw(
         name
         description
         packageName
-        packageVersion
         fixedTestContext
         customizationPointValues
         statesTransitions );
@@ -112,7 +111,6 @@ sub new {
     $self->{name}                     = $name;
     $self->{description}              = $description;
     $self->{packageName}              = $packageName;
-    $self->{packageVersion}           = UBOS::Host::packageVersion( $packageName );
     $self->{fixedTestContext}         = $fixedTestContext;
     $self->{customizationPointValues} = $custPointValues;
     $self->{statesTransitions}        = $statesTransitions;
@@ -146,15 +144,6 @@ sub packageName {
     my $self = shift;
 
     return $self->{packageName};
-}
-
-##
-# Obtain the version of the package being tested
-# return: the package version
-sub packageVersion {
-    my $self = shift;
-
-    return $self->{packageVersion};
 }
 
 ##
