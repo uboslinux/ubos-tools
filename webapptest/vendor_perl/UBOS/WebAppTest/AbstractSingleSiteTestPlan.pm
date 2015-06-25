@@ -99,7 +99,7 @@ sub new {
 
         $self->{appConfigJson} = {
             'context'     => $context,
-            'appconfigid' =>  'a' . UBOS::Utils::randomHex( 40 );
+            'appconfigid' =>  'a' . UBOS::Utils::randomHex( 40 ),
             'appid'       => $test->packageName()
         };
 
@@ -126,7 +126,7 @@ sub new {
         };
 
         $self->{siteJson} = {
-                'siteid'     =>  's' . UBOS::Utils::randomHex( 40 );
+                'siteid'     =>  's' . UBOS::Utils::randomHex( 40 ),
                 'hostname'   => $hostname,
                 'admin'      => $admin,
                 'appconfigs' => [ $self->{appConfigJson} ]
