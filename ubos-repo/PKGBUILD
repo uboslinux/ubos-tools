@@ -2,11 +2,12 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.6
+pkgver=0.7
 pkgrel=1
 pkgdesc="UBOS package repository"
 arch=('any')
 license=('GPL')
+install=install
 
 package() {
 # Manifest
@@ -19,6 +20,10 @@ package() {
 # Code
     mkdir -p ${pkgdir}/usr/share/${pkgname}
     install -m0755 ${startdir}/index.php ${pkgdir}/usr/share/${pkgname}/
+
+    mkdir -p ${pkgdir}/usr/share/${pkgname}/bin
+    install -m0755 ${startdir}/bin/provision.pl ${pkgdir}/usr/share/${pkgname}/bin/
+    install -m0755 ${startdir}/bin/safe-rsync.pl ${pkgdir}/usr/share/${pkgname}/bin/
 
 # Tmpl
     mkdir -p ${pkgdir}/usr/share/${pkgname}/tmpl

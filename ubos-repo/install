@@ -1,0 +1,24 @@
+#
+# Create a ubos-repo user that can log in via ssh
+#
+# The ~ubos-repo/.ssh/authorized_key file will be generated/updated by
+# ubos-manifest.json
+#
+
+post_install() {
+    # create user ubos-repo if it does not exist, with bash
+    getent passwd ubos-repo &>/dev/null || useradd -s /bin/bash -c 'rsync over ssh access for upload' -m ubos-repo >/dev/null
+
+    # lock the account by setting an impossible password
+    passwd -l ubos-repo &>/dev/null
+    true
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    # for security reasons, leave user and their data there
+    true
+}

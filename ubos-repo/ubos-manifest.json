@@ -13,42 +13,53 @@
             ],
             "appconfigitems" : [
                 {
-                    "type"         : "directory",
-                    "name"         : "${appconfig.datadir}"
+                    "type"  : "directory",
+                    "name"  : "${appconfig.datadir}",
+                    "uname" : "ubos-repo",
+                    "gname" : "ubos-repo",
                 },
                 {
-                    "type"         : "directory",
-                    "name"         : "${appconfig.datadir}/x86_64",
-                    "uname"          : "buildmaster",
-                    "gname"          : "buildmaster",
+                    "type"            : "directory",
+                    "name"            : "${appconfig.datadir}/x86_64",
+                    "uname"           : "ubos-repo",
+                    "gname"           : "ubos-repo",
                     "retentionpolicy" : "keep",
                     "retentionbucket" : "x86_64"
                 },
                 {
-                    "type"         : "directory",
-                    "name"         : "${appconfig.datadir}/armv6h",
-                    "uname"          : "buildmaster",
-                    "gname"          : "buildmaster",
+                    "type"            : "directory",
+                    "name"            : "${appconfig.datadir}/armv6h",
+                    "uname"           : "ubos-repo",
+                    "gname"           : "ubos-repo",
                     "retentionpolicy" : "keep",
                     "retentionbucket" : "armv6h"
                 },
                 {
-                    "type"         : "directory",
-                    "name"         : "${appconfig.datadir}/armv7h",
-                    "uname"          : "buildmaster",
-                    "gname"          : "buildmaster",
+                    "type"            : "directory",
+                    "name"            : "${appconfig.datadir}/armv7h",
+                    "uname"           : "ubos-repo",
+                    "gname"           : "ubos-repo",
                     "retentionpolicy" : "keep",
                     "retentionbucket" : "armv7h"
                 },
                 {
                     "type"         : "file",
                     "name"         : "${appconfig.apache2.appconfigfragmentfile}",
-                    "uname"          : "buildmaster",
-                    "gname"          : "buildmaster",
                     "template"     : "tmpl/htaccess.tmpl",
                     "templatelang" : "varsubst"
+                },
+                {
+                    "type"   : "perlscript",
+                    "source" : "bin/provision.pl"
                 }
             ]
+        }
+    },
+    "customizationpoints" : {
+        "publicsshkey" : {
+            "name" : "Public SSH key for upload",
+            "type" : "text",
+            "required" : true
         }
     }
 }
