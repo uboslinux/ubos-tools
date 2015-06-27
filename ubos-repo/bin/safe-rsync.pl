@@ -12,12 +12,14 @@ my $org         = $ENV{SSH_ORIGINAL_COMMAND};
 # something like:
 # rsync --server -logDtpre.iLsfx . bar
 
-unless( $org =~ m!^rsync --server -(\S+) \. (.+)$! ) {
+UBOS::Utils::saveFile( '/tmp/foo', $org );
+
+unless( $org =~ m!^rsync(( -\S+)+) \. (.+)$! ) {
     print STDERR "ERROR: This server only accepts rsync commands.\n";
     exit 1;
 }
 my $options = $1;
-my $dest    = $2;
+my $dest    = $3;
 
 if( $dest =~ m!^/! ) {
     print STDERR "ERROR: Only relative destination paths accepted.\n";
@@ -29,7 +31,7 @@ if( $dest =~ m!\.\.! ) {
 }
 
 my $fullDest = "/var/lib/ubos-repo/$appConfigId/$dest";
-my $cmd = "rsync --server -$options . $fullDest";
+my $cmd = "rsync$options . $fullDest";
 
 UBOS::Utils::myexec( $cmd );
 

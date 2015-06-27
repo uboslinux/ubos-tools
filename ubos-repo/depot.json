@@ -1,0 +1,24 @@
+{
+   "hostname" : "depot",
+   "appconfigs" : [
+      {
+         "appid" : "ubos-repo",
+         "context" : "/dev",
+         "appconfigid" : "a1b690b51166aed20ef1838bd68ba7c1c0eb22f25",
+         "customizationpoints" : {
+            "ubos-repo" : {
+               "publicsshkey" : {
+                  "value" : "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkRpXvcU6h6AdztwZLg20jon18IqHNcKB9TFELpEHmr6Jy8MtgdTUQYj3ggKAgQ6FFkNmXDBkXLvJQZ3r+45Q1MlfSRcYNDA83PBcFXm5aKrI/DyXiria/GCKF7LtIC6cuAhylD1KBkmNjY4z0GRCrkZjirJzNjN9pBSJH0AbrC2XNjqN+wxXRoAn3mujCrEyHH8gDP2aFK8yWvcxCxryhDd8Ki3ZngSRqQkEHzDpidL8w79nXQ/RKw4ucS0x2V6g6vM7VsNKJstF2u+JCgbOfXarhjSjcfJV7k103WL3KMoybzfPiymh9A1pzyPv9mETW7Qd/GODNo8rbTWkXPvHj buildmaster@localhost"
+               }
+            }
+         }
+      }
+   ],
+   "siteid" : "sb4c9be4c33ae149ff29041cf6fd2a8a8813bee5e",
+   "admin" : {
+      "email" : "admin@ubos.net",
+      "credential" : "qwerqwer",
+      "username" : "admin",
+      "userid" : "admin"
+   }
+}
