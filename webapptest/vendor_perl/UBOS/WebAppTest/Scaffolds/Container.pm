@@ -32,7 +32,7 @@ package UBOS::WebAppTest::Scaffolds::Container;
 
 use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
 use fields qw( directory name sshPublicKeyFile
-               bootMaxSeconds keysMaxSeconds systemRunningMaxSeconds shutdownMaxSeconds );
+               bootMaxSeconds );
 
 use File::Temp qw( tempdir );
 use Socket;
@@ -110,27 +110,6 @@ sub setup {
         $self->{bootMaxSeconds} = 240;
     }
 
-    if( exists( $options->{'keys-max-seconds'} )) {
-        $self->{keysMaxSeconds} = $options->{'keys-max-seconds'};
-        delete $options->{'keys-max-seconds'};
-    } else {
-        $self->{keysMaxSeconds} = 240;
-    }
-
-    if( exists( $options->{'system-running-max-seconds'} )) {
-        $self->{systemRunningMaxSeconds} = $options->{'system-running-max-seconds'};
-        delete $options->{'system-running-max-seconds'};
-    } else {
-        $self->{systemRunningMaxSeconds} = 240;
-    }
-
-    if( exists( $options->{'shutdown-max-seconds'} )) {
-        $self->{shutdownMaxSeconds} = $options->{'shutdown-max-seconds'};
-        delete $options->{'shutdown-max-seconds'};
-    } else {
-        $self->{shutdownMaxSeconds} = 240;
-    }
-
     $self->{directory}         = delete $options->{directory};
     $self->{sshPublicKeyFile}  = delete $options->{'shepherd-public-key-file'};
     $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
@@ -201,53 +180,18 @@ sub teardown {
 sub waitUntilTargetReady {
     my $self = shift;
 
-    # getent hosts does not seem to work for containers, so we look up
-    # IP address
-    # first we wait for the corresponding Ethernet interface
-
     my $name = $self->{name};
     my $ret  = 0;
     for( my $count = 0 ; $count < $self->{bootMaxSeconds} ; $count += 5 ) {
         my $out;
-        debug( 'Checking whether hostname exists:', $self->{name} );
-
-        my $packed_ip = gethostbyname( $self->{name} );
-        if( defined( $packed_ip )) {
-            $self->{sshHost} = inet_ntoa( $packed_ip );
-            $ret = 1;
-            last;
-        }
-        sleep 5;
-    }
-    unless( $ret ) {
-        return $ret;
-    }
-    for( my $count = 0 ; $count < $self->{keysMaxSeconds} ; $count += 5  ) {
-        my $out;
-        $self->invokeOnTarget( 'ls -l /etc/pacman.d/gnupg/pubring.gpg', undef, \$out );
-        # format: -rw-r--r-- 1 root root 450806 Aug 31 20:26 /etc/pacman.d/gnupg/pubring.gpg
-
-        if( $out =~ m!^(?:\S{10})\s+(?:\S+)\s+(?:\S+)\s+(?:\S+)\s+(\d+)\s+! ) {
-            my $size = $1;
-            if( $size > 10000 ) {
-                # rather arbitrary cutoff, but seems to do the job
-                $ret = 1;
-                last;
-            }
-        }
-        sleep 5;
-    }
-    debug( 'Pacman keys file not populated in time' );
-    for( my $count = 0 ; $count < $self->{systemRunningMaxSeconds} ; $count += 5  ) {
-        my $out;
-        my $result = $self->invokeOnTarget( 'systemctl is-system-running', undef, \$out );
+        my $result = UBOS::Utils::myexec( "sudo systemctl -M '$name' is-system-running", undef, \$out );
         if( $result == 0 ) {
             $ret = 1;
             return $ret;
         }
         sleep 5;
     }
-    debug( 'system is-system-running not in time' );
+    debug( 'system is-system-running not in time:', $out );
 
     return $ret;
 }
