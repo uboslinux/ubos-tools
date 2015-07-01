@@ -1,0 +1,11 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=$developer
+pkgname=$(basename $(pwd))
+pkgver=0.1
+pkgrel=1
+pkgdesc="Meta-package for UBOS tools"
+arch=('any')
+license=('GPL')
+depends=('pacsane' 'ubos-install' 'webapptest')
+
