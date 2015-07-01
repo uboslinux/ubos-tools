@@ -3,7 +3,7 @@
 # A scaffold for running tests on the local machine inside a
 # Linux container.
 #
-# The virtual machine is configured with two network interfaces:
+# The container is configured with two network interfaces:
 # 1: uses NAT networking, so it can access the public internet and
 #    download new packages if the test requires that.
 # 2: uses hostonly, so the host can do HTTP get on web apps
@@ -32,9 +32,10 @@ package UBOS::WebAppTest::Scaffolds::Container;
 
 use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
 use fields qw( directory name sshPublicKeyFile
-               bootMaxSeconds keysMaxSeconds shutdownMaxSeconds );
+               bootMaxSeconds keysMaxSeconds systemRunningMaxSeconds shutdownMaxSeconds );
 
 use File::Temp qw( tempdir );
+use Socket;
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -116,6 +117,13 @@ sub setup {
         $self->{keysMaxSeconds} = 240;
     }
 
+    if( exists( $options->{'system-running-max-seconds'} )) {
+        $self->{systemRunningMaxSeconds} = $options->{'system-running-max-seconds'};
+        delete $options->{'system-running-max-seconds'};
+    } else {
+        $self->{systemRunningMaxSeconds} = 240;
+    }
+
     if( exists( $options->{'shutdown-max-seconds'} )) {
         $self->{shutdownMaxSeconds} = $options->{'shutdown-max-seconds'};
         delete $options->{'shutdown-max-seconds'};
@@ -193,23 +201,21 @@ sub teardown {
 sub waitUntilTargetReady {
     my $self = shift;
 
+    # getent hosts does not seem to work for containers, so we look up
+    # IP address
     # first we wait for the corresponding Ethernet interface
 
     my $name = $self->{name};
     my $ret  = 0;
-    OUTER:
     for( my $count = 0 ; $count < $self->{bootMaxSeconds} ; $count += 5 ) {
         my $out;
-        if( UBOS::Utils::myexec( "getent hosts '" . $self->{name} . "'", undef, \$out ) == 0 ) {            
-            # 10.0.0.2        webapptest-20150617-025624
-            # 169.254.217.154 webapptest-20150617-025624
-            foreach my $line ( split "\n", $out ) {
-                if( $line =~ m!(10\.\d+\.\d+\.\d+)! ) {
-                    $self->{sshHost} = $1;
-                    $ret = 1;
-                    last OUTER;
-                }
-            }
+        debug( 'Checking whether hostname exists:', $self->{name} );
+
+        my $packed_ip = gethostbyname( $self->{name} );
+        if( defined( $packed_ip )) {
+            $self->{sshHost} = inet_ntoa( $packed_ip );
+            $ret = 1;
+            last;
         }
         sleep 5;
     }
@@ -226,12 +232,22 @@ sub waitUntilTargetReady {
             if( $size > 10000 ) {
                 # rather arbitrary cutoff, but seems to do the job
                 $ret = 1;
-                return $ret;
+                last;
             }
         }
         sleep 5;
     }
     debug( 'Pacman keys file not populated in time' );
+    for( my $count = 0 ; $count < $self->{systemRunningMaxSeconds} ; $count += 5  ) {
+        my $out;
+        my $result = $self->invokeOnTarget( 'systemctl is-system-running', undef, \$out );
+        if( $result == 0 ) {
+            $ret = 1;
+            return $ret;
+        }
+        sleep 5;
+    }
+    debug( 'system is-system-running not in time' );
 
     return $ret;
 }
@@ -252,7 +268,6 @@ sub populateConfigDir {
     }
 
     UBOS::Utils::saveFile( "$dir/shepherd/ssh/id_rsa.pub", $sshPubKey );
-
 }
 
 ##
