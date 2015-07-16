@@ -32,7 +32,7 @@ package UBOS::WebAppTest::Scaffolds::Container;
 
 use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
 use fields qw( directory name sshPublicKeyFile
-               bootMaxSeconds );
+               bootMaxSeconds shutdownMaxSeconds );
 
 use File::Temp qw( tempdir );
 use Socket;
@@ -110,6 +110,13 @@ sub setup {
         $self->{bootMaxSeconds} = 60;
     }
 
+    if( exists( $options->{'shutdown-max-seconds'} )) {
+        $self->{shutdownMaxSeconds} = $options->{'shutdown-max-seconds'};
+        delete $options->{'shutdown-max-seconds'};
+    } else {
+        $self->{shutdownMaxSeconds} = 60;
+    }
+
     $self->{directory}         = delete $options->{directory};
     $self->{sshPublicKeyFile}  = delete $options->{'shepherd-public-key-file'};
     $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
@@ -167,9 +174,18 @@ sub teardown {
 
     my $containerName = $self->{name};
     
-    debug( 'Shutting down container, unregistering, and deleting image file' );
     if( UBOS::Utils::myexec( "sudo machinectl poweroff '$containerName'" )) {
         error( 'machinectl poweroff failed' );
+    }
+    my $out;
+    my $err;
+    for( my $count = 0 ; $count < $self->{shutdownMaxSeconds} ; ++$count ) {
+        if( UBOS::Utils::myexec( "sudo machinectl show '$containerName' -p State", undef, \$out, \$err )) {
+            last;
+        }
+        $out =~ s!\s+! !g;
+        debug( 'Machine', $containerName, 'still has status', $out );
+        sleep 1;
     }
 
     return 1;
