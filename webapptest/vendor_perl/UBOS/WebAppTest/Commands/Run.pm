@@ -37,6 +37,7 @@ use UBOS::WebAppTest::TestingUtils;
 sub run {
     my @args = @_;
 
+    my $configFile    = undef;
     my $interactive   = 0;
     my $verbose       = 0;
     my $logConfigFile = undef;
@@ -49,6 +50,7 @@ sub run {
 
     my $parseOk = GetOptionsFromArray(
             \@args,
+            'configfile=s'      => \$configFile,
             'interactive'       => \$interactive,
             'verbose+'          => \$verbose,
             'logConfig=s'       => \$logConfigFile,
@@ -66,6 +68,35 @@ sub run {
     unless( @args ) {
         fatal( 'Must provide name of at least one test suite.' );
     }
+
+    my $configData = undef;
+    if( $configFile ) {
+        unless( -r $configFile ) {
+            fatal( 'Cannot read configfile', $configFile );
+        }
+        $configData = UBOS::Utils::readJsonFromFile( $configFile );
+
+        if( !$interactive && exists( $configData->{interactive} )) {
+            $interactive = $configData->{interactive};
+        }
+        if( !$verbose && exists( $configData->{verbose} )) {
+            $verbose = $configData->{verbose};
+        }
+        if( !$logConfigFile && exists( $configData->{logConfig} )) {
+            $logConfigFile = $configData->{logConfig};
+        }
+
+        if( !$tlsKeyFile && exists( $configData->{tlskeyfile} )) {
+            $tlsKeyFile = $configData->{tlskeyfile};
+        }
+        if( !$tlsCrtFile && exists( $configData->{tlscrtfile} )) {
+            $tlsCrtFile = $configData->{tlscrtfile};
+        }
+        if( !$tlsCrtChainFile && exists( $configData->{tlscrtchainfile} )) {
+            $tlsCrtChainFile = $configData->{tlscrtchainfile};
+        }
+    }
+    
     my $tlsCount = 0;
     foreach my $arg ( $tlsKeyFile, $tlsCrtFile, $tlsCrtChainFile ) {
         if( $arg ) {
@@ -88,12 +119,18 @@ sub run {
         $tlsData->{crtchain} = UBOS::Utils::slurpFile( $tlsCrtChainFile );
     }
 
-    unless( $scaffoldOpt ) {
-        $scaffoldOpt = 'here';
+    my( $scaffoldName, $scaffoldOptions );
+    if( $scaffoldOpt ) {
+        ( $scaffoldName, $scaffoldOptions ) = decode( $scaffoldOpt );
+    } elsif( $configData && exists( $configData->{scaffold} )) {
+        foreach my $n ( keys %{$configData->{scaffold}} ) {
+            ( $scaffoldName, $scaffoldOptions ) = ( $n, $configData->{scaffold}->{$n} );
+            last; # for consistency, can be extended later
+        }
+    } else {
+        $scaffoldName = 'here';
     }
 
-    my( $scaffoldName, $scaffoldOptions ) = decode( $scaffoldOpt );
-    
     my $scaffoldPackageName = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
     unless( $scaffoldPackageName ) {
         fatal( 'Cannot find scaffold', $scaffoldName );
@@ -115,6 +152,19 @@ sub run {
             }
             $testPlanPackagesWithArgsToRun{$testPlanPackage} = $testPlanOptions;
         }
+
+    } elsif( $configData && exists( $configData->{testplan} )) {
+        foreach my $testPlanName ( keys %{ $configData->{testplan} } ) {
+            my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
+            unless( $testPlanPackage ) {
+                fatal( 'Cannot find test plan', $testPlanName );
+            }
+            if( defined( $testPlanPackagesWithArgsToRun{$testPlanPackage} )) {
+                fatal( 'Cannot run the same test plan multiple times at this time' );
+            }
+            $testPlanPackagesWithArgsToRun{$testPlanPackage} = $configData->{testplan}->{$testPlanName};
+        }
+
     } else {
         %testPlanPackagesWithArgsToRun = ( UBOS::WebAppTest::TestingUtils::findTestPlan( 'default' ) => undef );
     }
@@ -139,6 +189,7 @@ sub run {
     my $scaffold;
 
     do {
+        my $scaffoldOptionsCopy = { %$scaffoldOptions }; # scaffold deletes them, so repeat won't work without copying
         $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
         if( $scaffold && $scaffold->isOk ) {
             $success = 1;
@@ -197,20 +248,31 @@ sub run {
 # return: hash of synopsis to help text
 sub synopsisHelp {
     return {
-        <<SSS => <<HHH
+        <<SSS => <<HHH,
     [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold>] [--testplan <testplan>] [--tlskeyfile <tlskeyfile> --tlscrtfile <tlscrtfile> --tlscrtchainfile <tlscrtchainfile> ] <apptest>...
 SSS
     Run the test apptest.
     --interactive: stop at important points and wait for user input
-    <scaffold>: use this named scaffold instead of the default. If given as
-                "abc:def=ghi:jkl=mno", "abc" represents the name of the scaffold,
-                and "def" and "jkl" are scaffold-specific options
-    <testplan>: use this named testplan instead of the default. If given as
-                "abc:def=ghi:jkl=mno", "abc" represents the name of the testplan,
-                and "def" and "jkl" are scaffold-specific options
+    <scaffold>:   use this named scaffold instead of the default. If given as
+                  "abc:def=ghi:jkl=mno", "abc" represents the name of the scaffold,
+                  and "def" and "jkl" are scaffold-specific options
+    <testplan>:   use this named testplan instead of the default. If given as
+                  "abc:def=ghi:jkl=mno", "abc" represents the name of the testplan,
+                  and "def" and "jkl" are scaffold-specific options
     <tlskeyfile>, <tlscrtfile>, <tlscrtchainfile>: files containing
-                TLS key, certificate, certicate chain, and client certificate chain
-                if test is supposed to be run with TLS
+                  TLS key, certificate, certicate chain, and client certificate chain
+                  if test is supposed to be run with TLS
+HHH
+        <<SSS => <<HHH
+    [--verbose | --logConfig <file>] --configfile <configfile> <apptest>...
+SSS
+    Run the test apptest.
+    <configfile>: Read arguments from <configfile>, instead of from command-line
+                  arguments. If arguments are provided on the command-line
+                  anyway, they will override the values from the config file.
+                  The config file must be a JSON file, in a hierarchical order
+                  that corresponds to the command-line arguments and options for
+                  scaffolds and testplans.
 HHH
     };
 }

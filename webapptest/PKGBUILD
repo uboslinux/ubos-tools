@@ -2,14 +2,14 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.92
+pkgver=0.93
 pkgrel=1
 pkgdesc="Testing tools for UBOS web apps"
 arch=('any')
 license=('GPL')
 depends=(
-        'perl-www-curl'
-        'sudo'
+    'perl-www-curl'
+    'sudo'
 )
 optdepends=('virtualbox: run tests in VirtualBox virtual machines')
 options=('!strip')
@@ -29,4 +29,8 @@ package() {
         done
     done
     install -m755 $startdir/vendor_perl/UBOS/WebAppTest.pm $pkgdir/usr/lib/perl5/vendor_perl/UBOS/
+
+# Example config files
+    mkdir -p $pkgdir/usr/share/doc/$pkgname/sample-configs/
+    install -m 644 $startdir/sample-configs/*.json $pkgdir/usr/share/doc/$pkgname/sample-configs/
 }

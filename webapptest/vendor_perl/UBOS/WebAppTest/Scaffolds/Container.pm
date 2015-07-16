@@ -107,7 +107,7 @@ sub setup {
         $self->{bootMaxSeconds} = $options->{'boot-max-seconds'};
         delete $options->{'boot-max-seconds'};
     } else {
-        $self->{bootMaxSeconds} = 240;
+        $self->{bootMaxSeconds} = 60;
     }
 
     $self->{directory}         = delete $options->{directory};
@@ -131,10 +131,10 @@ sub setup {
     debug( 'Starting container' );
     my $cmd = "sudo systemd-nspawn";
     $cmd .= " --boot";
+    $cmd .= " --ephemeral";
     $cmd .= " --network-veth";
     $cmd .= " --machine=" . $self->{name};
     $cmd .= " --directory '" . $self->{directory} . "'";
-    $cmd .= " --ephemeral";                                # run in temporary btrfs snapshot, requires systemd>=220
     $cmd .= " --bind '" . $ubosStaffDir . ":/UBOS-STAFF'"; # UBOS staff 
     $cmd .= " > '" . $outFile->filename . "'";
     $cmd .= " 2>&1";
@@ -182,12 +182,25 @@ sub waitUntilTargetReady {
 
     my $name = $self->{name};
     my $ret  = 0;
+    my $out;
+    my $err;
     for( my $count = 0 ; $count < $self->{bootMaxSeconds} ; $count += 5 ) {
-        my $out;
-        my $result = UBOS::Utils::myexec( "sudo systemctl -M '$name' is-system-running", undef, \$out );
+        # systemctl -M $name is-system-running currently is not possible due to
+        # https://github.com/uboslinux/ubos-admin/issues/110
+        # So we look for success of ubos-httpd instead.
+        
+        my $result = UBOS::Utils::myexec( "sudo systemctl -M '$name' status ubos-httpd", undef, \$out, \$err );
         if( $result == 0 ) {
-            $ret = 1;
-            return $ret;
+
+            my $h = gethostbyname( $name );
+            if( defined( $h )) {
+                $self->{sshHost} = inet_ntoa( $h );
+            
+                debug( 'target', $name, 'is ready at', $self->{sshHost} );
+
+                $ret = 1;
+                return $ret;
+            }
         }
         sleep 5;
     }
