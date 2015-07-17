@@ -25,6 +25,7 @@ use warnings;
 package UBOS::WebAppTest::AbstractScaffold;
 
 use fields qw( isOk verbose );
+use Socket;
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -250,6 +251,13 @@ sub getFileInfo {
 sub handleImpersonateDepot {
     my $self = shift;
     my $ip   = shift;
+
+    unless( $ip =~ m!\d+\.\d+\.\d+\.\d+! ) {
+        my $packedIp = gethostbyname( $ip );
+        if( defined( $packedIp )) {
+            $ip = inet_ntoa( $packedIp );
+        }
+    }
 
     my $cmd = <<'CMD';
 use strict;
