@@ -143,7 +143,6 @@ sub invokeOnTarget {
         $sshCmd .= ' -i ' . $self->{sshPrivateKeyFile};
     }
     $sshCmd .= " '$cmd'";
-    debug( 'ssh command:', $sshCmd );
 
     return UBOS::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
 }
