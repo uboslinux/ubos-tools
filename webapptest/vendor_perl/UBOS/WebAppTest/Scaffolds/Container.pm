@@ -51,6 +51,9 @@ sub setup {
     }
     $self->SUPER::setup( $options );
 
+    debug( 'Setting up Container scaffold with options', sub {
+        join( ', ', map { "$_ => " . $options->{$_}} keys %$options )
+    } );
     # make sure ip_forwarding is set on the host
     my $out;
     if( UBOS::Utils::myexec( 'sysctl net.ipv4.ip_forward', undef, \$out ) != 0 ) {

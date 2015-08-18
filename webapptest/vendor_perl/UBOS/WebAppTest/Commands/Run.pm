@@ -41,7 +41,7 @@ sub run {
     my $interactive   = 0;
     my $verbose       = 0;
     my $logConfigFile = undef;
-    my $scaffoldOpt;
+    my @scaffoldOpts;
     my @testPlanOpts;
     my $tlsKeyFile;
     my $tlsCrtFile;
@@ -54,7 +54,7 @@ sub run {
             'interactive'       => \$interactive,
             'verbose+'          => \$verbose,
             'logConfig=s'       => \$logConfigFile,
-            'scaffold=s'        => \$scaffoldOpt,
+            'scaffold=s'        => \@scaffoldOpts,
             'testplan=s'        => \@testPlanOpts,
             'tlskeyfile=s'      => \$tlsKeyFile,
             'tlscrtfile=s'      => \$tlsCrtFile,
@@ -119,22 +119,48 @@ sub run {
         $tlsData->{crtchain} = UBOS::Utils::slurpFile( $tlsCrtChainFile );
     }
 
-    my( $scaffoldName, $scaffoldOptions );
-    if( $scaffoldOpt ) {
-        ( $scaffoldName, $scaffoldOptions ) = decode( $scaffoldOpt );
-    } elsif( $configData && exists( $configData->{scaffold} )) {
-        foreach my $n ( keys %{$configData->{scaffold}} ) {
-            ( $scaffoldName, $scaffoldOptions ) = ( $n, $configData->{scaffold}->{$n} );
-            last; # for consistency, can be extended later
+    my %scaffoldPackagesWithOptions;
+    if( @scaffoldOpts ) {
+        foreach my $scaffoldOpt ( @scaffoldOpts ) {
+            my( $scaffoldName, $scaffoldOptions ) = decode( $scaffoldOpt );
+            
+            my $scaffoldPackage = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
+            unless( $scaffoldPackage ) {
+                fatal( 'Cannot find scaffold', $scaffoldName );
+            }
+            if( defined( $scaffoldPackagesWithOptions{$scaffoldPackage} )) {
+                fatal( 'Cannot run the scaffold multiple times at this time' );
+            }
+            
+            $scaffoldPackagesWithOptions{$scaffoldPackage} = $scaffoldOptions;
         }
-    } else {
-        $scaffoldName = 'here';
     }
 
-    my $scaffoldPackageName = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
-    unless( $scaffoldPackageName ) {
-        fatal( 'Cannot find scaffold', $scaffoldName );
+    if( $configData && exists( $configData->{scaffold} )) {
+        foreach my $scaffoldName ( keys %{$configData->{scaffold}} ) {
+            
+            my $scaffoldPackage = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
+            unless( $scaffoldPackage ) {
+                fatal( 'Cannot find scaffold', $scaffoldName );
+            }
+            # don't do duplicates check; command-line might override
+
+            my $scaffoldOptions = $configData->{scaffold}->{$scaffoldName};
+
+            foreach my $option ( keys %$scaffoldOptions ) {
+                unless( exists( $scaffoldPackagesWithOptions{$scaffoldPackage}->{$option} )) {
+                    # explicitly set overrides config file
+                    $scaffoldPackagesWithOptions{$scaffoldPackage}->{$option} = $scaffoldOptions->{$option};
+                }
+            }
+        }
     }
+    unless( %scaffoldPackagesWithOptions ) {
+        my $here = UBOS::WebAppTest::TestingUtils::findScaffold( 'here' );
+        $scaffoldPackagesWithOptions{$here} = undef;
+    }
+
+    debug( 'Found scaffold(s)', keys %scaffoldPackagesWithOptions );
 
     my %testPlanPackagesWithArgsToRun = ();
     if( @testPlanOpts ) {
@@ -152,22 +178,34 @@ sub run {
             }
             $testPlanPackagesWithArgsToRun{$testPlanPackage} = $testPlanOptions;
         }
+    }
 
-    } elsif( $configData && exists( $configData->{testplan} )) {
+    if( $configData && exists( $configData->{testplan} )) {
         foreach my $testPlanName ( keys %{ $configData->{testplan} } ) {
+            
             my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
             unless( $testPlanPackage ) {
                 fatal( 'Cannot find test plan', $testPlanName );
             }
-            if( defined( $testPlanPackagesWithArgsToRun{$testPlanPackage} )) {
-                fatal( 'Cannot run the same test plan multiple times at this time' );
-            }
-            $testPlanPackagesWithArgsToRun{$testPlanPackage} = $configData->{testplan}->{$testPlanName};
-        }
+            # don't do duplicates check; command-line might override
 
-    } else {
-        %testPlanPackagesWithArgsToRun = ( UBOS::WebAppTest::TestingUtils::findTestPlan( 'default' ) => undef );
+            my $testPlanOptions = $configData->{testplan}->{$testPlanName};
+
+            foreach my $option ( keys %$testPlanOptions ) {
+                unless( exists( $testPlanPackagesWithArgsToRun{$testPlanPackage}->{$option} )) {
+                    # explicitly set overrides config file
+                    $testPlanPackagesWithArgsToRun{$testPlanPackage}->{$option} = $testPlanOptions->{$option};
+                }
+            }
+        }
     }
+
+    unless( %testPlanPackagesWithArgsToRun ) {
+        my $def = UBOS::WebAppTest::TestingUtils::findTestPlan( 'default' );
+        $testPlanPackagesWithArgsToRun{$def} = undef;
+    }
+
+    debug( 'Found test plan(s)', keys %testPlanPackagesWithArgsToRun );
 
     my @appTestsToRun = ();
     foreach my $appTestName ( @args ) {
@@ -186,58 +224,76 @@ sub run {
     my $repeat;
     my $abort;
     my $quit;
-    my $scaffold;
+    
+    
+    foreach my $scaffoldPackage ( sort keys %scaffoldPackagesWithOptions ) {
+        my $scaffoldOptions = $scaffoldPackagesWithOptions{$scaffoldPackage};
 
-    do {
-        my $scaffoldOptionsCopy = { %$scaffoldOptions }; # scaffold deletes them, so repeat won't work without copying
-        $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackageName . '->setup', $scaffoldOptions );
-        if( $scaffold && $scaffold->isOk ) {
-            $success = 1;
+        my $scaffold;
 
-        } else {
-            $success = 0;
-
-            error( 'Setting up scaffold failed.' );
-
-        }
-        ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Setting up scaffold', $interactive, $success, $ret );
-
-    } while( $repeat );
-
-    if( $success && !$abort && !$quit ) {
-        my $printTest     = @appTestsToRun > 1;
-        my $printTestPlan = ( keys %testPlanPackagesWithArgsToRun ) > 1;
-
-        foreach my $appTest ( @appTestsToRun ) {
-            if( $printTest ) {
-                print "Running AppTest " . $appTest->name . "\n";
+        do {
+            my $scaffoldOptionsCopy;
+            if( defined( $scaffoldOptions )) {
+                $scaffoldOptionsCopy = { %$scaffoldOptions }; # scaffold deletes them, so repeat won't work without copying
+            } else {
+                $scaffoldOptionsCopy = undef;
             }
-            foreach my $testPlanPackage ( sort keys %testPlanPackagesWithArgsToRun ) { # consistent sequence
-                my $testPlanOptions = $testPlanPackagesWithArgsToRun{$testPlanPackage};
 
-                if( $printTestPlan ) {
-                    print "Running TestPlan " . $testPlanPackage . "\n";
+            debug( 'Scaffold->setup()' );
+
+            $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackage . '->setup', $scaffoldOptions );
+            if( $scaffold && $scaffold->isOk ) {
+                $success = 1;
+
+            } else {
+                $success = 0;
+
+                error( 'Setting up scaffold failed.' );
+
+            }
+            ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Setting up scaffold', $interactive, $success, $ret );
+
+        } while( $repeat );
+
+        if( $success && !$abort && !$quit ) {
+            my $printTest     = @appTestsToRun > 1;
+            my $printTestPlan = ( keys %testPlanPackagesWithArgsToRun ) > 1;
+
+            foreach my $appTest ( @appTestsToRun ) {
+                if( $printTest ) {
+                    print "Running AppTest " . $appTest->name . "\n";
                 }
-                info( 'Running AppTest', $appTest->name, 'with test plan', $testPlanPackage );
-                
-                my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $appTest, $testPlanOptions, $tlsData );
+                foreach my $testPlanPackage ( sort keys %testPlanPackagesWithArgsToRun ) { # consistent sequence
+                    my $testPlanOptions = $testPlanPackagesWithArgsToRun{$testPlanPackage};
 
-                my $status = $testPlan->run( $scaffold, $interactive, $verbose );
-                $ret &= $status;
+                    if( $printTestPlan ) {
+                        print "Running TestPlan " . $testPlanPackage . "\n";
+                    }
+                    info( 'Running AppTest', $appTest->name, 'with test plan', $testPlanPackage );
+                    
+                    my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $appTest, $testPlanOptions, $tlsData );
 
-                unless( $status ) {
-                    error( 'Test', $appTest->name, 'failed.' );
+                    my $status = $testPlan->run( $scaffold, $interactive, $verbose );
+                    $ret &= $status;
 
-                } elsif( $verbose > 0 ) {
-                    print "Test passed.\n";
+                    unless( $status ) {
+                        error( 'Test', $appTest->name, 'failed.' );
+
+                    } elsif( $verbose > 0 ) {
+                        print "Test passed.\n";
+                    }
                 }
             }
         }
-    }
-    $ret &= $success;
+        $ret &= $success;
 
-    if( $scaffold && !$abort ) {
-        $scaffold->teardown();
+        if( $scaffold && !$abort ) {
+            debug( 'Scaffold->teardown()' );
+            $scaffold->teardown();
+        }
+        if( $abort || $quit ) {
+            last;
+        }
     }
 
     return $ret;

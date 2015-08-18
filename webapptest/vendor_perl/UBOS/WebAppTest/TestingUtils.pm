@@ -127,7 +127,7 @@ sub findAppTestInDirectory {
     if( !-r $fileName && $fileName !~ m!\.pm$! ) {
         $fileName = "$fileName.pm";
     }
-    if( -r $fileName ) {
+    if( -r $fileName && -f $fileName ) {
         my $content = UBOS::Utils::slurpFile( $fileName );
         
         my $appTest = eval $content;

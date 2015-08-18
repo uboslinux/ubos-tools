@@ -22,6 +22,7 @@
 use strict;
 use warnings;
 
+use UBOS::Logging;
 use UBOS::WebAppTest::TestingUtils;
 use UBOS::Utils;
 
@@ -46,7 +47,9 @@ if( $commandPackage ) {
             }
         }
     }
-    
+
+    debug( 'Invoking webapptest command', $commandPackage ); 
+
     my $result = UBOS::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
 
     exit !$result;

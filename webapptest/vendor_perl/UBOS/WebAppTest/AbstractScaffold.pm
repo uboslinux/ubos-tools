@@ -248,9 +248,14 @@ sub getFileInfo {
 ##
 # Handle the impersonatedepot option, if given
 # $ip: the IP address to use for depot.ubos.net, or undef if using the real one
+# return: 1 if successful
 sub handleImpersonateDepot {
     my $self = shift;
     my $ip   = shift;
+    
+    unless( $ip ) {
+        return 1;
+    }
 
     unless( $ip =~ m!\d+\.\d+\.\d+\.\d+! ) {
         my $packedIp = gethostbyname( $ip );
