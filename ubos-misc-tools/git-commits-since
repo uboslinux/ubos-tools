@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+#
+# Show the number of commits since a particular date
+#
+
+use strict;
+use warnings;
+
+use Cwd;
+use File::Basename;
+use Getopt::Long;
+
+my $since = undef;
+my $parseOk = GetOptions(
+        'since=s' => \$since );
+
+my @dirs = @ARGV;
+if( !$parseOk || !$since || !@dirs ) {
+    print STDERR <<END;
+Synopsis:
+    $0 --since <timestamp-acceptable-to-git> <dir>...
+END
+    exit 1;
+}
+
+my $total = 0;
+foreach my $d ( @dirs ) {
+    print "$d: ";
+    if( isGitDir( $d )) {
+        my $n = grep { /commit/ } split "\n", `cd "$d"; git log --since "$since"`;
+        print "$n\n";
+        $total += $n;
+    } else {
+        print "not a git directory\n";
+    }
+}
+print "Total: $total\n";
+
+sub isGitDir {
+    my $d = shift;
+
+    if( -d "$d/.git" ) {
+        return 1;
+    }
+    $d = Cwd::abs_path( $d );
+    if( $d eq '/' ) {
+        return 0;
+    }
+    return isGitDir( dirname( $d ));
+}
+
+1;

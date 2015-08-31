@@ -8,13 +8,12 @@ use strict;
 use warnings;
 
 use Cwd;
+use File::Basename;
 use Getopt::Long;
 
-my $verbose = 0;
-my @wrt     = ();
+my @wrt = ();
 
 my $parseOk = GetOptions(
-        'verbose+'           => \$verbose,
         'compare-with-tag=s' => \@wrt );
 
 my @dirs = @ARGV;
@@ -30,14 +29,20 @@ my %wrt = ();
 map { $wrt{$_} = $_ } @wrt;
 
 foreach my $d ( @dirs ) {
-    if( -d "$d/.git" ) {
+    if( isGitDir( $d )) {
         print "=== $d ===\n";
-        print "Status:\n";
-        print map { "    $_\n" } split( "\n", `cd $d; git status -s` );
-        
+
+        my @status   = split( "\n", `cd $d; git status -s` );
         my @branches = split( "\n", `cd $d; git branch` );
         my @tags     = split( "\n", `cd $d; git tag` );
 
+        if( @status ) {
+            print "Status:\n";
+            print map { "    $_\n" } @status;
+        } else {
+            print "Status: clean\n";
+        }
+        
         print "Branches:\n";
         print map { "    $_ (" . info( $d, $_, undef )  . ")\n" } @branches;
 
@@ -51,6 +56,19 @@ foreach my $d ( @dirs ) {
     } else {
         print "WARNING: $d is not a git directory\n";
     }
+}
+
+sub isGitDir {
+    my $d = shift;
+
+    if( -d "$d/.git" ) {
+        return 1;
+    }
+    $d = Cwd::abs_path( $d );
+    if( $d eq '/' ) {
+        return 0;
+    }
+    return isGitDir( dirname( $d ));
 }
 
 sub info {

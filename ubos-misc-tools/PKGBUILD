@@ -14,4 +14,5 @@ package() {
 # Code
     mkdir -p $pkgdir/usr/bin
     install -m755 $startdir/git-360 $pkgdir/usr/bin/
+    install -m755 $startdir/git-commits-since $pkgdir/usr/bin/
 }
