@@ -1,0 +1,75 @@
+#!/usr/bin/perl
+#
+# Provides a 360-degree view of the status of one or more git directories
+# with respect to other branches and tags
+#
+
+use strict;
+use warnings;
+
+use Cwd;
+use Getopt::Long;
+
+my $verbose = 0;
+my @wrt     = ();
+
+my $parseOk = GetOptions(
+        'verbose+'           => \$verbose,
+        'compare-with-tag=s' => \@wrt );
+
+my @dirs = @ARGV;
+if( !$parseOk || !@dirs ) {
+    print STDERR <<END;
+Synopsis:
+    $0 [ --compare-with-tag <tag> ]... <dir>...
+END
+    exit 1;
+}
+
+my %wrt = ();
+map { $wrt{$_} = $_ } @wrt;
+
+foreach my $d ( @dirs ) {
+    if( -d "$d/.git" ) {
+        print "=== $d ===\n";
+        print "Status:\n";
+        print map { "    $_\n" } split( "\n", `cd $d; git status -s` );
+        
+        my @branches = split( "\n", `cd $d; git branch` );
+        my @tags     = split( "\n", `cd $d; git tag` );
+
+        print "Branches:\n";
+        print map { "    $_ (" . info( $d, $_, undef )  . ")\n" } @branches;
+
+        if( @tags ) {
+            print "Tags:\n";
+            print map { "    $_ (" . info( $d, $_, \%wrt )  . ")\n" } @tags;
+        } else {
+            print "No tags\n";
+        }
+        print "\n";
+    } else {
+        print "WARNING: $d is not a git directory\n";
+    }
+}
+
+sub info {
+    my $d      = shift;
+    my $tag    = shift;
+    my $toShow = shift;
+
+    my $ret;
+    if( $tag =~ m!\*! ) {
+        $ret = "this";
+    } elsif( !defined( $toShow ) || defined( $toShow->{$tag} )) {
+        $ret = `cd $d; git diff --shortstat $tag`;
+        $ret =~ s!^\s+!!;
+        $ret =~ s!\s+$!!;
+    } else {
+        $ret = "not shown";
+    }
+    return $ret;
+}
+
+1;
+
