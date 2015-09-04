@@ -11,46 +11,73 @@ use Cwd;
 use File::Basename;
 use Getopt::Long;
 
-my @wrt = ();
+my $statusArg;
+my $tagsArg;
+my $branchesArg;
+my $allArg;
+my @wrtArg = ();
 
 my $parseOk = GetOptions(
-        'compare-with-tag=s' => \@wrt );
+        'status'             => \$statusArg,
+        'tags'               => \$tagsArg,
+        'branches'           => \$branchesArg,
+        'all'                => \$allArg,
+        'compare-with-tag=s' => \@wrtArg );
 
 my @dirs = @ARGV;
-if( !$parseOk || !@dirs ) {
+if(    !$parseOk
+    || !@dirs
+    || ( $allArg && ( $statusArg || $tagsArg || $branchesArg ))
+    || ( @wrtArg && !( $allArg || $tagsArg )))
+{
     print STDERR <<END;
 Synopsis:
-    $0 [ --compare-with-tag <tag> ]... <dir>...
+    $0 [--status] [--tags [ --compare-with-tag <tag> ]] [--branches] <dir>...
+    $0 --all <dir>...
+    $0 ... <dir>...
 END
     exit 1;
 }
 
 my %wrt = ();
-map { $wrt{$_} = $_ } @wrt;
+map { $wrt{$_} = $_ } @wrtArg;
+
+if( $allArg ) {
+    $statusArg   = 1;
+    $tagsArg     = 1;
+    $branchesArg = 1;
+} elsif( !$statusArg && !$tagsArg && !$branchesArg ) {
+    $statusArg = 1;
+}
 
 foreach my $d ( @dirs ) {
     if( isGitDir( $d )) {
         print "=== $d ===\n";
 
-        my @status   = split( "\n", `cd $d; git status -s` );
-        my @branches = split( "\n", `cd $d; git branch` );
-        my @tags     = split( "\n", `cd $d; git tag` );
-
-        if( @status ) {
-            print "Status:\n";
-            print map { "    $_\n" } @status;
-        } else {
-            print "Status: clean\n";
+        if( $statusArg ) {
+            my @status   = split( "\n", `cd $d; git status -s` );
+            if( @status ) {
+                print "Status:\n";
+                print map { "    $_\n" } @status;
+            } else {
+                print "Status: clean\n";
+            }
         }
         
-        print "Branches:\n";
-        print map { "    $_ (" . info( $d, $_, undef )  . ")\n" } @branches;
+        if( $branchesArg ) {
+            my @branches = split( "\n", `cd $d; git branch` );
+            print "Branches:\n";
+            print map { "    $_ (" . info( $d, $_, undef )  . ")\n" } @branches;
+        }
 
-        if( @tags ) {
-            print "Tags:\n";
-            print map { "    $_ (" . info( $d, $_, \%wrt )  . ")\n" } @tags;
-        } else {
-            print "No tags\n";
+        if( $tagsArg ) {
+            my @tags     = split( "\n", `cd $d; git tag` );
+            if( @tags ) {
+                print "Tags:\n";
+                print map { "    $_ (" . info( $d, $_, \%wrt )  . ")\n" } @tags;
+            } else {
+                print "No tags\n";
+            }
         }
         print "\n";
     } else {
@@ -83,8 +110,11 @@ sub info {
         $ret = `cd $d; git diff --shortstat $tag`;
         $ret =~ s!^\s+!!;
         $ret =~ s!\s+$!!;
+        unless( $ret ) {
+            $ret = "same";
+        }
     } else {
-        $ret = "not shown";
+        $ret = "?";
     }
     return $ret;
 }
