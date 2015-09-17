@@ -56,11 +56,22 @@ sub setup {
     } );
     # make sure ip_forwarding is set on the host
     my $out;
-    if( UBOS::Utils::myexec( 'sysctl net.ipv4.ip_forward', undef, \$out ) != 0 ) {
-        fatal( 'sysctl call failed' );
-    }
-    unless( $out =~ m!\Qnet.ipv4.ip_forward\E\s*=\s*1\s*! ) {
-        fatal( 'Cannot run Container scaffold without IPv4 forwarding:', $out );
+    for( my $i=0 ; 1 ; ++$i ) {
+        if( UBOS::Utils::myexec( 'sysctl net.ipv4.ip_forward', undef, \$out ) != 0 ) {
+            fatal( 'sysctl call failed' );
+        }
+        if( $out =~ m!\Qnet.ipv4.ip_forward\E\s*=\s*1\s*! ) {
+            last;
+        }
+        if( $i>=1 ) {
+            fatal( 'Failed to set IPv4 packet forwarding, and cannot run Container scaffold without:', $out );
+        }
+        warning( 'Switching on IPv4 packet forwarding, otherwise the container scaffold cannot run' );
+
+        if( UBOS::Utils::myexec( 'sudo sysctl net.ipv4.ip_forward=1', undef, \$out ) != 0 ) {
+            fatal( 'sysctl call failed' );
+        }
+        
     }
 
     $self->{isOk} = 0; # until we decide otherwise
