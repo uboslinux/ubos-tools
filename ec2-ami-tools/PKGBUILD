@@ -1,0 +1,48 @@
+# Upstream maintainer: Steven Noonan <steven@uplinklabs.net>
+# Forked for UBOS
+
+developer=https://aws.amazon.com/
+url=${developer}
+maintainer=http://indiecomputing.com/
+pkgname=$(basename $(pwd))
+pkgver=1.5.7
+pkgrel=1
+pkgdesc="The Amazon EC2 AMI Tools are command-line utilities to help manage machine instances for Amazon S3."
+arch=('any')
+source=("http://s3.amazonaws.com/ec2-downloads/ec2-ami-tools-${pkgver}.zip"
+        'installed-paths.patch')
+depends=('ruby' 'rsync' 'openssl' 'gzip' 'tar')
+license=('custom')
+sha512sums=('2754ded47cbe842f58e12207c4bb7f81c8cd366dc506cbadfa9bda74d91fd5f8e1cafbb117612b14833368ff5943c4943a072d1679f23f591c15f2f49b61b4c2'
+            '79feed9bdd4240d1ea054ed80df64fbfdd420bfab734f71db4154e43976b8688c04f045e5ce63de0443f9fb5823c3286109c354398ddbb2a9aab7909dfe04f21')
+
+prepare() {
+  cd "$srcdir/$pkgname-$pkgver"
+  patch -Np1 -i "${srcdir}/installed-paths.patch"
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+
+  mkdir -p "$pkgdir/usr"
+  cp -r lib "$pkgdir/usr/"
+  cp -r bin "$pkgdir/usr/"
+
+  mkdir -p "$pkgdir/usr/share/$pkgname/certs"
+  cp etc/ec2/amitools/*csv "$pkgdir/usr/share/$pkgname/"
+  cp etc/ec2/amitools/*pem "$pkgdir/usr/share/$pkgname/certs/"
+
+  mkdir -p "$pkgdir/usr/share/licenses/$pkgname"
+  install -m 644 license.txt "$pkgdir/usr/share/licenses/$pkgname"
+
+  find "$pkgdir" -type f | xargs chmod 644
+  find "$pkgdir/usr/bin" -type f | xargs chmod 755
+}
+
+check() {
+  for file in $(find "$srcdir/$pkgname-$pkgver" -type f -name '*.rb'); do
+    echo -n "$file: "
+    ruby -c $file
+  done
+}
+
