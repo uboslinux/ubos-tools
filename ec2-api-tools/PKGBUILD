@@ -3,14 +3,14 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=1.7.5.1
-pkgrel=1
+pkgrel=2
 pkgdesc="API tools for Amazon EC2"
 arch=('any')
 license=("Amazon Software License")
 source=("http://s3.amazonaws.com/ec2-downloads/${pkgname}-${pkgver}.zip")
 options=('!strip')
 depends=(
-    'java-runtime-common'
+    'java-runtime-headless'
 )
 sha512sums=('50045b0ecdd1b1bcb4079be28878c341eabffacccfb75cb1fddeaf7d65065322f2e3da04b4129298e456c5f109237abf43b13e24ddf6e16ddf98c25593045e39')
 
