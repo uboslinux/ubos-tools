@@ -1,0 +1,4 @@
+pkg/
+src/
+ec2-api-tools-*.zip
+ec2-api-tools-*-any.pkg.tar*

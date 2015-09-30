@@ -1,0 +1,40 @@
+developer=https://aws.amazon.com/
+url=${developer}
+maintainer=http://indiecomputing.com/
+pkgname=$(basename $(pwd))
+pkgver=1.7.5.1
+pkgrel=1
+pkgdesc="API tools for Amazon EC2"
+arch=('any')
+license=("Amazon Software License")
+source=("http://s3.amazonaws.com/ec2-downloads/${pkgname}-${pkgver}.zip")
+options=('!strip')
+depends=(
+    'java-runtime-common'
+)
+sha512sums=('50045b0ecdd1b1bcb4079be28878c341eabffacccfb75cb1fddeaf7d65065322f2e3da04b4129298e456c5f109237abf43b13e24ddf6e16ddf98c25593045e39')
+
+shopt -s extglob
+
+package() {
+    mkdir -p ${pkgdir}/usr/share/${pkgname}/lib
+    install -m0644 ${startdir}/src/${pkgname}-${pkgver}/lib/*.jar ${pkgdir}/usr/share/${pkgname}/lib/
+
+    mkdir -p ${pkgdir}/usr/bin
+    mkdir -p ${pkgdir}/usr/share/${pkgname}/bin
+
+    for s in ${startdir}/src/${pkgname}-${pkgver}/bin/+([^.]); do
+        cat $s \
+        | grep -v ^__ZIP_PREFIX__EC2_HOME \
+        | grep -v ^__RPM_PREFIX__EC2_HOME \
+        | sed -e 's/^"\${EC2_HOME}"/# Simplified for UBOS (C) 2015 by Indie Computing Corp.\n\/usr\/share\/ec2-api-tools/' \
+        > ${pkgdir}/usr/bin/$(basename $s)
+        chmod 755 ${pkgdir}/usr/bin/$(basename $s)
+    done
+
+    # but ec2-cmd needs to go somewhere else
+    rm ${pkgdir}/usr/bin/ec2-cmd
+
+    install -m0755 ${startdir}/ec2-cmd ${pkgdir}/usr/share/${pkgname}/bin/
+}
+
