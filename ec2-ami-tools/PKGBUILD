@@ -6,7 +6,7 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=1.5.7
-pkgrel=1
+pkgrel=2
 pkgdesc="The Amazon EC2 AMI Tools are command-line utilities to help manage machine instances for Amazon S3."
 arch=('any')
 source=("http://s3.amazonaws.com/ec2-downloads/ec2-ami-tools-${pkgver}.zip"
@@ -38,11 +38,3 @@ package() {
   find "$pkgdir" -type f | xargs chmod 644
   find "$pkgdir/usr/bin" -type f | xargs chmod 755
 }
-
-check() {
-  for file in $(find "$srcdir/$pkgname-$pkgver" -type f -name '*.rb'); do
-    echo -n "$file: "
-    ruby -c $file
-  done
-}
-
