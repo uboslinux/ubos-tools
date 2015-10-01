@@ -3,7 +3,7 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=1.7.5.1
-pkgrel=2
+pkgrel=3
 pkgdesc="API tools for Amazon EC2"
 arch=('any')
 license=("Amazon Software License")
@@ -36,5 +36,8 @@ package() {
     rm ${pkgdir}/usr/bin/ec2-cmd
 
     install -m0755 ${startdir}/ec2-cmd ${pkgdir}/usr/share/${pkgname}/bin/
-}
 
+    # licenses
+    mkdir -p ${pkgdir}/usr/share/licenses/${pkgname}
+    install -m0644 ${startdir}/src/${pkgname}-${pkgver}/{license.txt,notice.txt,THIRDPARTYLICENSE.TXT} ${pkgdir}/usr/share/licenses/${pkgname}/
+}
