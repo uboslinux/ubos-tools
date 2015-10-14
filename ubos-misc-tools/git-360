@@ -15,6 +15,7 @@ my $statusArg;
 my $tagsArg;
 my $branchesArg;
 my $allArg;
+my $quietArg;
 my @wrtArg = ();
 
 my $parseOk = GetOptions(
@@ -22,19 +23,21 @@ my $parseOk = GetOptions(
         'tags'               => \$tagsArg,
         'branches'           => \$branchesArg,
         'all'                => \$allArg,
+        'quiet'              => \$quietArg,
         'compare-with-tag=s' => \@wrtArg );
 
 my @dirs = @ARGV;
 if(    !$parseOk
     || !@dirs
-    || ( $allArg && ( $statusArg || $tagsArg || $branchesArg ))
+    || ( $allArg && ( $statusArg || $tagsArg || $branchesArg || $quietArg ))
     || ( @wrtArg && !( $allArg || $tagsArg )))
 {
     print STDERR <<END;
 Synopsis:
     $0 [--status] [--tags [ --compare-with-tag <tag> ]] [--branches] <dir>...
     $0 --all <dir>...
-    $0 ... <dir>...
+    $0 --quiet <dir>...
+    $0 <dir>...
 END
     exit 1;
 }
@@ -52,34 +55,42 @@ if( $allArg ) {
 
 foreach my $d ( @dirs ) {
     if( isGitDir( $d )) {
-        print "=== $d ===\n";
+        my $isImportant = 0;
+        my $out = "=== $d ===\n";
 
         if( $statusArg ) {
             my @status   = split( "\n", `cd $d; git status -s` );
             if( @status ) {
-                print "Status:\n";
-                print map { "    $_\n" } @status;
+                $out .= "Status:\n";
+                $out .= join( '', map { "    $_\n" } @status );
+                $isImportant = 1;
             } else {
-                print "Status: clean\n";
+                $out .= "Status: clean\n";
             }
         }
         
         if( $branchesArg ) {
             my @branches = split( "\n", `cd $d; git branch` );
-            print "Branches:\n";
-            print map { "    $_ (" . info( $d, $_, undef )  . ")\n" } @branches;
+            $out .= "Branches:\n";
+            $out .= join( '', map { "    $_ (" . info( $d, $_, undef )  . ")\n" } @branches );
+            $isImportant = 1;
         }
 
         if( $tagsArg ) {
-            my @tags     = split( "\n", `cd $d; git tag` );
+            my @tags = split( "\n", `cd $d; git tag` );
             if( @tags ) {
-                print "Tags:\n";
-                print map { "    $_ (" . info( $d, $_, \%wrt )  . ")\n" } @tags;
+                $out .= "Tags:\n";
+                $out .= join( '', map { "    $_ (" . info( $d, $_, \%wrt )  . ")\n" } @tags );
             } else {
-                print "No tags\n";
+                $out .= "No tags\n";
             }
+            $isImportant = 1;
         }
-        print "\n";
+        $out .= "\n";
+
+        if( $isImportant || !$quietArg ) {
+            print $out;
+        }
     } else {
         print "WARNING: $d is not a git directory\n";
     }
