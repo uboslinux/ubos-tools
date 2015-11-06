@@ -1,0 +1,24 @@
+developer=https://aws.amazon.com/
+url=${developer}
+maintainer=http://indiecomputing.com/
+pkgname=$(basename $(pwd))
+pkgver=1.9.5
+pkgrel=1
+pkgdesc='Universal Command Line Interface for Amazon Web Services'
+arch=('any')
+source=("https://github.com/aws/aws-cli/archive/${pkgver}.tar.gz")
+depends=('python2')
+license=('Apache')
+sha512sums=('0c7b78185391463398900c83c3acafe1f54e039c053f5b83204f14e8b866e481e3493b9e0a875d5a1dfbd9bd98163a1643f0b45be6de6f26aa8349c6403a25fe')
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  python2 setup.py install --root="${pkgdir}"
+
+  rm ${pkgdir}/usr/bin/aws.cmd
+  rm ${pkgdir}/usr/bin/{aws_completer,aws_zsh_completer.sh}
+
+  install -Dpm644 'README.rst' 'requirements.txt' -t "${pkgdir}/usr/share/doc/${pkgname%-git}/"
+  install -Dpm644 'LICENSE.txt' "${pkgdir}/usr/share/licenses/${pkgname%-git}/LICENSE"
+}
