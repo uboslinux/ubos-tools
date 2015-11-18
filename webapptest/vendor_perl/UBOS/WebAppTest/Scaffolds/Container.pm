@@ -215,17 +215,22 @@ sub waitUntilTargetReady {
     my $out;
     my $err;
     for( my $count = 0 ; $count < $self->{bootMaxSeconds} ; $count += 5 ) {
-        # systemctl -M $name is-system-running currently is not possible due to
-        # https://github.com/uboslinux/ubos-admin/issues/110
-        # So we look for success of ubos-httpd instead.
-        
-        my $result = UBOS::Utils::myexec( "sudo systemctl -M '$name' status ubos-httpd", undef, \$out, \$err );
+        my $result = UBOS::Utils::myexec( "sudo systemctl -M '$name' is-system-running", undef, \$out, \$err );
         if( $result == 0 ) {
+            my $h;
+            UBOS::Utils::myexec( "getent ahostsv4 '$name'", undef, \$h );
+            if( $h && $h =~ m!^(\S+)\s+! ) {
+                $self->{sshHost} = $1; # ipv4
 
-            my $h = gethostbyname( $name );
-            if( defined( $h )) {
-                $self->{sshHost} = inet_ntoa( $h );
-            
+                debug( 'target', $name, 'is ready at', $self->{sshHost} );
+
+                $ret = 1;
+                return $ret;
+            }
+            UBOS::Utils::myexec( "getent ahostsv6 '$name'", undef, \$h );
+            if( $h && $h =~ m!^(\S+)\s+! ) {
+                $self->{sshHost} = $1; # ipv6
+
                 debug( 'target', $name, 'is ready at', $self->{sshHost} );
 
                 $ret = 1;
