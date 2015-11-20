@@ -54,24 +54,48 @@ sub setup {
     debug( 'Setting up Container scaffold with options', sub {
         join( ', ', map { "$_ => " . $options->{$_}} keys %$options )
     } );
-    # make sure ip_forwarding is set on the host
+
+    # make sure ip_forwarding is set for the default route upstream
     my $out;
-    for( my $i=0 ; 1 ; ++$i ) {
-        if( UBOS::Utils::myexec( 'sysctl net.ipv4.ip_forward', undef, \$out ) != 0 ) {
-            fatal( 'sysctl call failed' );
+    my $depotIp;
+    my $depotNic;
+    my $depotNicForwarding=0;
+    for( my $i=0 ; $i<5 ; ++$i ) {
+        UBOS::Utils::myexec( 'getent ahostsv4 depot.ubos.net', undef, \$out );
+        if( $out =~ m!^(\d+\.\d+\.\d+\.\d+)\s+STREAM! ) {
+                # 52.23.168.209   STREAM depot.ubos.net
+                # 52.23.168.209   DGRAM
+                # 52.23.168.209   RAW
+            $depotIp = $1;
+
+        } else {
+            next;
         }
-        if( $out =~ m!\Qnet.ipv4.ip_forward\E\s*=\s*1\s*! ) {
+
+        UBOS::Utils::myexec( 'ip route get ' . $depotIp, undef, \$out );
+        if( $out =~ m!^\d+\.\d+\.\d+\.\d+ via \d+\.\d+\.\d+\.\d+ \S+ (\S+)! ) {
+                # 52.23.168.209 via 192.168.138.1 dev enp0s3  src 192.168.138.144
+                # cache
+            $depotNic = $1;
+
+        } else {
+            next;
+        }
+
+        UBOS::Utils::myexec( "sudo sysctl net.ipv4.conf.$depotNic.forwarding=1", undef, \$out );
+        if( UBOS::Utils::slurpFile( "/proc/sys/net/ipv4/conf/$depotNic/forwarding" ) =~ m!1! ) {
+            $depotNicForwarding=1;
             last;
         }
-        if( $i>=1 ) {
-            fatal( 'Failed to set IPv4 packet forwarding, and cannot run Container scaffold without:', $out );
-        }
-        warning( 'Switching on IPv4 packet forwarding, otherwise the container scaffold cannot run' );
 
-        if( UBOS::Utils::myexec( 'sudo sysctl net.ipv4.ip_forward=1', undef, \$out ) != 0 ) {
-            fatal( 'sysctl call failed' );
-        }
-        
+        sleep( 2 );
+    }
+    if( !defined( $depotIp )) {
+        fatal( 'Failed to determine IPv4 address of depot.ubos.net' );
+    } elsif( !defined( $depotNic )) {
+        fatal( 'Failed to determine NIC of route to depot.ubos.net' );
+    } elsif( $depotNicForwarding==0 ) {
+        fatal( 'Failed to set IPv4 forwarding on upstream NIC', $depotNic );
     }
 
     $self->{isOk} = 0; # until we decide otherwise
@@ -210,36 +234,35 @@ sub teardown {
 sub waitUntilTargetReady {
     my $self = shift;
 
-    my $name = $self->{name};
-    my $ret  = 0;
+    my $name   = $self->{name};
+    my $ret    = 0;
+    my $result = 1;
     my $out;
     my $err;
     for( my $count = 0 ; $count < $self->{bootMaxSeconds} ; $count += 5 ) {
-        my $result = UBOS::Utils::myexec( "sudo systemctl -M '$name' is-system-running", undef, \$out, \$err );
+        $result = UBOS::Utils::myexec( "sudo systemctl -M '$name' is-system-running", undef, \$out, \$err );
         if( $result == 0 ) {
-            my $h;
-            UBOS::Utils::myexec( "getent ahostsv4 '$name'", undef, \$h );
-            if( $h && $h =~ m!^(\S+)\s+! ) {
-                $self->{sshHost} = $1; # ipv4
+
+            UBOS::Utils::myexec( "getent ahostsv4 '$name'", undef, \$out );
+            if( $out && $out =~ m!^(\S+)\s+! ) {
+                $self->{sshHost} = $1;
 
                 debug( 'target', $name, 'is ready at', $self->{sshHost} );
 
                 $ret = 1;
                 return $ret;
             }
-            UBOS::Utils::myexec( "getent ahostsv6 '$name'", undef, \$h );
-            if( $h && $h =~ m!^(\S+)\s+! ) {
-                $self->{sshHost} = $1; # ipv6
-
-                debug( 'target', $name, 'is ready at', $self->{sshHost} );
-
-                $ret = 1;
-                return $ret;
-            }
+            # Do not attempt to use ipv6; we are not set up to do that: would
+            # need to obtain IPv6 address that's not link-local, see
+            # http://superuser.com/questions/236993/how-to-ssh-to-a-ipv6-ubuntu-in-a-lan#comment-1309716
         }
         sleep 5;
     }
-    debug( 'system is-system-running not in time:', $out );
+    if( $result ) {
+        warning( 'system is-system-running not in time:', $out );
+    } else {
+        warning( 'system is-system-running in time, but no IPv4 address:', $out );
+    }
 
     return $ret;
 }
