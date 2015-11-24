@@ -244,13 +244,27 @@ sub waitUntilTargetReady {
         if( $result == 0 ) {
 
             UBOS::Utils::myexec( "getent ahostsv4 '$name'", undef, \$out );
-            if( $out && $out =~ m!^(\S+)\s+! ) {
-                $self->{sshHost} = $1;
+            if( $out ) {
+                my @lines = split /\n/, $out;
+                my $best  = undef;
+                foreach my $line ( @lines ) {
+                    # Prefer IP addresses not from 169.254
+                    if( $line =~ m!^(\d+)\.(\d+)\.(\S+)\s+! ) {
+                        if( $1 ne 169 && $2 ne 254 ) {
+                            $best = "$1.$2.$3";
+                        } elsif( $!best ) {
+                            $best = "$1.$2.$3";
+                        }
+                    }
+                }
+                if( defined( $best )) {
+                    $self->{sshHost} = $best;
 
-                debug( 'target', $name, 'is ready at', $self->{sshHost} );
+                    debug( 'target', $name, 'is ready at', $self->{sshHost} );
 
-                $ret = 1;
-                return $ret;
+                    $ret = 1;
+                    return $ret;
+                }
             }
             # Do not attempt to use ipv6; we are not set up to do that: would
             # need to obtain IPv6 address that's not link-local, see
