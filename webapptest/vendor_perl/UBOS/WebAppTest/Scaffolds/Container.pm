@@ -252,7 +252,7 @@ sub waitUntilTargetReady {
                     if( $line =~ m!^(\d+)\.(\d+)\.(\S+)\s+! ) {
                         if( $1 ne 169 && $2 ne 254 ) {
                             $best = "$1.$2.$3";
-                        } elsif( $!best ) {
+                        } elsif( !$best ) {
                             $best = "$1.$2.$3";
                         }
                     }
