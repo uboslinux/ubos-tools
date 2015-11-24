@@ -145,14 +145,14 @@ sub setup {
         $self->{bootMaxSeconds} = $options->{'boot-max-seconds'};
         delete $options->{'boot-max-seconds'};
     } else {
-        $self->{bootMaxSeconds} = 60;
+        $self->{bootMaxSeconds} = 240;
     }
 
     if( exists( $options->{'shutdown-max-seconds'} )) {
         $self->{shutdownMaxSeconds} = $options->{'shutdown-max-seconds'};
         delete $options->{'shutdown-max-seconds'};
     } else {
-        $self->{shutdownMaxSeconds} = 60;
+        $self->{shutdownMaxSeconds} = 120;
     }
 
     $self->{directory}         = delete $options->{directory};
