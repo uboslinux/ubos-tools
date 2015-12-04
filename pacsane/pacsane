@@ -189,7 +189,7 @@ foreach my $dbFile ( @dbFiles ) {
 
         unless( $definedPackages->{$foundPackageNameVersion} ) {
             # let's also report on alternate versions found of the same package
-            if( $foundPackageNameVersion =~ m!^(.*)(-\d+:)?-([^-]+)-(\d+)$! ) {
+            if( $foundPackageNameVersion =~ m!^(.*)(-\d+:)?-([^-]+)-(\d+(\.\d+))$! ) {
                 my $packageName = $1;
                 unless( defined( $notInDb->{$packageName} )) {
                     $notInDb->{$packageName} = [];
