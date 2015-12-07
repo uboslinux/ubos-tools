@@ -1,0 +1,88 @@
+#!/usr/bin/perl
+#
+# Do the same thing to several git repositories at one.
+#
+
+use strict;
+use warnings;
+
+use Cwd;
+use File::Basename;
+use Getopt::Long;
+
+my $tagArg;
+my $msgArg;
+my $signArg;
+my $pushArg;
+my $remoteArg;
+
+my $parseOk = GetOptions(
+        'tag=s'     => \$tagArg,
+        'message=s' => \$msgArg,
+        'sign'      => \$signArg,
+        'push'      => \$pushArg,
+        'remote=s'  => \$remoteArg );
+
+my @dirs = @ARGV;
+if(    !$parseOk
+    || !@dirs
+    || !(    ( $tagArg && $msgArg )
+          || ( $tagArg && $pushArg && $remoteArg )))
+{
+    print STDERR <<END;
+Synopsis:
+    $0 --tag <tag> --message <msg> [--sign] <dir>...
+    $0 --push --remote <remote> --tag <tag> <dir>...
+END
+    exit 1;
+}
+
+my $gitCmd;
+if( $msgArg ) {
+    # create tag
+
+    my $msg = $msgArg;
+    $msgArg =~ s!'!\'!g;
+
+    $gitCmd = "git tag";
+    if( $signArg ) {
+        $gitCmd .= " -s";
+    } else {
+        $gitCmd .= " -a";
+    }
+    $gitCmd .= " $tagArg -m '$msg'";
+
+} elsif( $pushArg ) {
+    # push tag
+
+    $gitCmd = "git push $remoteArg $tagArg";
+}
+
+if( defined( $gitCmd )) {
+    foreach my $d ( @dirs ) {
+        if( isGitDir( $d )) {
+
+            print "cd $d; $gitCmd\n";
+            system( "cd $d; $gitCmd" );
+
+        } else {
+            print "WARNING: $d is not a git directory\n";
+        }
+    }
+}
+
+sub isGitDir {
+    my $d = shift;
+
+    if( -d "$d/.git" ) {
+        return 1;
+    }
+    $d = Cwd::abs_path( $d );
+    if( $d eq '/' ) {
+        return 0;
+    }
+    return isGitDir( dirname( $d ));
+}
+
+1;
+
