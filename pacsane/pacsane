@@ -25,6 +25,7 @@ use warnings;
 use Archive::Tar;
 use File::Temp;
 use Getopt::Long;
+use UBOS::Logging
 
 # Keep tempfiles around while the program is running
 my $tempFiles = {};
@@ -157,14 +158,11 @@ foreach my $dbFile ( @dbFiles ) {
         
         delete $tempFiles->{$packageFile};
     }
-    
-    if( 0 ) { # set to 1 for debugging
-        use Data::Dumper;
-        print "*** Packages mentioned in package database\n";
-        print Dumper( $definedPackages ) . "\n";
 
-        print "*** Packages actually found in filesystem\n";
-        print Dumper( $foundPackages ) . "\n";
+    if( UBOS::Logging::isDebugActive() ) {
+        debug( "*** Packages mentioned in package database:\n", $definedPackages );
+
+        debug( "*** Packages actually found in filesystem:\n", $foundPackages );
     }
 
     # Now let's do some matching. First: make sure all package files exist that are referenced in
@@ -300,33 +298,6 @@ sub compareFoundDefined {
     }
 }
             
-#####
-# Print informational message
-sub info {
-    my @args = @_;
- 
-    print join( ' ' , @args ) . "\n";
-}
-    
-#####
-# An error occurred, but we can continue
-sub error {
-    my @args = @_;
- 
-    print STDERR 'ERROR: ' . join( ' ' , @args ) . "\n";
-    
-    ++$exit;
-}
-    
-#####
-# An unrecoverable error occurred
-sub fatal {
-    my @args = @_;
- 
-    print STDERR 'FATAL: ' . join( ' ' , @args ) . "\n";
-    exit -1;
-}
-
 #####
 # Print synopsis or help
 sub synopsisHelpQuit {
