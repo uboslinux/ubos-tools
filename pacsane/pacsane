@@ -3,7 +3,7 @@
 # pacsane -- check pacman database for consistency
 #
 # This file is part of pacsane
-# (C) 2012-2014 Indie Computing Corp.
+# (C) 2012-2015 Indie Computing Corp.
 #
 # pacsane is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -211,10 +211,11 @@ foreach my $dbFile ( @dbFiles ) {
         my $notInDbPackageVersions = $notInDb->{$notInDbName};
 
         foreach my $notInDbPackageVersion ( @$notInDbPackageVersions ) {
+            my @infoMsg;
             if( $obsoleteOnly ) {
                 print $notInDbPackageVersion;
             } else {
-                info( 'Package', $notInDbPackageVersion, 'found, but not referenced in package database' );
+                push @infoMsg, 'Package', $notInDbPackageVersion, 'not referenced, but alternate version in database:';
             }
 
             foreach my $definedPackageVersion ( keys %$definedPackages ) {
@@ -226,10 +227,13 @@ foreach my $dbFile ( @dbFiles ) {
                             print " # db has: $definedPackageVersion";
                         }
                     } else {
-                        info( '    however, alternate version', $definedPackageVersion, 'found in package database' );
+                        push @infoMsg, $definedPackageVersion;
                     }
                     # putting last here seems to create some really strange effects, so let's not do this
                 }
+            }
+            if( @infoMsg ) {
+                info( @infoMsg );
             }
             if( $obsoleteOnly ) {
                 print "\n";
