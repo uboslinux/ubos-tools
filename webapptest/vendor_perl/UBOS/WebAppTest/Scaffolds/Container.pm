@@ -32,7 +32,8 @@ package UBOS::WebAppTest::Scaffolds::Container;
 
 use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
 use fields qw( directory name sshPublicKeyFile
-               bootMaxSeconds shutdownMaxSeconds );
+               bootMaxSeconds shutdownMaxSeconds
+               nspawnLogFile );
 
 use File::Temp qw( tempdir );
 use Socket;
@@ -105,7 +106,10 @@ sub setup {
         $self->{name} = $options->{name};
         delete $options->{name};
     } else {
-        $self->{name} = 'webapptest-' . UBOS::Utils::time2string( time() );
+        # The name needs to be unique in the first 8 chars because the virtual nic
+        # uses it and it seems to have only 8 chars.
+        my $now = UBOS::Utils::time2string( time() );
+        $self->{name} = 't-' . substr( $now, length( $now )-6 ) . '-webapptest';
     }
 
     if( exists( $options->{'shepherd'} )) {
@@ -171,7 +175,7 @@ sub setup {
 
     info( 'Creating Scaffold container' );
 
-    my $outFile = File::Temp->new();
+    $self->{nspawnLogFile} = File::Temp->new();
 
     debug( 'Starting container' );
     my $cmd = "sudo systemd-nspawn";
@@ -181,12 +185,12 @@ sub setup {
     $cmd .= " --machine=" . $self->{name};
     $cmd .= " --directory '" . $self->{directory} . "'";
     $cmd .= " --bind '" . $ubosStaffDir . ":/UBOS-STAFF'"; # UBOS staff 
-    $cmd .= " > '" . $outFile->filename . "'";
+    $cmd .= " > '" . $self->{nspawnLogFile}->filename . "'";
     $cmd .= " 2>&1";
     $cmd .= " &";                                          # run in background; we don't want the login prompt
 
     if( UBOS::Utils::myexec( $cmd )) {
-        fatal( 'systemd-nspawn failed', UBOS::Utils::slurpFile( $outFile->filename ));
+        fatal( 'systemd-nspawn failed', UBOS::Utils::slurpFile( $self->{nspawnLogFile}->filename ));
     }
 
     info( 'Waiting until target is ready' );
@@ -213,7 +217,7 @@ sub teardown {
     my $containerName = $self->{name};
     
     if( UBOS::Utils::myexec( "sudo machinectl poweroff '$containerName'" )) {
-        error( 'machinectl poweroff failed' );
+        error( 'machinectl poweroff failed, systemd-nspawn log:', UBOS::Utils::slurpFile( $self->{nspawnLogFile}->filename ));
     }
     my $out;
     my $err;
