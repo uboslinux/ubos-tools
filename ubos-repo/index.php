@@ -18,7 +18,7 @@ if( $dir && is_dir( $dir )) {
 
     if( is_dir( $dir ) && $handle = opendir( $dir )) {
         while( false !== ( $file = readdir( $handle ))) {
-            if( $file == '.' || $file == '..' || $file == 'index.php' ) {
+            if( $file == 'index.php' || substr( $file, 0, 1 ) == '.' ) {
                 continue;
             }
             $files[] = $file;
