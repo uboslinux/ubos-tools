@@ -106,10 +106,10 @@ sub setup {
         $self->{name} = $options->{name};
         delete $options->{name};
     } else {
-        # The name needs to be unique in the first 8 chars because the virtual nic
-        # uses it and it seems to have only 8 chars.
+        # The name needs to be unique in the first 11 chars because the virtual nic
+        # uses it, which has only 14 chars total and starts with ve-
         my $now = UBOS::Utils::time2string( time() );
-        $self->{name} = 't-' . substr( $now, length( $now )-6 ) . '-webapptest';
+        $self->{name} = 't-' . substr( $now, length( $now )-9 ) . '-webapptest';
     }
 
     if( exists( $options->{'shepherd'} )) {
@@ -141,6 +141,16 @@ sub setup {
     unless( exists( $options->{directory} )) {
         fatal( 'No value provided for directory' );
     }
+    if( $options->{directory} =~ m!^~([^/]*)(/.*)?$! ) {
+        # allow ~/foo and ~bar/foo
+        my $user = $1 || getlogin || getpwuid($<);
+        my $dir  = $2;
+        my $line;
+        UBOS::Utils::myexec( "getent passwd $user", undef, \$line );
+        my $home = ( split /:/, $line )[5];
+
+        $options->{directory} = $home . $dir;
+    }
     unless( -d $options->{directory} ) {
         fatal( 'directory does not exist or cannot be read:', $options->{directory} );
     }
@@ -157,6 +167,12 @@ sub setup {
         delete $options->{'shutdown-max-seconds'};
     } else {
         $self->{shutdownMaxSeconds} = 120;
+    }
+
+    my $bind;
+    if( exists( $options->{bind} )) {
+        $bind = $options->{bind};
+        delete $options->{bind};
     }
 
     $self->{directory}         = delete $options->{directory};
@@ -184,7 +200,10 @@ sub setup {
     $cmd .= " --network-veth";
     $cmd .= " --machine=" . $self->{name};
     $cmd .= " --directory '" . $self->{directory} . "'";
-    $cmd .= " --bind '" . $ubosStaffDir . ":/UBOS-STAFF'"; # UBOS staff 
+    $cmd .= " --bind '" . $ubosStaffDir . ":/UBOS-STAFF'"; # UBOS staff
+    if( $bind ) {
+        $cmd .= " --bind '$bind'";
+    }
     $cmd .= " > '" . $self->{nspawnLogFile}->filename . "'";
     $cmd .= " 2>&1";
     $cmd .= " &";                                          # run in background; we don't want the login prompt
