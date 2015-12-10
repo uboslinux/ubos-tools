@@ -40,6 +40,10 @@ use Socket;
 use UBOS::Logging;
 use UBOS::Utils;
 
+my $defaultKeysDir    = 'local.ssh';
+my $defaultPublicKey  = "$defaultKeysDir/id_rsa.pub";
+my $defaultPrivateKey = "$defaultKeysDir/id_rsa";
+
 ##
 # Instantiate the Scaffold.
 # $options: hash of options
@@ -122,19 +126,55 @@ sub setup {
         $self->{sshUser} = 'shepherd';
     }
 
-    unless( exists( $options->{'shepherd-public-key-file'} ) && $options->{'shepherd-public-key-file'} ) {
-        fatal( 'No value provided for shepherd-public-key-file' );
-    }
-    unless( -r $options->{'shepherd-public-key-file'} ) {
-        fatal( 'Cannot find or read file', $options->{'shepherd-public-key-file'} );
-    }
-    unless( exists( $options->{'shepherd-private-key-file'} ) && $options->{'shepherd-private-key-file'} ) {
-        fatal( 'No value provided for shepherd-private-key-file' );
-    }
-    unless( -r $options->{'shepherd-private-key-file'} ) {
-        fatal( 'Cannot find or read file', $options->{'shepherd-private-key-file'} );
-    }
+    if( exists( $options->{'shepherd-public-key-file'} )) {
+        unless( $options->{'shepherd-public-key-file'} ) {
+            fatal( 'Empty value for shepherd-public-key-file' );
+        }        
+        unless( -r $options->{'shepherd-public-key-file'} ) {
+            fatal( 'Cannot find or read file', $options->{'shepherd-public-key-file'} );
+        }
+        unless( exists( $options->{'shepherd-private-key-file'} )) {
+            fatal( 'If providing shepherd-public-key-file, must also provide value for shepherd-private-key-file' );
+        }
+        unless( $options->{'shepherd-private-key-file'} ) {
+            fatal( 'Empty value for shepherd-private-key-file' );
+        }
+        unless( -r $options->{'shepherd-private-key-file'} ) {
+            fatal( 'Cannot find or read file', $options->{'shepherd-private-key-file'} );
+        }
 
+        $self->{sshPublicKeyFile}  = delete $options->{'shepherd-public-key-file'};
+        $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
+        
+    } elsif( exists( $options->{'shepherd-private-key-file'} )) {
+        fatal( 'If providing shepherd-private-key-file, must also provide value for shepherd-public-key-file' );
+
+    } else {
+        # have neither, use defaults
+        unless( -d $defaultKeysDir ) {
+            unless( UBOS::Utils::mkdir( $defaultKeysDir )) {
+                fatal( 'Failed to create directory', $defaultKeysDir );
+            }
+        }
+        if( -e $defaultPublicKey ) {
+            if( ! -e $defaultPrivateKey ) {
+                fatal( 'Cannot find default public ssh key at', $defaultPublicKey, 'but have default private ssh key' );
+            }
+            info( 'Reusing default ssh keys for container access in directory', $defaultKeysDir );
+        } elsif( -e $defaultPrivateKey ) {
+            fatal( 'Cannot find default private ssh key at', $defaultPublicKey, 'but have default public ssh key' );
+        } else {
+            if( UBOS::Utils::myexec( 'ssh-keygen -q -N "" -f ' . $defaultPrivateKey )) {
+                fatal( 'Automatic generation of ssh keypair for webapptest failed' );
+            }
+            if( ! -e $defaultPublicKey || ! -e $defaultPrivateKey ) {
+                fatal( 'Cannot find generated ssh keypair file(s)' );
+            }
+            info( 'Generated ssh keys for container access in directory', $defaultKeysDir );
+        }
+        $self->{sshPublicKeyFile}  = $defaultPublicKey;
+        $self->{sshPrivateKeyFile} = $defaultPrivateKey;
+    }
 
     debug( 'Creating container', $self->{name} );
 
@@ -176,8 +216,6 @@ sub setup {
     }
 
     $self->{directory}         = delete $options->{directory};
-    $self->{sshPublicKeyFile}  = delete $options->{'shepherd-public-key-file'};
-    $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
     my $impersonateDepot       = delete $options->{impersonatedepot};
 
     if( defined( $options ) && %$options ) {
