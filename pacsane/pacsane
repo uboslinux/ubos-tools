@@ -25,7 +25,7 @@ use warnings;
 use Archive::Tar;
 use File::Temp;
 use Getopt::Long;
-use UBOS::Logging
+use UBOS::Logging;
 
 # Keep tempfiles around while the program is running
 my $tempFiles = {};
