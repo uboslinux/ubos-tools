@@ -2,14 +2,22 @@ developer=https://aws.amazon.com/
 url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
-pkgver=1.9.5
+pkgver=1.9.13
 pkgrel=1
 pkgdesc='Universal Command Line Interface for Amazon Web Services'
 arch=('any')
-source=("https://github.com/aws/aws-cli/archive/${pkgver}.tar.gz")
-depends=('python2')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/aws/aws-cli/archive/${pkgver}.tar.gz")
+depends=(
+    'botocore'
+    'jmespath'
+    'python2'
+    'python2-colorama'
+    'python2-dateutil'
+    'python2-docutils'
+    'python2-rsa'
+)
 license=('Apache')
-sha512sums=('0c7b78185391463398900c83c3acafe1f54e039c053f5b83204f14e8b866e481e3493b9e0a875d5a1dfbd9bd98163a1643f0b45be6de6f26aa8349c6403a25fe')
+sha512sums=('77e9e7b72c4fafea701812b54ac1c8c4fe62eeeca259e4c1c26add9497d352380d330a2919f5c72a89eb78d91d1fdd5579d234b80c2b498e8125238f5e7070e8')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
@@ -19,6 +27,6 @@ package() {
   rm ${pkgdir}/usr/bin/aws.cmd
   rm ${pkgdir}/usr/bin/{aws_completer,aws_zsh_completer.sh}
 
-  install -Dpm644 'README.rst' 'requirements.txt' -t "${pkgdir}/usr/share/doc/${pkgname%-git}/"
-  install -Dpm644 'LICENSE.txt' "${pkgdir}/usr/share/licenses/${pkgname%-git}/LICENSE"
+  install -Dpm644 'README.rst' 'requirements.txt' -t "${pkgdir}/usr/share/doc/${pkgname}/"
+  install -Dpm644 'LICENSE.txt' "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }

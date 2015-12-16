@@ -1,2 +1,1 @@
-[1-9]*.tar.gz
-aws-cli-*-any.pkg*
+aws-cli-*.tar.*

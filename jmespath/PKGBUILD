@@ -1,0 +1,21 @@
+developer=https://aws.amazon.com/
+url=${developer}
+maintainer=http://indiecomputing.com/
+pkgname=$(basename $(pwd))
+pkgver=0.9.0
+pkgrel=1
+pkgdesc='The low-level, core functionality of boto 3'
+arch=('any')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/jmespath/jmespath.py/archive/${pkgver}.tar.gz")
+depends=('python2')
+license=('Apache')
+sha512sums=('123c49184add3a994f4289ca79152234b6723ec4ba10a090d0823f12124925ea50ff8b16d0ea491e7a0505181216faa696442ac2fd0c9b2972c78fd1e42fd850')
+
+package() {
+  cd "${srcdir}/${pkgname}.py-${pkgver}"
+
+  python2 setup.py install --root="${pkgdir}"
+
+  install -Dpm644 'README.rst' -t "${pkgdir}/usr/share/doc/${pkgname}/"
+  install -Dpm644 'LICENSE.txt' "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
