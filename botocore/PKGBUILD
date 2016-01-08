@@ -2,14 +2,14 @@ developer=https://aws.amazon.com/
 url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
-pkgver=1.3.13
+pkgver=1.3.17
 pkgrel=1
 pkgdesc='The low-level, core functionality of boto 3'
 arch=('any')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/boto/botocore/archive/${pkgver}.tar.gz")
 depends=('python2')
 license=('Apache')
-sha512sums=('077fd4bd6f4147d79745e98f2074dfde1cbbf1fc97041412df78bdeeddf8ae88a0445a3fdcb9b92a229605658e8351b0ad728cf8f1861f11e63252ce023227d1')
+sha512sums=('6d5fdc99b5cf6a8f1053b94d392e9cc9171e6712b99f01ef784be93c0e0dfcb952671b4b17130a510e0290c74e00a455b78d7ab4245021bc6a6a14ca40af0092')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
