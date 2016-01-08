@@ -7,7 +7,7 @@ Alias ${appconfig.contextorslash} /var/lib/ubos-repo/${appconfig.appconfigid}
     SetEnv DATADIR /var/lib/ubos-repo/${appconfig.appconfigid}
     SetEnv CONTEXT "${appconfig.context}"
 
-    <IfModule php5_module>
+    <IfModule php7_module>
         php_admin_value open_basedir ${appconfig.apache2.dir}:/tmp/:${package.codedir}:${appconfig.datadir}
     </IfModule>
 </Location>

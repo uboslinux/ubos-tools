@@ -9,7 +9,7 @@
                 "php-apache"
             ],
             "apache2modules" : [
-                "php5"
+                "php7"
             ],
             "appconfigitems" : [
                 {
