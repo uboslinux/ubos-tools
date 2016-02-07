@@ -2,10 +2,13 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.1
+pkgver=0.2
 pkgrel=1
-pkgdesc="Meta-package for UBOS tools"
+pkgdesc="Metapackage for UBOS tools"
 arch=('any')
 license=('GPL')
-depends=('pacsane' 'ubos-install' 'webapptest')
-
+depends=(
+    'pacsane'
+    'ubos-install'
+    'webapptest')
+options=('!strip')
