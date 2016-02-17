@@ -225,6 +225,7 @@ sub setup {
     debug( 'Creating ubos-staff config directory' );
 
     my $ubosStaffDir = tempdir( CLEANUP => 1 );
+    chmod 0755, $ubosStaffDir; # So it's consistent with the package
     $self->populateConfigDir( $ubosStaffDir );
 
     info( 'Creating Scaffold container' );
