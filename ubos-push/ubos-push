@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+#
+# Upload one or more locally built UBOS packages to a remote UBOS host
+# and install those packages there using ubos-admin update
+#
+
+use strict;
+use warnings;
+
+use File::Basename;
+use Getopt::Long;
+use UBOS::Logging;
+use UBOS::Utils;
+
+my $host;
+my $verbose       = 0;
+my $logConfigFile = undef;
+
+my $parseOk = GetOptions(
+        'verbose+'    => \$verbose,
+        'logConfig=s' => \$logConfigFile,
+        'host=s'      => \$host );
+
+my @packages = @ARGV;
+if(    !$parseOk
+    || !$host
+    || !@packages )
+{
+    helpQuit();
+}
+
+UBOS::Logging::initialize( 'ubos-push', undef, $verbose, $logConfigFile );
+
+my $sshCmd = 'ssh shepherd@' . $host;
+my $wd     = '/var/tmp';
+my $out;
+
+my $cmd = "mktemp --directory $wd/ubos-push-XXX";
+if( UBOS::Utils::myexec( "$sshCmd $cmd", undef, \$out )) {
+    fatal( 'Cannot create temp directory in', $wd, 'on host', $host );
+}
+my $dest = $out;
+$dest =~ s!\s+$!!;
+
+my @signatures = grep { -e $_ } map { "$_.sig" } @packages;
+
+my $from = join( ' ', @packages, @signatures );
+my $to   = 'shepherd@' . $host . ':' . $dest . '/';
+
+if( UBOS::Utils::myexec( "scp $from $to" )) {
+    fatal( 'Upload failed: scp', $from, $to );
+}
+my @barePackages = map { basename( $_ ) } @packages;
+
+$cmd = 'sudo ubos-admin update ';
+$cmd .= '-v ' x $verbose;
+$cmd .= join( ' ', map { "--pkgfile $dest/$_" } @barePackages );
+
+if( UBOS::Utils::myexec( "$sshCmd $cmd" )) {
+    fatal( 'Remote ubos-admin update failed, package files remain in', $dest );
+}
+
+$cmd = "/bin/rm -rf $dest";
+if( UBOS::Utils::myexec( "$sshCmd $cmd" )) {
+    fatal( 'Failed to delete uploaded package files in', $dest );
+}
+
+exit 0;
+
+#####
+
+sub helpQuit {
+    print STDERR <<END;
+Synopsis: $0 [--verbose] --host <ubos-host> <pkg>...
+     <ubos-host>: the UBOS host on which to install the packages, using
+                  the "shepherd" user
+     <pkg>:       filename of one or more packages to be installed
+END
+    exit 0;
+}
+
+1;

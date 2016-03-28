@@ -3,11 +3,11 @@ url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
 pkgver=0.3
-pkgrel=1
+pkgrel=2
 pkgdesc="Miscellanous tools that have turned out to be somewhat useful"
 arch=('any')
 license=('GPL')
-depends=()
+depends=('perl')
 options=('!strip')
 
 package() {

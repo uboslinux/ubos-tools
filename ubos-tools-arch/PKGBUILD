@@ -2,7 +2,7 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.2
+pkgver=0.3
 pkgrel=1
 pkgdesc="Metapackage for UBOS tools intended to run on Arch Linux"
 arch=('any')
@@ -10,5 +10,6 @@ license=('GPL')
 depends=(
     'pacsane'
     'ubos-install'
+    'ubos-push'
     'webapptest' )
 options=('!strip')
