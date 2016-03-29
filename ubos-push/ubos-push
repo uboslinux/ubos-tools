@@ -44,10 +44,11 @@ $dest =~ s!\s+$!!;
 
 my @signatures = grep { -e $_ } map { "$_.sig" } @packages;
 
-my $from = join( ' ', @packages, @signatures );
-my $to   = 'shepherd@' . $host . ':' . $dest . '/';
+my $from  = join( ' ', @packages, @signatures );
+my $to    = 'shepherd@' . $host . ':' . $dest . '/';
+my $quiet = $verbose ? '' : ' -q';
 
-if( UBOS::Utils::myexec( "scp $from $to" )) {
+if( UBOS::Utils::myexec( "scp$quiet $from $to" )) {
     fatal( 'Upload failed: scp', $from, $to );
 }
 my @barePackages = map { basename( $_ ) } @packages;
