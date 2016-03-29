@@ -59,7 +59,14 @@ foreach my $d ( @dirs ) {
         my $out = "=== $d ===\n";
 
         if( $statusArg ) {
-            my @status   = split( "\n", `cd $d; git status -s` );
+            my $msg = `cd $d; git status`;
+            if( $msg =~ m!(Your branch is.*commit\.)! ) {
+                $out .= "Sync status: ";
+                $out .= $1 . "\n";
+                $isImportant = 1;
+            }
+
+            my @status = split( "\n", `cd $d; git status -s` );
             if( @status ) {
                 $out .= "Status:\n";
                 $out .= join( '', map { "    $_\n" } @status );
