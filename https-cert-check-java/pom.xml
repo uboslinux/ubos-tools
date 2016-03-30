@@ -14,7 +14,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>net.ubos.tools.httpscertcheck</mainClass>
+                            <mainClass>net.ubos.tools.httpscertcheck.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
