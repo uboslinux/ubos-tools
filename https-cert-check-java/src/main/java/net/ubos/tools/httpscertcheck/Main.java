@@ -1,18 +1,16 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Very simple utility to access a URL, and print any exceptions that might occur,
+ * such as SSL/TLS exceptions.
  */
 package net.ubos.tools.httpscertcheck;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-
 /**
  *
- * @author jernst
  */
 public class Main
 {
@@ -25,7 +23,25 @@ public class Main
             synopsis();
             return;
         }
-        URL           url  = new URL( args[0] );
+        try {
+            run( new URL( args[0] ));
+
+        } catch( Throwable t ) {
+
+            System.err.println( "Exceptions:" );
+            while( t != null ) {
+                System.err.println( t.getMessage());
+
+                t = t.getCause();
+            }
+        }
+    }
+
+    static void run(
+            URL url )
+        throws
+            IOException
+    {
         URLConnection conn = url.openConnection();
         InputStream   in   = conn.getInputStream();
 
@@ -36,7 +52,7 @@ public class Main
             count += read;
         }
         in.close();
-        
+
         System.out.printf( "Successfully read %d bytes from %s\n", count, url.toExternalForm() );
     }
 
@@ -44,5 +60,5 @@ public class Main
     {
         System.err.println( "Arguments: <url to access>" );
     }
-    
+
 }
