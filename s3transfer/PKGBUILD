@@ -3,7 +3,7 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=0.0.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Amazon S3 Transfer Manager for Python'
 arch=('any')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/boto/s3transfer/archive/${pkgver}.tar.gz")
@@ -14,7 +14,7 @@ sha512sums=('bee66e58f58ff9c774966131bfca3c9bd86baeb4ea6d757281c526690695195e4b0
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
 
-  python2 setup.py install --root="${pkgdir}"
+  python setup.py install --root="${pkgdir}"
 
   install -Dpm644 'README.rst' -t "${pkgdir}/usr/share/doc/${pkgname}/"
   install -Dpm644 'LICENSE.txt' "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
