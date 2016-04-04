@@ -3,26 +3,28 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=1.10.17
-pkgrel=1
+pkgrel=2
 pkgdesc='Universal Command Line Interface for Amazon Web Services'
 arch=('any')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/aws/aws-cli/archive/${pkgver}.tar.gz")
 depends=(
     'botocore'
     'jmespath'
-    'python2'
-    'python2-colorama'
-    'python2-dateutil'
-    'python2-docutils'
-    'python2-rsa'
+    'python'
+    'python-colorama'
+    'python-dateutil'
+    'python-docutils'
+    'python-rsa'
+    's3transfer'
 )
+makedepends=('python-setuptools')
 license=('Apache')
 sha512sums=('df6213a6c88232d07814bd5490d07422a8ac2d82ef4568d02ea298e5115ba5fc8193101434178aa8d5200e3f5e82d0e85ba8e0bbba045fbcb16e6bdc50ee5b93')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
 
-  python2 setup.py install --root="${pkgdir}"
+  python setup.py install --root="${pkgdir}"
 
   rm ${pkgdir}/usr/bin/aws.cmd
   rm ${pkgdir}/usr/bin/{aws_completer,aws_zsh_completer.sh}
