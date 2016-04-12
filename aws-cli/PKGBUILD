@@ -3,12 +3,13 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=1.10.17
-pkgrel=3
+pkgrel=4
 pkgdesc='Universal Command Line Interface for Amazon Web Services'
 arch=('any')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/aws/aws-cli/archive/${pkgver}.tar.gz")
 depends=(
     'botocore'
+    'groff'
     'jmespath'
     'python'
     'python-colorama'
