@@ -3,11 +3,12 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=0.0.1
-pkgrel=2
+pkgrel=3
 pkgdesc='Amazon S3 Transfer Manager for Python'
 arch=('any')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/boto/s3transfer/archive/${pkgver}.tar.gz")
 depends=('python')
+makedepends=('python-setuptools')
 license=('Apache')
 sha512sums=('bee66e58f58ff9c774966131bfca3c9bd86baeb4ea6d757281c526690695195e4b0770745b09912bd93a41eac83c0299f93a2174ebfaf441740951a68b9ffc61')
 
