@@ -34,8 +34,12 @@ use UBOS::Utils;
 # return: hash of file name to AppTest object
 sub findAppTestsInDirectory {
     my $dir = shift;
-    
-    my $appTestCandidates = UBOS::Utils::readFilesInDirectory( $dir, 'Test.*\.pm$' );
+
+    unless( -d $dir ) {
+        fatal( 'Not a directory or not readable:', $dir );
+    }
+
+    my $appTestCandidates = UBOS::Utils::readFilesInDirectory( $dir, '.*Test.*\.pm$' );
     my $appTests = {};
 
     foreach my $fileName ( keys %$appTestCandidates ) {

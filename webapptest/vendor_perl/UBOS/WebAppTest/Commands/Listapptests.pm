@@ -54,7 +54,7 @@ sub run {
         $allAppTests = UBOS::WebAppTest::TestingUtils::findAppTestsInDirectory( getcwd() );
     }
 
-    print UBOS::Utils::hashAsColumns( $allAppTests, sub { shift->description(); } );
+    print UBOS::Utils::hashAsColumns( $allAppTests, sub { shift->description() || '(no description)'; } );
 
     1;
 }
