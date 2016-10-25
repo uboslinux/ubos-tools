@@ -2,7 +2,7 @@ developer=https://aws.amazon.com/
 url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
-pkgver=1.10.38
+pkgver=1.11.9
 pkgrel=4
 pkgdesc='Universal Command Line Interface for Amazon Web Services'
 arch=('any')
@@ -20,7 +20,7 @@ depends=(
 )
 makedepends=('python-setuptools')
 license=('Apache')
-sha512sums=('6ccb1e9960c47589e36eeb4c0a420ff705d2664a765117e0749e84c10e6ae64fd4e088eebacd122a8574385eb268573002bc8a2afd42bfef85101d92ae5249c0')
+sha512sums=('a1a584d740f889b4fb5c17b817185ad236eb7722dceb52c7ccd0c35db555e1c7926bbe1fa4e636514492cdd9e6728f0ee565030aa4f62da27f504921c6559845')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
