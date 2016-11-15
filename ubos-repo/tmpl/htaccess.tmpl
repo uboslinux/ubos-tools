@@ -3,7 +3,7 @@ RedirectMatch ^/$ http://ubos.net/
 AliasMatch ^${appconfig.context}/[a-zA-Z0-9_]+/images/$ ${package.codedir}/index.php
 Alias ${appconfig.contextorslash} /var/lib/ubos-repo/${appconfig.appconfigid}
 
-<Location ${appconfig.context}>
+<Location ${appconfig.contextorslash}>
     SetEnv DATADIR /var/lib/ubos-repo/${appconfig.appconfigid}
     SetEnv CONTEXT "${appconfig.context}"
 
