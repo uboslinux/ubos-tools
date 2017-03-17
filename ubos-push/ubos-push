@@ -15,16 +15,19 @@ use UBOS::Utils;
 my $host;
 my $verbose       = 0;
 my $logConfigFile = undef;
+my $identityFile  = undef;
 
 my $parseOk = GetOptions(
         'verbose+'    => \$verbose,
         'logConfig=s' => \$logConfigFile,
+        'i=s'         => \$identityFile,
         'host=s'      => \$host );
 
 my @packages = @ARGV;
 if(    !$parseOk
     || !$host
-    || !@packages )
+    || !@packages
+    || ( $identityFile && ! -e $identityFile ))
 {
     helpQuit();
 }
@@ -32,6 +35,9 @@ if(    !$parseOk
 UBOS::Logging::initialize( 'ubos-push', undef, $verbose, $logConfigFile );
 
 my $sshCmd = 'ssh shepherd@' . $host;
+if( $identityFile ) {
+    $sshCmd .= " -i '$identityFile'";
+}
 my $wd     = '/var/tmp';
 my $out;
 
@@ -72,10 +78,11 @@ exit 0;
 
 sub helpQuit {
     print STDERR <<END;
-Synopsis: $0 [--verbose] --host <ubos-host> <pkg>...
-     <ubos-host>: the UBOS host on which to install the packages, using
-                  the "shepherd" user
-     <pkg>:       filename of one or more packages to be installed
+Synopsis: $0 [--verbose] [-i <identityFile>] --host <ubos-host> <pkg>...
+    <identityFile> -- non-default ssh private key file, like ssh's -i flag
+    <ubos-host>    -- the UBOS host on which to install the packages, using
+                      the "shepherd" user
+    <pkg>          -- filename of one or more packages to be installed
 END
     exit 0;
 }
