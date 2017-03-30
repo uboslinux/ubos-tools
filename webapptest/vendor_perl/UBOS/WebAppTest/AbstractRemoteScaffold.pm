@@ -142,9 +142,18 @@ sub invokeOnTarget {
     if( $self->{sshPrivateKeyFile} ) {
         $sshCmd .= ' -i ' . $self->{sshPrivateKeyFile};
     }
-    $sshCmd .= " '$cmd'";
+    $sshCmd .= " '$cmd -v -v'";
 
-    return UBOS::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
+    my $ret = UBOS::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
+
+    if( $$stderr !~ m!^(FATAL|ERROR|WARNING):! ) {
+        # If there are no errors, zap the log output, otherwise keep the whole thing
+        $$stderr =~ s!^(INFO|DEBUG):\s*$!!m;
+        if( $ret == 0 ) { # Guess the command was wrong
+            $ret = -999;
+        }
+    }
+    return $ret;
 }
 
 ##
