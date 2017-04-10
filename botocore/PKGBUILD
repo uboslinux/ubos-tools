@@ -10,7 +10,7 @@ source=("${pkgname}-${pkgver}.tar.gz::https://github.com/boto/botocore/archive/$
 depends=('python')
 makedepends=('python-setuptools')
 license=('Apache')
-sha512sums=('261408076dc3d3bd4c8b1bb87db424ee79e4222c0b00feb4aee0f590ae88d922771d836f0b46113c2248d53bb6697a93f96e2cda7d5d86a91059e2575bb04964')
+sha512sums=('9ffcc1b665f2200f6492c8b4a1917e0dc8812f4150f1680c97635cde85682de87410b9757bbb14919cba47e4b3b5731d5fb3c50b9bfbdd507bde95b7f8851074')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
