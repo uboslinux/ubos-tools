@@ -20,7 +20,7 @@ depends=(
 )
 makedepends=('python-setuptools')
 license=('Apache')
-sha512sums=('a1a584d740f889b4fb5c17b817185ad236eb7722dceb52c7ccd0c35db555e1c7926bbe1fa4e636514492cdd9e6728f0ee565030aa4f62da27f504921c6559845')
+sha512sums=('f7cd3312519207843983fc24322cc2b97471d15cc31f26c0f20be34c52f75a4ffb03c6567c1c3411435fe85c556cedd4b0469f352612e88ec476b4ffa4624806')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"

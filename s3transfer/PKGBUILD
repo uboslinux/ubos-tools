@@ -10,7 +10,7 @@ source=("${pkgname}-${pkgver}.tar.gz::https://github.com/boto/s3transfer/archive
 depends=('python')
 makedepends=('python-setuptools')
 license=('Apache')
-sha512sums=('5716be8d42b1b38dd7a10535e02dd1e011c6accc9d9348f9ab2ddca63da77f67e1b689fedd376e3a0c0785dcd3b7f4982ebf90351d6a6f4238c7f4f8ad9b2bf3')
+sha512sums=('9d8b2ef688e90809c8edff42e3ea9a9c5d4a4f908cbcd7d90ab9630eb4a5cdd3326b9a4f3f9b4534e494d9accc9a236c43a5fa627048d6f79a2d3d7650e64e37')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
