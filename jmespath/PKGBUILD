@@ -10,7 +10,7 @@ source=("${pkgname}-${pkgver}.tar.gz::https://github.com/jmespath/jmespath.py/ar
 depends=('python')
 makedepends=('python-setuptools')
 license=('Apache')
-sha512sums=('123c49184add3a994f4289ca79152234b6723ec4ba10a090d0823f12124925ea50ff8b16d0ea491e7a0505181216faa696442ac2fd0c9b2972c78fd1e42fd850')
+sha512sums=('e99f5680cdb766a7c538c7ac6d50f44cdb3b4e046aca06a499d0a9fbd0bfdf293805886cf0b26403df65199b5835934964291f96ce0780eb591ef152e3dde398')
 
 package() {
   cd "${srcdir}/${pkgname}.py-${pkgver}"
