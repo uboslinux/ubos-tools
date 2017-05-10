@@ -144,7 +144,7 @@ sub invokeOnTarget {
     $cmd = $cmd . ' -v -v';
     my $ret = UBOS::Utils::myexec( $cmd, $stdin, $stdout, $stderr );
 
-    if( $$stderr !~ m!^(FATAL|ERROR|WARNING):! ) {
+    if( $stderr && $$stderr !~ m!^(FATAL|ERROR|WARNING):! ) {
         # If there are no errors, zap the log output, otherwise keep the whole thing
         $$stderr =~ s!^(INFO|DEBUG):\s*$!!m;
         if( $ret == 0 ) { # Guess the command was wrong
