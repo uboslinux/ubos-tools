@@ -2,7 +2,7 @@ developer=https://aws.amazon.com/
 url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
-pkgver=0.9.2
+pkgver=0.9.3
 pkgrel=1
 pkgdesc='A query language for JSON'
 arch=('any')
@@ -10,7 +10,7 @@ source=("${pkgname}-${pkgver}.tar.gz::https://github.com/jmespath/jmespath.py/ar
 depends=('python')
 makedepends=('python-setuptools')
 license=('Apache')
-sha512sums=('e99f5680cdb766a7c538c7ac6d50f44cdb3b4e046aca06a499d0a9fbd0bfdf293805886cf0b26403df65199b5835934964291f96ce0780eb591ef152e3dde398')
+sha512sums=('3ca646337e96d3defef45d89f48dbbaa2739a6a18a926b6cf37222bf6db8e6838d0a183fbfb5d4e31be02f9e0de495024b1dba8a69cec995a5285209486c870f')
 
 package() {
   cd "${srcdir}/${pkgname}.py-${pkgver}"
