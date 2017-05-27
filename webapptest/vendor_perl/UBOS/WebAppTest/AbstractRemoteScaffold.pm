@@ -142,7 +142,7 @@ sub invokeOnTarget {
     if( $self->{sshPrivateKeyFile} ) {
         $sshCmd .= ' -i ' . $self->{sshPrivateKeyFile};
     }
-    $sshCmd .= " '$cmd -v -v'";
+    $sshCmd .= " '$cmd'";
 
     my $ret = UBOS::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
 
@@ -215,7 +215,7 @@ if( -e '$fileName' ) {
         print readlink( '$fileName' ) . "\\n";
     }
 } else {
-    print( "---\n" );
+    print( "---\\n" );
 }
 exit 0;
 1;

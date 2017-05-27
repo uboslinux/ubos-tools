@@ -256,7 +256,7 @@ sub setup {
         $self->{isOk} = 1;
 
         $self->{isOk} &= $self->handleImpersonateDepot( $impersonateDepot );
-        $self->{isOk} &= ( $self->invokeOnTarget( "sudo ubos-admin update" ) == 0 );
+        $self->{isOk} &= ( $self->invokeOnTarget( "sudo ubos-admin update" . ( ' --verbose' x $self->{verbose} )) == 0 );
 
     } else {
         error( 'Container machine failed to start up in time' );
