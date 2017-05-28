@@ -146,11 +146,13 @@ sub invokeOnTarget {
 
     my $ret = UBOS::Utils::myexec( $sshCmd, $stdin, $stdout, $stderr );
 
-    if( $stderr && $$stderr !~ m!^(FATAL|ERROR|WARNING):! ) {
-        # If there are no errors, zap the log output, otherwise keep the whole thing
-        $$stderr =~ s!^(INFO|DEBUG):\s*$!!m;
-        if( $ret == 0 ) { # Guess the command was wrong
+    if( $ret == 0 && $stderr ) {
+        if( $$stderr =~ m!^(FATAL|ERROR|WARNING):! ) {
+            # Guess the command was wrong, it didn't return an error code
             $ret = -999;
+        } else {
+            # If there are no errors, zap the log output
+            $$stderr = '';
         }
     }
     return $ret;
@@ -225,7 +227,7 @@ SCRIPT
     my $err;
     if( $self->invokeOnTarget( 'perl', $script, \$out, \$err )) {
         error( 'Failed to invoke remote perl command', $err );
-        return 0;
+        return undef;
     }
 
     my @lines = split /\n/, $out;

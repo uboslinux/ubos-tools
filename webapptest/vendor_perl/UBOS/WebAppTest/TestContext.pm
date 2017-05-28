@@ -929,7 +929,7 @@ sub checkFile {
 
     my( $uname, $gname, $mode, $localContent ) = $self->{scaffold}->getFileInfo( $fileName, defined( $testMethod ));
     unless( defined( $uname )) {
-        $self->error( 'File does not exist:', $fileName );
+        $self->error( 'File does not exist, or error when accessing it:', $fileName );
         return 0;
     }
 

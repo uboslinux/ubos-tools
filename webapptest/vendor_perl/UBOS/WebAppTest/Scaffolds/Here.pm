@@ -141,7 +141,6 @@ sub invokeOnTarget {
     my $stdout = shift;
     my $stderr = shift;
 
-    $cmd = $cmd . ' -v -v';
     my $ret = UBOS::Utils::myexec( $cmd, $stdin, $stdout, $stderr );
 
     if( $stderr && $$stderr !~ m!^(FATAL|ERROR|WARNING):! ) {
