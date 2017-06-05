@@ -34,9 +34,11 @@ if(    !$parseOk
 
 UBOS::Logging::initialize( 'ubos-push', undef, $verbose, $logConfigFile );
 
-my $sshCmd = 'ssh shepherd@' . $host;
+my $sshCmd  = 'ssh shepherd@' . $host;
+my $scpCmd = 'scp';
 if( $identityFile ) {
     $sshCmd .= " -i '$identityFile'";
+    $scpCmd .= " -i '$identityFile'";
 }
 my $wd     = '/var/tmp';
 my $out;
@@ -54,7 +56,7 @@ my $from  = join( ' ', @packages, @signatures );
 my $to    = 'shepherd@' . $host . ':' . $dest . '/';
 my $quiet = $verbose ? '' : ' -q';
 
-if( UBOS::Utils::myexec( "scp$quiet $from $to" )) {
+if( UBOS::Utils::myexec( "$scpCmd$quiet $from $to" )) {
     fatal( 'Upload failed: scp', $from, $to );
 }
 my @barePackages = map { basename( $_ ) } @packages;
