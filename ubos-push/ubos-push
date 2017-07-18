@@ -26,21 +26,24 @@ my $parseOk = GetOptions(
 my @packages = @ARGV;
 if(    !$parseOk
     || !$host
-    || !@packages
-    || ( $identityFile && ! -e $identityFile ))
+    || !@packages )
 {
     helpQuit();
+}
+if( $identityFile && ! -e $identityFile ) {
+    fatal( 'Cannot find or read file:', $identityFile );
 }
 
 UBOS::Logging::initialize( 'ubos-push', undef, $verbose, $logConfigFile );
 
-my $sshCmd  = 'ssh shepherd@' . $host;
-my $scpCmd = 'scp';
+my $sshCmd   = 'ssh shepherd@' . $host;
+my $rsyncCmd = 'rsync -e "ssh';
 if( $identityFile ) {
-    $sshCmd .= " -i '$identityFile'";
-    $scpCmd .= " -i '$identityFile'";
+    $sshCmd   .= " -i '$identityFile'";
+    $rsyncCmd .= " -i '$identityFile'";
 }
-my $wd     = '/var/tmp';
+
+my $wd = '/var/tmp';
 my $out;
 
 my $cmd = "mktemp --directory $wd/ubos-push-XXX";
@@ -56,8 +59,8 @@ my $from  = join( ' ', @packages, @signatures );
 my $to    = 'shepherd@' . $host . ':' . $dest . '/';
 my $quiet = $verbose ? '' : ' -q';
 
-if( UBOS::Utils::myexec( "$scpCmd$quiet $from $to" )) {
-    fatal( 'Upload failed: scp', $from, $to );
+if( UBOS::Utils::myexec( "$rsyncCmd$quiet $from $to" )) {
+    fatal( 'Upload failed: rsync', $from, $to );
 }
 my @barePackages = map { basename( $_ ) } @packages;
 
