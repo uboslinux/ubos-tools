@@ -129,7 +129,7 @@ sub setup {
     if( exists( $options->{'shepherd-public-key-file'} )) {
         unless( $options->{'shepherd-public-key-file'} ) {
             fatal( 'Empty value for shepherd-public-key-file' );
-        }        
+        }
         unless( -r $options->{'shepherd-public-key-file'} ) {
             fatal( 'Cannot find or read file', $options->{'shepherd-public-key-file'} );
         }
@@ -145,7 +145,7 @@ sub setup {
 
         $self->{sshPublicKeyFile}  = delete $options->{'shepherd-public-key-file'};
         $self->{sshPrivateKeyFile} = delete $options->{'shepherd-private-key-file'};
-        
+
     } elsif( exists( $options->{'shepherd-private-key-file'} )) {
         fatal( 'If providing shepherd-private-key-file, must also provide value for shepherd-public-key-file' );
 
@@ -273,7 +273,7 @@ sub teardown {
     info( 'Tearing down Scaffold Container' );
 
     my $containerName = $self->{name};
-    
+
     if( UBOS::Utils::myexec( "sudo machinectl poweroff '$containerName'" )) {
         error( 'machinectl poweroff failed, systemd-nspawn log:', UBOS::Utils::slurpFile( $self->{nspawnLogFile}->filename ));
     }
@@ -331,6 +331,12 @@ sub waitUntilTargetReady {
             # Do not attempt to use ipv6; we are not set up to do that: would
             # need to obtain IPv6 address that's not link-local, see
             # http://superuser.com/questions/236993/how-to-ssh-to-a-ipv6-ubuntu-in-a-lan#comment-1309716
+
+        } else {
+            if( $out =~ m!degraded! ) {
+                $ret = 1;
+                last;
+            }
         }
         sleep 5;
     }
@@ -378,5 +384,5 @@ Options:
     shutdown-max-seconds      (optional) -- the maximum number of seconds to wait until shutdown is complete
 TXT
 }
-                    
+
 1;
