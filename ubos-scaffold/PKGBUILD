@@ -17,4 +17,8 @@ package() {
 
     mkdir -p ${pkgdir}/usr/lib/perl5/vendor_perl
     cp -a ${startdir}/vendor_perl/* ${pkgdir}/usr/lib/perl5/vendor_perl/
+
+# Default app icons
+    mkdir -p ${pkgdir}/usr/share/${pkgname}/default-appicons
+    cp -a ${startdir}/default-appicons/* ${pkgdir}/usr/share/${pkgname}/default-appicons/
 }

@@ -93,7 +93,7 @@ sub copyIcons {
     my $dir = shift;
 
     for my $f ( '72x72.png', '144x144.png' ) {
-        UBOS::Utils::myexec( "cp /usr/share/ubos-scaffold/default-appicons/$f", $dir );
+        UBOS::Utils::myexec( "cp '/usr/share/ubos-scaffold/default-appicons/$f' '$dir'" );
     }
     1;
 }
