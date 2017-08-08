@@ -48,7 +48,7 @@ if( $commandPackage ) {
         }
     }
 
-    debug( 'Invoking webapptest command', $commandPackage ); 
+    debug( 'Invoking webapptest command', $commandPackage );
 
     my $result = UBOS::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
 
@@ -79,8 +79,8 @@ END
         }
     }
 
-	my $cmd = $0;
-	$cmd =~ s!.*/!!;
+    my $cmd = $0;
+    $cmd =~ s!.*/!!;
 
     foreach my $command ( sort keys %$commands ) {
         if( !$helpFor || $command eq $helpFor ) {
