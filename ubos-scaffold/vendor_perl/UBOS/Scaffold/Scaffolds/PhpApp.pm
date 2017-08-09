@@ -77,13 +77,13 @@ sub generate {
 # Arch Linux wiki here: https://wiki.archlinux.org/index.php/PKGBUILD
 #
 
-developer="$pars->{developer}"
-url="$pars->{url}"
-maintainer=\${developer}
-pkgname=$pars->{name}
+developer='$pars->{developer}'
+url='$pars->{url}'
+maintainer='\${developer}'
+pkgname='$pars->{name}'
 pkgver=0.1
 pkgrel=1
-pkgdesc="$pars->{description}"
+pkgdesc='$pars->{description}'
 arch=('any')
 license=('$pars->{license}')
 depends=(

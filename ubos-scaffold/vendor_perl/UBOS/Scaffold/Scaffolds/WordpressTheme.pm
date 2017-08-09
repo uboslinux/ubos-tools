@@ -71,13 +71,13 @@ sub generate {
 # Arch Linux wiki here: https://wiki.archlinux.org/index.php/PKGBUILD
 #
 
-developer="$pars->{developer}"
-url="url=https://wordpress.org/themes/$pars->{name}/"
-maintainer=\${developer}
-pkgname=wordpress-theme-$pars->{name}
+developer='$pars->{developer}'
+url='url=https://wordpress.org/themes/$pars->{name}/'
+maintainer='\${developer}'
+pkgname='wordpress-theme-$pars->{name}'
 pkgver=$pars->{version}
 pkgrel=1
-pkgdesc="$pars->{description}"
+pkgdesc='$pars->{description}'
 arch=('any')
 license=('GPL')
 depends=(
