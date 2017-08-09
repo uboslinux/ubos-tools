@@ -98,4 +98,26 @@ sub copyIcons {
     1;
 }
 
+##
+# Ensure that this package directory exists and isn't already used
+# $dir: the package directory
+# return: 0: ok. 1: directory had to be created.
+sub ensurePackageDirectory {
+    my $dir = shift;
+
+    my $ret = 0;
+    if( -d $dir ) {
+        foreach my $f ( qw( PKGBUILD ubos-manifest.json )) {
+            if( -e "$dir/$f" ) {
+                fatal( "$dir/$f exists: refusing to proceed\n" );
+            }
+        }
+    } elsif( UBOS::Utils::mkdir( $dir )) {
+        $ret = 1;
+    } else {
+        fatal( 'Cannot find or create', $dir );
+    }
+    return $ret;
+}
+
 1;

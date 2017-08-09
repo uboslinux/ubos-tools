@@ -37,7 +37,7 @@ sub run {
 
     my $verbose       = 0;
     my $logConfigFile = undef;
-    my $directory     = '.';
+    my $directory     = undef;
     my $scaffoldName  = undef;
 
     my $parseOk = GetOptionsFromArray(
@@ -53,16 +53,11 @@ sub run {
     {
         fatal( 'Invalid command-line arguments, add --help' );
     }
-    unless( -d $directory ) {
-        fatal( 'Cannot find directory:', $directory );
-    }
 
     UBOS::Logging::initialize( 'ubos-scaffold', 'generate', $verbose, $logConfigFile );
 
-    foreach my $f ( qw( PKGBUILD ubos-manifest.json )) {
-        if( -e "$directory/$f" ) {
-            fatal( "$directory/$f exists: refusing to proceed\n" );
-        }
+    if( $directory ) {
+        UBOS::Scaffold::ScaffoldUtils::ensurePackageDirectory( $directory );
     }
 
     my $scaffold = UBOS::Scaffold::ScaffoldUtils::findScaffold( $scaffoldName );
@@ -82,7 +77,7 @@ sub run {
         }
     }
 
-    print STDERR "Generating UBOS files for package $parValues->{name} into directory $directory using scaffold $scaffoldName\n";
+    print STDERR "Generating UBOS files for package $parValues->{name} using scaffold $scaffoldName\n";
 
     UBOS::Utils::invokeMethod( $scaffold . '::generate', $parValues, $directory );
 
@@ -101,7 +96,7 @@ sub synopsisHelp {
 SSS
 Generate a scaffold for a UBOS package, or list which scaffolds are
 available.
-    <dir>      -- the directory into which to generate. Defaults to the current directory.
+    <dir>      -- the directory into which to generate. Defaults to a subdirectory of the current directory with the name of the package.
     <scaffold> -- the name of the scaffold to generate.
 HHH
     };

@@ -24,6 +24,8 @@ use warnings;
 
 package UBOS::Scaffold::Scaffolds::Accessory;
 
+use UBOS::Scaffold::ScaffoldUtils;
+
 ##
 # Declare which parameters should be provided for this scaffold.
 sub pars {
@@ -75,6 +77,12 @@ DESC
 sub generate {
     my $pars = shift;
     my $dir  = shift;
+
+    my $packageName = $pars->{name};
+    unless( $dir ) {
+        $dir = $packageName;
+        UBOS::Scaffold::ScaffoldUtils::ensurePackageDirectory( $dir );
+    }
 
     my $pkgBuild = <<END;
 #
