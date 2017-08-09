@@ -82,7 +82,7 @@ sub run {
         }
     }
 
-    print STDERR "Generating UBOS files for package $parValues->{name} into directory $directory using scaffold $scaffold\n";
+    print STDERR "Generating UBOS files for package $parValues->{name} into directory $directory using scaffold $scaffoldName\n";
 
     UBOS::Utils::invokeMethod( $scaffold . '::generate', $parValues, $directory );
 
