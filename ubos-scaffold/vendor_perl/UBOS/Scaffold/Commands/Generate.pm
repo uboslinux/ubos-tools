@@ -38,7 +38,7 @@ sub run {
     my $verbose       = 0;
     my $logConfigFile = undef;
     my $directory     = '.';
-    my $scaffoldName  = 'default';
+    my $scaffoldName  = undef;
 
     my $parseOk = GetOptionsFromArray(
             \@args,

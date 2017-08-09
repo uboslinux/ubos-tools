@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# A scaffold for PHP app packages on UBOS.
+# A scaffold for Python app packages on UBOS.
 #
 # This file is part of ubos-scaffold.
 # (C) 2017 Indie Computing Corp.
@@ -22,7 +22,7 @@
 use strict;
 use warnings;
 
-package UBOS::Scaffold::Scaffolds::PhpApp;
+package UBOS::Scaffold::Scaffolds::PythonApp;
 
 ##
 # Declare which parameters should be provided for this scaffold.
@@ -88,9 +88,14 @@ arch=('any')
 license=('$pars->{license}')
 depends=(
     # Insert your UBOS package dependencies here as a bash array, like this:
-    #     'perl-archive-zip' 'ubos-perl-utils'
+    #     'python' 'python-lxml' 'python-pillow' 'python-psycopg2' 'python-setuptools'
     # and close with a parenthesis
 )
+makedepends=(
+    # Insert the UBOS build-time package dependencies here, like this:
+    #     'python-virtualenv')
+)
+
 backup=(
     # List any config files your package uses that should NOT be overridden
     # upon the next package update if the user has modified them.
@@ -106,12 +111,14 @@ sha512sums=(
     #     '1c1e59d3733d4c1073c19f54c8eda48f71a7f9e8db74db7ab761fcd950445f7541bce5d9ac800238ab7099ff760cb51bd59b7426020128873fa166870c58f125'
 )
 
-# If your package requires compilation, uncomment this build() function
-# and insert your build code.
-# build () {
-#     echo -n 'Build starts in directory:'
-#     pwd
-# }
+build() {
+    # Insert your python build commands here, like this:
+    #
+    #     cd "\${srcdir}/\${pkgname}-\${pkgver}"
+    #
+    #     [ -d site-packages ] || mkdir site-packages
+    #     PYTHONPATH=\$(pwd)/site-packages python2 setup.py develop --verbose --install-dir \$(pwd)/site-packages
+}
 
 package() {
 # Manifest
@@ -129,10 +136,15 @@ package() {
     mkdir -p \${pkgdir}/usr/share/\${pkgname}
     # install your code here, such as:
     #     install -m0755 \${startdir}/my-\${pkgname}-script \${pkgdir}/usr/bin/
+    #     cp -dr --no-preserve=ownership \${startdir}/src/\${pkgname}-\${pkgver}/* \${pkgdir}/usr/share/\${pkgname}/
 
-# Webserver configuration
+# Configuration from templates
     mkdir -p \${pkgdir}/usr/share/\${pkgname}/tmpl
-    install -m644 \${startdir}/tmpl/htaccess.tmpl \${pkgdir}/usr/share/\${pkgname}/tmpl/
+    install -m644 \${startdir}/tmpl/{wsgi.py,$pars->{name}.ini,htaccess}.tmpl \${pkgdir}/usr/share/{pkgname}/tmpl/
+
+# Celery service
+    mkdir -p \${pkgdir}/usr/lib/systemd/system
+    install -m755 \${startdir}/systemd/$pars->{name}-celeryd\@.service \${pkgdir}/usr/lib/systemd/system/
 }
 END
 
@@ -144,60 +156,52 @@ END
         "apache2" : {
             "defaultcontext" : "/$pars->{name}",
             "depends" : [
-                "php-apache",
-                "php-apcu",
-                "php-gd",
-                "sudo"
+                "mod_wsgi2"
             ],
             "apache2modules" : [
-                "php7",
-                "rewrite",
-                "headers",
-                "env",
-                "setenvif"
-            ],
-            "phpmodules" : [
-                "apcu",
-                "gd",
-                "iconv",
-                "mysqli",
-                "pdo_mysql"
+                "wsgi"
             ],
             "appconfigitems" : [
                 {
-                    "type" : "directorytree",
-                    "names" : [
-                        "index.php",
+                    "type"  : "directory",
+                    "name"  : "\${appconfig.datadir}",
+                    "uname" : "\${apache2.uname}",
+                    "gname" : "\${apache2.gname}"
+                },
+                {
+                    "type"  : "directory",
+                    "names"  : [
+                        "/var/cache/\${appconfig.appconfigid}",
+                        "/var/cache/\${appconfig.appconfigid}/egg-cache",
                     ],
-                    "source" : "$pars->{name}/\$1",
-                    "uname" : "root",
-                    "gname" : "root",
-                    "filepermissions" : "preserve",
-                    "dirpermissions"  : "preserve"
+                    "uname" : "\${apache2.uname}",
+                    "gname" : "\${apache2.gname}"
                 },
                 {
-                    "type"  : "directory",
-                    "name"  : "\${appconfig.datadir}"
+                    "type"         : "file",
+                    "name"         : "\${appconfig.apache2.dir}/wsgi.py",
+                    "template"     : "tmpl/wsgi.py.tmpl",
+                    "templatelang" : "varsubst"
                 },
                 {
-                    "type"  : "directory",
-                    "name"  : "\${appconfig.datadir}/data",
-                    "retentionpolicy" : "keep",
-                    "retentionbucket" : "datadir",
-                    "dirpermissions"  : "0750",
-                    "filepermissions" : "0640",
-                    "uname"       : "\${apache2.uname}",
-                    "gname"       : "\${apache2.gname}"
+                    "type"         : "file",
+                    "name"         : "\${appconfig.datadir}/$pars->{name}.ini",
+                    "template"     : "tmpl/$pars->{name}.ini.tmpl",
+                    "templatelang" : "varsubst"
                 },
                 {
                     "type"         : "file",
                     "name"         : "\${appconfig.apache2.appconfigfragmentfile}",
                     "template"     : "tmpl/htaccess.tmpl",
                     "templatelang" : "varsubst"
+                },
+                {
+                    "type"         : "systemd-service",
+                    "name"         : "$pars->{name}-celeryd\@\${appconfig.appconfigid}"
                 }
             ]
         },
-        "mysql" : {
+        "postgresql" : {
             "appconfigitems" : [
                 {
                     "type"       : "database",
@@ -213,34 +217,80 @@ END
 END
 
     my $htAccessTmpl = <<END;
-<Directory "\${appconfig.apache2.dir}">
-  <IfModule php7_module>
-    php_admin_value open_basedir        \${appconfig.apache2.dir}:/tmp/:/usr/share/:/dev:\${appconfig.datadir}
-    php_value       post_max_size       1G
-    php_value       upload_max_filesize 1G
-  </IfModule>
+Alias \${appconfig.context}/static/ \${package.codedir}/web/static/
+
+WSGIScriptAlias \${appconfig.contextorslash} \${appconfig.apache2.dir}/wsgi.py
+
+WSGIPassAuthorization On
+WSGIDaemonProcess $pars->{name}-\${appconfig.appconfigid} processes=2 threads=10 \
+       umask=0007 inactivity-timeout=900 maximum-requests=1000 \
+       python-path=\${package.codedir}
+WSGIProcessGroup $pars->{name}-\${appconfig.appconfigid}
+
+# Can't do this because there may be more than one WSGI app:
+# WSGIApplicationGroup %{GLOBAL}
+
+<Directory "\${package.codedir}/static">
+    Require all granted
 </Directory>
-<IfModule mod_headers.c>
-  Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains; preload"
-</IfModule>
+
+END
+
+    my $wsgiTmpl = <<END;
+#!\${package.codedir}/bin/python2
+
+import os
+os.environ['PYTHON_EGG_CACHE'] = '/var/cache/\${appconfig.appconfigid}/egg-cache'
+
+import site
+site.addsitedir('\${package.codedir}/site-packages')
+
+from paste.deploy import loadapp
+
+CONFIG_PATH = '\${appconfig.datadir}/paste.ini'
+application = loadapp('config:' + CONFIG_PATH)
+
+END
+
+    my $appTmpl = <<END;
+[$pars->{name}]
+sql_engine = postgresql://\${appconfig.postgresql.dbuser.maindb}:\${appconfig.postgresql.dbusercredential.maindb}\@\${appconfig.postgresql.dbhost.maindb}:\${appconfig.postgresql.dbport.maindb}/\${appconfig.postgresql.dbname.maindb}
+END
+
+    my $pasteTmpl = <<END;
+[DEFAULT]
+# Set to true to enable web-based debugging messages and etc.
+debug = true
+
+[pipeline:main]
+pipeline = errors routing
+
+[app:$pars->{name}]
+use = egg:$pars->{name}#app
+config = %(here)s/$pars->{name}.ini
+
 END
 
     UBOS::Utils::mkdir( "$dir/appicons" );
     UBOS::Utils::mkdir( "$dir/tmpl" );
 
-    UBOS::Utils::saveFile( "$dir/PKGBUILD",           $pkgBuild,     0644 );
-    UBOS::Utils::saveFile( "$dir/ubos-manifest.json", $manifest,     0644 );
+    UBOS::Utils::saveFile( "$dir/PKGBUILD",                $pkgBuild,     0644 );
+    UBOS::Utils::saveFile( "$dir/ubos-manifest.json",      $manifest,     0644 );
 
     UBOS::Scaffold::ScaffoldUtils::copyIcons( "$dir/appicons" );
 
-    UBOS::Utils::saveFile( "$dir/tmpl/htaccess.tmpl", $htAccessTmpl, 0644 );
+    UBOS::Utils::saveFile( "$dir/tmpl/$pars->{name}.tmpl", $appTmpl,      0644 );
+    UBOS::Utils::saveFile( "$dir/tmpl/htaccess.tmpl",      $htAccessTmpl, 0644 );
+    UBOS::Utils::saveFile( "$dir/tmpl/paste.ini.tmpl",     $pasteTmpl,    0644 );
+    UBOS::Utils::saveFile( "$dir/tmpl/wsgi.py.tmpl",       $wsgiTmpl,     0644 );
 }
 
 ##
 # Return help text.
 # return: help text
 sub help {
-    return 'PHP web app';
+    return 'Python app using paste and WSGI';
 }
 
 1;
+

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# A scaffold for PHP app packages on UBOS.
+# A scaffold for app packages that need to start a compiled background daemon on UBOS.
 #
 # This file is part of ubos-scaffold.
 # (C) 2017 Indie Computing Corp.
@@ -22,7 +22,7 @@
 use strict;
 use warnings;
 
-package UBOS::Scaffold::Scaffolds::PhpApp;
+package UBOS::Scaffold::Scaffolds::CompiledDaemonApp;
 
 ##
 # Declare which parameters should be provided for this scaffold.
@@ -89,7 +89,6 @@ license=('$pars->{license}')
 depends=(
     # Insert your UBOS package dependencies here as a bash array, like this:
     #     'perl-archive-zip' 'ubos-perl-utils'
-    # and close with a parenthesis
 )
 backup=(
     # List any config files your package uses that should NOT be overridden
@@ -98,12 +97,12 @@ backup=(
 source=(
     # Insert URLs to the source(s) of your code here, usually one or more tar files
     # or such, like this:
-    #     "https://download.nextcloud.com/server/releases/nextcloud-\${pkgver}.tar.bz2"
+    #     "https://releases.mattermost.com/\${pkgver}/mattermost-team-\${pkgver}-linux-amd64.tar.gz"
 )
 sha512sums=(
     # List the checksums for one source at a time, same sequence as the in
     # the sources array, like this:
-    #     '1c1e59d3733d4c1073c19f54c8eda48f71a7f9e8db74db7ab761fcd950445f7541bce5d9ac800238ab7099ff760cb51bd59b7426020128873fa166870c58f125'
+    #     '2391c2564d6cccbb3c925c3cd7c4d5fde6de144cc7960ec43cc903f222352eaa312f58925b32e6f7dd88338e9b2efee0d5e50c902f7aeb3bc5dbdebc3b70b379'
 )
 
 # If your package requires compilation, uncomment this build() function
@@ -122,6 +121,9 @@ package() {
     mkdir -p \${pkgdir}/srv/http/_appicons/\${pkgname}
     install -m644 \${startdir}/appicons/{72x72,144x144}.png \${pkgdir}/srv/http/_appicons/\${pkgname}/
 
+# Place for instance-specific config files
+    mkdir -p \${pkgdir}/etc/\${pkgname}
+
 # Data
     mkdir -p \${pkgdir}/var/lib/\${pkgname}
 
@@ -133,6 +135,10 @@ package() {
 # Webserver configuration
     mkdir -p \${pkgdir}/usr/share/\${pkgname}/tmpl
     install -m644 \${startdir}/tmpl/htaccess.tmpl \${pkgdir}/usr/share/\${pkgname}/tmpl/
+
+# Systemd
+    mkdir -p \${pkgdir}/usr/lib/systemd/system
+    cp \${startdir}/systemd/*.service \${pkgdir}/usr/lib/systemd/system/
 }
 END
 
@@ -143,37 +149,17 @@ END
     "roles" : {
         "apache2" : {
             "defaultcontext" : "/$pars->{name}",
-            "depends" : [
-                "php-apache",
-                "php-apcu",
-                "php-gd",
-                "sudo"
-            ],
             "apache2modules" : [
-                "php7",
-                "rewrite",
+                "proxy",
+                "proxy_http",
                 "headers",
-                "env",
-                "setenvif"
-            ],
-            "phpmodules" : [
-                "apcu",
-                "gd",
-                "iconv",
-                "mysqli",
-                "pdo_mysql"
+                "proxy_wstunnel",
+                "rewrite"
             ],
             "appconfigitems" : [
                 {
-                    "type" : "directorytree",
-                    "names" : [
-                        "index.php",
-                    ],
-                    "source" : "$pars->{name}/\$1",
-                    "uname" : "root",
-                    "gname" : "root",
-                    "filepermissions" : "preserve",
-                    "dirpermissions"  : "preserve"
+                    "type"         : "tcpport",
+                    "name"         : "mainport"
                 },
                 {
                     "type"  : "directory",
@@ -194,7 +180,17 @@ END
                     "name"         : "\${appconfig.apache2.appconfigfragmentfile}",
                     "template"     : "tmpl/htaccess.tmpl",
                     "templatelang" : "varsubst"
-                }
+                },
+                {
+                    "type"         : "file",
+                    "name"         : "/etc/$pars->{name}/\${appconfig.appconfigid}.json",
+                    "template"     : "tmpl/config.json.tmpl",
+                    "templatelang" : "varsubst"
+                },
+                {
+                    "type"         : "systemd-service",
+                    "name"         : "$pars->{name}\@\${appconfig.appconfigid}",
+                },
             ]
         },
         "mysql" : {
@@ -223,24 +219,64 @@ END
 <IfModule mod_headers.c>
   Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains; preload"
 </IfModule>
+
+ProxyPass /robots.txt !
+ProxyPass /favicon.ico !
+ProxyPass /sitemap.xml !
+ProxyPass /.well-known !
+ProxyPass /_common !
+ProxyPass /_errors !
+
+ProxyPass \${appconfig.contextorslash} http://127.0.0.1:\${appconfig.tcpport.mainport}\${appconfig.contextorslash}
+ProxyPassReverse \${appconfig.contextorslash} http://127.0.0.1:\${appconfig.tcpport.mainport}\${appconfig.contextorslash}
+ProxyPassReverseCookieDomain 127.0.0.1 \${site.hostname}
+
+ProxyPreserveHost On
+
+RequestHeader set X-Forwarded-Proto "\${site.protocol}"
+RequestHeader set X-Frame-Options SAMEORIGIN
+
+END
+
+    my $configTmpl = <<END;
+{
+    "some" : "thing"
+}
+END
+
+    my $dotService = <<END;
+\[Unit]
+Description=$pars->{description}
+
+[Service]
+WorkingDirectory=/usr/share/$pars->{name}
+ExecStart=/usr/share/$pars->{name}/bin/$pars->{name}d --config=/etc/$pars->{name}/%I.json
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 END
 
     UBOS::Utils::mkdir( "$dir/appicons" );
+    UBOS::Utils::mkdir( "$dir/systemd" );
     UBOS::Utils::mkdir( "$dir/tmpl" );
 
-    UBOS::Utils::saveFile( "$dir/PKGBUILD",           $pkgBuild,     0644 );
-    UBOS::Utils::saveFile( "$dir/ubos-manifest.json", $manifest,     0644 );
+    UBOS::Utils::saveFile( "$dir/PKGBUILD",                        $pkgBuild,     0644 );
+    UBOS::Utils::saveFile( "$dir/ubos-manifest.json",              $manifest,     0644 );
 
     UBOS::Scaffold::ScaffoldUtils::copyIcons( "$dir/appicons" );
 
-    UBOS::Utils::saveFile( "$dir/tmpl/htaccess.tmpl", $htAccessTmpl, 0644 );
+    UBOS::Utils::saveFile( "$dir/systemd/$pars->{name}\@.service", $dotService,   0644 );
+    UBOS::Utils::saveFile( "$dir/tmpl/htaccess.tmpl",              $htAccessTmpl, 0644 );
+    UBOS::Utils::saveFile( "$dir/tmpl/config.json.tmpl",           $configTmpl,   0644 );
+
 }
 
 ##
 # Return help text.
 # return: help text
 sub help {
-    return 'PHP web app';
+    return 'a compiled daemon is run that speaks HTTP at a non-standard port';
 }
 
 1;

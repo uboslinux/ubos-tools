@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# A scaffold for PHP app packages on UBOS.
+# A scaffold for some kind of application accessory package on UBOS.
 #
 # This file is part of ubos-scaffold.
 # (C) 2017 Indie Computing Corp.
@@ -22,7 +22,7 @@
 use strict;
 use warnings;
 
-package UBOS::Scaffold::Scaffolds::PhpApp;
+package UBOS::Scaffold::Scaffolds::Accessory;
 
 ##
 # Declare which parameters should be provided for this scaffold.
@@ -31,7 +31,7 @@ sub pars {
         {
             'name'        => 'name',
             'description' => <<DESC
-Name of the package
+Name of the accessory package (should be <appname>-<accname>)
 DESC
         },
         {
@@ -57,6 +57,12 @@ DESC
             'name'        => 'license',
             'description' => <<DESC
 License of your package, such as GPL, Apache, or Proprietary
+DESC
+        },
+        {
+            'name'        => 'app',
+            'description' => <<DESC
+Package name of the app to which this is an accessory
 DESC
         }
     ];
@@ -122,125 +128,45 @@ package() {
     mkdir -p \${pkgdir}/srv/http/_appicons/\${pkgname}
     install -m644 \${startdir}/appicons/{72x72,144x144}.png \${pkgdir}/srv/http/_appicons/\${pkgname}/
 
-# Data
-    mkdir -p \${pkgdir}/var/lib/\${pkgname}
-
 # Code
     mkdir -p \${pkgdir}/usr/share/\${pkgname}
     # install your code here, such as:
     #     install -m0755 \${startdir}/my-\${pkgname}-script \${pkgdir}/usr/bin/
-
-# Webserver configuration
-    mkdir -p \${pkgdir}/usr/share/\${pkgname}/tmpl
-    install -m644 \${startdir}/tmpl/htaccess.tmpl \${pkgdir}/usr/share/\${pkgname}/tmpl/
 }
 END
 
     my $manifest = <<END;
 {
-    "type" : "app",
+    "type"  : "accessory",
+
+    "accessoryinfo" : {
+        "appid"         : "$pars->{app}",
+        "accessoryid"   : "$pars->{name}"
+    },
 
     "roles" : {
         "apache2" : {
-            "defaultcontext" : "/$pars->{name}",
-            "depends" : [
-                "php-apache",
-                "php-apcu",
-                "php-gd",
-                "sudo"
-            ],
-            "apache2modules" : [
-                "php7",
-                "rewrite",
-                "headers",
-                "env",
-                "setenvif"
-            ],
-            "phpmodules" : [
-                "apcu",
-                "gd",
-                "iconv",
-                "mysqli",
-                "pdo_mysql"
-            ],
             "appconfigitems" : [
-                {
-                    "type" : "directorytree",
-                    "names" : [
-                        "index.php",
-                    ],
-                    "source" : "$pars->{name}/\$1",
-                    "uname" : "root",
-                    "gname" : "root",
-                    "filepermissions" : "preserve",
-                    "dirpermissions"  : "preserve"
-                },
-                {
-                    "type"  : "directory",
-                    "name"  : "\${appconfig.datadir}"
-                },
-                {
-                    "type"  : "directory",
-                    "name"  : "\${appconfig.datadir}/data",
-                    "retentionpolicy" : "keep",
-                    "retentionbucket" : "datadir",
-                    "dirpermissions"  : "0750",
-                    "filepermissions" : "0640",
-                    "uname"       : "\${apache2.uname}",
-                    "gname"       : "\${apache2.gname}"
-                },
-                {
-                    "type"         : "file",
-                    "name"         : "\${appconfig.apache2.appconfigfragmentfile}",
-                    "template"     : "tmpl/htaccess.tmpl",
-                    "templatelang" : "varsubst"
-                }
-            ]
-        },
-        "mysql" : {
-            "appconfigitems" : [
-                {
-                    "type"       : "database",
-                    "name"       : "maindb",
-                    "retentionpolicy"  : "keep",
-                    "retentionbucket"  : "maindb",
-                    "privileges" : "all privileges"
-                }
             ]
         }
     }
 }
-END
 
-    my $htAccessTmpl = <<END;
-<Directory "\${appconfig.apache2.dir}">
-  <IfModule php7_module>
-    php_admin_value open_basedir        \${appconfig.apache2.dir}:/tmp/:/usr/share/:/dev:\${appconfig.datadir}
-    php_value       post_max_size       1G
-    php_value       upload_max_filesize 1G
-  </IfModule>
-</Directory>
-<IfModule mod_headers.c>
-  Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains; preload"
-</IfModule>
 END
 
     UBOS::Utils::mkdir( "$dir/appicons" );
-    UBOS::Utils::mkdir( "$dir/tmpl" );
 
     UBOS::Utils::saveFile( "$dir/PKGBUILD",           $pkgBuild,     0644 );
     UBOS::Utils::saveFile( "$dir/ubos-manifest.json", $manifest,     0644 );
 
     UBOS::Scaffold::ScaffoldUtils::copyIcons( "$dir/appicons" );
-
-    UBOS::Utils::saveFile( "$dir/tmpl/htaccess.tmpl", $htAccessTmpl, 0644 );
-}
+    }
 
 ##
 # Return help text.
 # return: help text
 sub help {
-    return 'PHP web app';
+    return 'generic accessory';
 }
 
 1;

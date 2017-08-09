@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# A scaffold for PHP app packages on UBOS.
+# A scaffold for Java Servlet app packages on UBOS.
 #
 # This file is part of ubos-scaffold.
 # (C) 2017 Indie Computing Corp.
@@ -22,7 +22,7 @@
 use strict;
 use warnings;
 
-package UBOS::Scaffold::Scaffolds::PhpApp;
+package UBOS::Scaffold::Scaffolds::JavaServletApp;
 
 ##
 # Declare which parameters should be provided for this scaffold.
@@ -31,7 +31,7 @@ sub pars {
         {
             'name'        => 'name',
             'description' => <<DESC
-Name of the package
+Name of the accessory package
 DESC
         },
         {
@@ -57,6 +57,12 @@ DESC
             'name'        => 'license',
             'description' => <<DESC
 License of your package, such as GPL, Apache, or Proprietary
+DESC
+        },
+        {
+            'name'        => 'groupId',
+            'description' => <<DESC
+Maven GroupId of your project, such as com.example.greatestever
 DESC
         }
     ];
@@ -86,9 +92,17 @@ pkgrel=1
 pkgdesc="$pars->{description}"
 arch=('any')
 license=('$pars->{license}')
+
+# Your project's maven groupId
+_groupId='$pars->{groupId}'
+
+makedepends=(
+    'maven'
+    'jdk8-openjdk'
+)
 depends=(
     # Insert your UBOS package dependencies here as a bash array, like this:
-    #     'perl-archive-zip' 'ubos-perl-utils'
+    #     'java-runtime' 'mysql-connector-java'
     # and close with a parenthesis
 )
 backup=(
@@ -113,6 +127,12 @@ sha512sums=(
 #     pwd
 # }
 
+build() {
+    cd \${startdir}/maven
+    sed -e "s/PKGBUILD_VERSION/\${pkgver}/" pom.xml.tmpl > pom.xml
+    mvn clean install \\\${MVN_OPTS}
+}
+
 package() {
 # Manifest
     mkdir -p \${pkgdir}/var/lib/ubos/manifests
@@ -130,9 +150,24 @@ package() {
     # install your code here, such as:
     #     install -m0755 \${startdir}/my-\${pkgname}-script \${pkgdir}/usr/bin/
 
-# Webserver configuration
+# Code
+    install -m644 -D \${startdir}/maven/target/\${pkgname}-\${pkgver}.war \
+                     \${pkgdir}/usr/lib/java/\${_groupId//.//}/\${pkgname}/\${pkgver}/\${pkgname}-\${pkgver}.war
+
+# Templates, with package/module names and versions replaced
     mkdir -p \${pkgdir}/usr/share/\${pkgname}/tmpl
-    install -m644 \${startdir}/tmpl/htaccess.tmpl \${pkgdir}/usr/share/\${pkgname}/tmpl/
+    install -m644 \${startdir}/tmpl/context.xml.tmpl \${pkgdir}/usr/share/\${pkgname}/tmpl/
+    install -m644 \${startdir}/tmpl/htaccess.tmpl    \${pkgdir}/usr/share/\${pkgname}/tmpl/
+
+    groupId=\${_groupId//./\\/}
+
+    sed -i -e "s/\\\${pkgname}/\${pkgname}/g" \${pkgdir}/usr/share/\${pkgname}/tmpl/context.xml.tmpl
+    sed -i -e "s/\\\${pkgver}/\${pkgver}/g"   \${pkgdir}/usr/share/\${pkgname}/tmpl/context.xml.tmpl
+    sed -i -e "s/\\\${groupId}/\${groupId}/g" \${pkgdir}/usr/share/\${pkgname}/tmpl/context.xml.tmpl
+
+# SQL
+    mkdir -p \${pkgdir}/usr/share/\${pkgname}/sql
+    install -m755 \${startdir}/sql/create.sql \${pkgdir}/usr/share/\${pkgname}/sql/
 }
 END
 
@@ -143,56 +178,26 @@ END
     "roles" : {
         "apache2" : {
             "defaultcontext" : "/$pars->{name}",
-            "depends" : [
-                "php-apache",
-                "php-apcu",
-                "php-gd",
-                "sudo"
-            ],
             "apache2modules" : [
-                "php7",
-                "rewrite",
-                "headers",
-                "env",
-                "setenvif"
-            ],
-            "phpmodules" : [
-                "apcu",
-                "gd",
-                "iconv",
-                "mysqli",
-                "pdo_mysql"
+                "proxy",
+                "proxy_ajp"
             ],
             "appconfigitems" : [
                 {
-                    "type" : "directorytree",
-                    "names" : [
-                        "index.php",
-                    ],
-                    "source" : "$pars->{name}/\$1",
-                    "uname" : "root",
-                    "gname" : "root",
-                    "filepermissions" : "preserve",
-                    "dirpermissions"  : "preserve"
-                },
-                {
-                    "type"  : "directory",
-                    "name"  : "\${appconfig.datadir}"
-                },
-                {
-                    "type"  : "directory",
-                    "name"  : "\${appconfig.datadir}/data",
-                    "retentionpolicy" : "keep",
-                    "retentionbucket" : "datadir",
-                    "dirpermissions"  : "0750",
-                    "filepermissions" : "0640",
-                    "uname"       : "\${apache2.uname}",
-                    "gname"       : "\${apache2.gname}"
-                },
+                    "type" : "file",
+                    "name" : "\${appconfig.apache2.appconfigfragmentfile}",
+                    "template"     : "tmpl/htaccess.tmpl",
+                    "templatelang" : "varsubst"
+                }
+            ]
+        },
+        "tomcat8" : {
+            "defaultcontext" : "/$pars->{name}",
+            "appconfigitems" : [
                 {
                     "type"         : "file",
-                    "name"         : "\${appconfig.apache2.appconfigfragmentfile}",
-                    "template"     : "tmpl/htaccess.tmpl",
+                    "name"         : "\${appconfig.tomcat8.contextfile}",
+                    "template"     : "tmpl/context.xml.tmpl",
                     "templatelang" : "varsubst"
                 }
             ]
@@ -200,47 +205,82 @@ END
         "mysql" : {
             "appconfigitems" : [
                 {
-                    "type"       : "database",
-                    "name"       : "maindb",
+                    "type"             : "database",
+                    "name"             : "maindb",
                     "retentionpolicy"  : "keep",
                     "retentionbucket"  : "maindb",
-                    "privileges" : "all privileges"
+                    "privileges"       : "select, insert"
+                }
+            ],
+            "installers" : [
+                {
+                    "name"   : "maindb",
+                    "type"   : "sqlscript",
+                    "source" : "sql/create.sql"
                 }
             ]
         }
     }
 }
+
 END
 
     my $htAccessTmpl = <<END;
-<Directory "\${appconfig.apache2.dir}">
-  <IfModule php7_module>
-    php_admin_value open_basedir        \${appconfig.apache2.dir}:/tmp/:/usr/share/:/dev:\${appconfig.datadir}
-    php_value       post_max_size       1G
-    php_value       upload_max_filesize 1G
-  </IfModule>
-</Directory>
-<IfModule mod_headers.c>
-  Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains; preload"
-</IfModule>
+ProxyPass /robots.txt !
+ProxyPass /favicon.ico !
+ProxyPass /sitemap.xml !
+ProxyPass /.well-known !
+ProxyPass /_common !
+ProxyPass /_errors !
+
+ProxyPass \${appconfig.contextorslash} ajp://127.0.0.1:8009\${appconfig.contextorslash}
+ProxyPassReverse \${appconfig.contextorslash} ajp://127.0.0.1:8009\${appconfig.contextorslash}
+END
+
+    my $contextTmpl = <<END;
+<?xml version="1.0" encoding="UTF-8"?>
+<Context path="\${appconfig.context}"
+         antiResourceLocking="true"
+         cookies="false"
+         docBase="/usr/lib/java/\${groupId}/\${pkgname}/\${pkgver}/\${pkgname}-\${pkgver}.war">
+
+  <Resource auth="Container"
+            type="javax.sql.DataSource"
+            driverClassName="com.mysql.jdbc.Driver"
+            name="jdbc/maindb"
+            url="jdbc:mysql://\${appconfig.mysql.dbhost.maindb}/\${appconfig.mysql.dbname.maindb}"
+            username="\${appconfig.mysql.dbuser.maindb}"
+            password="\${escapeDquote( appconfig.mysql.dbusercredential.maindb )}"
+            maxActive="20"
+            maxIdle="10"
+            maxWait="-1"/>
+</Context>
+END
+
+    my $sql = <<END;
+# The SQL to be executed to initialize the MySQL database upon first install
+# Insert here ...
 END
 
     UBOS::Utils::mkdir( "$dir/appicons" );
+    UBOS::Utils::mkdir( "$dir/sql" );
     UBOS::Utils::mkdir( "$dir/tmpl" );
 
-    UBOS::Utils::saveFile( "$dir/PKGBUILD",           $pkgBuild,     0644 );
-    UBOS::Utils::saveFile( "$dir/ubos-manifest.json", $manifest,     0644 );
+    UBOS::Utils::saveFile( "$dir/PKGBUILD",              $pkgBuild,     0644 );
+    UBOS::Utils::saveFile( "$dir/ubos-manifest.json",    $manifest,     0644 );
 
     UBOS::Scaffold::ScaffoldUtils::copyIcons( "$dir/appicons" );
 
-    UBOS::Utils::saveFile( "$dir/tmpl/htaccess.tmpl", $htAccessTmpl, 0644 );
+    UBOS::Utils::saveFile( "$dir/sql/create.sql",        $sql,          0644 );
+
+    UBOS::Utils::saveFile( "$dir/tmpl/htaccess.tmpl",    $htAccessTmpl, 0644 );
+    UBOS::Utils::saveFile( "$dir/tmpl/context.xml.tmpl", $contextTmpl,  0644 );
 }
 
 ##
 # Return help text.
 # return: help text
 sub help {
-    return 'PHP web app';
+    return 'Java servlet app deployed to Tomcat';
 }
-
 1;
