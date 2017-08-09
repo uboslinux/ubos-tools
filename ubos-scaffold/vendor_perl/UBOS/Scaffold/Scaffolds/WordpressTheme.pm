@@ -35,15 +35,15 @@ Name of the Wordpress theme
 DESC
         },
         {
-            'name'        => 'developer',
+            'name'        => 'version',
             'description' => <<DESC
-URL of the developer, such as your company URL
+Current version of the theme
 DESC
         },
         {
-            'name'        => 'url',
+            'name'        => 'developer',
             'description' => <<DESC
-URL of the package, such as a product information page on your company website
+URL of the developer, such as your company URL
 DESC
         },
         {
@@ -72,28 +72,26 @@ sub generate {
 #
 
 developer="$pars->{developer}"
-url="$pars->{url}"
+url="url=https://wordpress.org/themes/$pars->{name}/"
 maintainer=\${developer}
 pkgname=wordpress-theme-$pars->{name}
-pkgver=0.1
+pkgver=$pars->{version}
 pkgrel=1
 pkgdesc="$pars->{description}"
 arch=('any')
-license=GPL
+license=('GPL')
 depends=(
     # Insert your UBOS package dependencies here as a bash array, like this:
     #     'wordpress'
     # and close with a parenthesis
 )
 source=(
-    # Insert URLs to the source(s) of your code here, usually one or more tar files
-    # or such, like this:
-    #     "source=("http://downloads.wordpress.org/theme/$pars->{name}.\${pkgver}.zip")
+    "http://downloads.wordpress.org/theme/$pars->{name}.\${pkgver}.zip"
 )
 sha512sums=(
-    # List the checksums for one source at a time, same sequence as the in
-    # the sources array, like this:
-    #     '1c1e59d3733d4c1073c19f54c8eda48f71a7f9e8db74db7ab761fcd950445f7541bce5d9ac800238ab7099ff760cb51bd59b7426020128873fa166870c58f125'
+    # Change this checksum to the correct one. Find out what it is by
+    # running "makepkg -g"
+    'fixme'
 )
 
 package() {
@@ -108,7 +106,7 @@ package() {
 # Source
     mkdir -p \${pkgdir}/usr/share/\${pkgname}
 
-    cp -a \${startdir}/src/$pars->{name} \${pkgdir}/usr/share/$pars->{name}/
+    cp -a \${startdir}/src/$pars->{name} \${pkgdir}/usr/share/wordpress-theme-$pars->{name}/
 }
 END
 
@@ -146,6 +144,8 @@ END
 
     UBOS::Utils::saveFile( "$dir/PKGBUILD",           $pkgBuild,     0644 );
     UBOS::Utils::saveFile( "$dir/ubos-manifest.json", $manifest,     0644 );
+
+    UBOS::Scaffold::ScaffoldUtils::copyIcons( "$dir/appicons" );
 }
 
 ##
