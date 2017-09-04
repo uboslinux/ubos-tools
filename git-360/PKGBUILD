@@ -9,6 +9,7 @@ arch=('any')
 license=('GPL')
 depends=('perl')
 options=('!strip')
+replaces=('ubos-misc-tools')
 
 package() {
 # Code
