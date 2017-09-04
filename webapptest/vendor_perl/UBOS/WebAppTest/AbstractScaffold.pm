@@ -45,7 +45,7 @@ sub setup {
         $self->{verbose} = $options->{verbose} || 0;
     } else {
         $self->{verbose} = 0;
-    }        
+    }
 
     return $self;
 }
@@ -67,7 +67,7 @@ sub deploy {
     my $site = shift;
 
     my $jsonString = UBOS::Utils::writeJsonToString( $site );
-    debug( 'Site JSON:', $jsonString );
+    trace( 'Site JSON:', $jsonString );
 
     my $cmd = 'sudo ubos-admin deploy --stdin';
     $cmd .= ( ' --verbose' x $self->{verbose} );
@@ -98,7 +98,7 @@ sub update {
 
     my $cmd = 'sudo ubos-admin update';
     $cmd .= ( ' --verbose' x $self->{verbose} );
-    
+
     my $exit = $self->invokeOnTarget( $cmd );
     return !$exit;
 }
@@ -144,7 +144,7 @@ sub backupToLocal {
     error( 'Must override Scaffold::backupToLocal' );
 
     return undef;
-}    
+}
 
 ##
 # Restore a site
@@ -252,7 +252,7 @@ sub getFileInfo {
 sub handleImpersonateDepot {
     my $self = shift;
     my $ip   = shift;
-    
+
     unless( $ip ) {
         return 1;
     }

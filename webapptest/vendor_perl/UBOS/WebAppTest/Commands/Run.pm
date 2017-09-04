@@ -59,7 +59,7 @@ sub run {
             'tlskeyfile=s'      => \$tlsKeyFile,
             'tlscrtfile=s'      => \$tlsCrtFile,
             'tlscrtchainfile=s' => \$tlsCrtChainFile );
-    
+
     UBOS::Logging::initialize( 'webapptest', 'run', $verbose, $logConfigFile );
 
     unless( $parseOk ) {
@@ -96,7 +96,7 @@ sub run {
             $tlsCrtChainFile = $configData->{tlscrtchainfile};
         }
     }
-    
+
     my $tlsCount = 0;
     foreach my $arg ( $tlsKeyFile, $tlsCrtFile, $tlsCrtChainFile ) {
         if( $arg ) {
@@ -123,7 +123,7 @@ sub run {
     if( @scaffoldOpts ) {
         foreach my $scaffoldOpt ( @scaffoldOpts ) {
             my( $scaffoldName, $scaffoldOptions ) = decode( $scaffoldOpt );
-            
+
             my $scaffoldPackage = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
             unless( $scaffoldPackage ) {
                 fatal( 'Cannot find scaffold', $scaffoldName );
@@ -131,14 +131,14 @@ sub run {
             if( defined( $scaffoldPackagesWithOptions{$scaffoldPackage} )) {
                 fatal( 'Cannot run the scaffold multiple times at this time' );
             }
-            
+
             $scaffoldPackagesWithOptions{$scaffoldPackage} = $scaffoldOptions;
         }
     }
 
     if( $configData && exists( $configData->{scaffold} )) {
         foreach my $scaffoldName ( keys %{$configData->{scaffold}} ) {
-            
+
             my $scaffoldPackage = UBOS::WebAppTest::TestingUtils::findScaffold( $scaffoldName );
             unless( $scaffoldPackage ) {
                 fatal( 'Cannot find scaffold', $scaffoldName );
@@ -160,7 +160,7 @@ sub run {
         $scaffoldPackagesWithOptions{$here} = undef;
     }
 
-    debug( 'Found scaffold(s)', keys %scaffoldPackagesWithOptions );
+    trace( 'Found scaffold(s)', keys %scaffoldPackagesWithOptions );
 
     my %testPlanPackagesWithArgsToRun = ();
     if( @testPlanOpts ) {
@@ -182,7 +182,7 @@ sub run {
 
     if( $configData && exists( $configData->{testplan} )) {
         foreach my $testPlanName ( keys %{ $configData->{testplan} } ) {
-            
+
             my $testPlanPackage = UBOS::WebAppTest::TestingUtils::findTestPlan( $testPlanName );
             unless( $testPlanPackage ) {
                 fatal( 'Cannot find test plan', $testPlanName );
@@ -205,7 +205,7 @@ sub run {
         $testPlanPackagesWithArgsToRun{$def} = undef;
     }
 
-    debug( 'Found test plan(s)', keys %testPlanPackagesWithArgsToRun );
+    trace( 'Found test plan(s)', keys %testPlanPackagesWithArgsToRun );
 
     my @appTestsToRun = ();
     foreach my $appTestName ( @args ) {
@@ -218,14 +218,14 @@ sub run {
         }
         push @appTestsToRun, $appTestToRun;
     }
-    
+
     my $ret = 1;
     my $success;
     my $repeat;
     my $abort;
     my $quit;
-    
-    
+
+
     foreach my $scaffoldPackage ( sort keys %scaffoldPackagesWithOptions ) {
         my $scaffoldOptions = $scaffoldPackagesWithOptions{$scaffoldPackage};
 
@@ -239,7 +239,7 @@ sub run {
                 $scaffoldOptionsCopy = undef;
             }
 
-            debug( 'Scaffold->setup()' );
+            trace( 'Scaffold->setup()' );
 
             $scaffold = UBOS::Utils::invokeMethod( $scaffoldPackage . '->setup', $scaffoldOptions );
             if( $scaffold && $scaffold->isOk ) {
@@ -270,7 +270,7 @@ sub run {
                         print "Running TestPlan " . $testPlanPackage . "\n";
                     }
                     info( 'Running AppTest', $appTest->name, 'with test plan', $testPlanPackage );
-                    
+
                     my $testPlan = UBOS::Utils::invokeMethod( $testPlanPackage . '->new', $appTest, $testPlanOptions, $tlsData );
 
                     my $status = $testPlan->run( $scaffold, $interactive, $verbose );
@@ -288,7 +288,7 @@ sub run {
         $ret &= $success;
 
         if( $scaffold && !$abort ) {
-            debug( 'Scaffold->teardown()' );
+            trace( 'Scaffold->teardown()' );
             $scaffold->teardown();
         }
         if( $abort || $quit ) {

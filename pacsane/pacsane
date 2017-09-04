@@ -80,20 +80,20 @@ foreach my $dbFile ( @dbFiles ) {
     unless( -r $dbFile ) {
         fatal( 'Cannot read file:', $dbFile );
     }
-    
+
     my $dbTar = readTar( $dbFile );
     unless( $dbTar ) {
         fatal( 'Cannot unpack. Is this a package db file?', $dbFile );
     }
     my @dbTarFiles = $dbTar->get_files;
-    
+
     my $definedPackages = {};
     foreach my $dbTarFile ( @dbTarFiles ) {
         my $dbTarPath = $dbTarFile->full_path;
         if( $dbTarPath =~ m!^(.*)/desc$! ) {
             my $packageName = $1;
             my $content     = $dbTarFile->get_content;
-            
+
             my $packageData = {};
             my $key;
             foreach my $line ( split /\n/, $content ) {
@@ -104,7 +104,7 @@ foreach my $dbFile ( @dbFiles ) {
                         } else {
                             $packageData->{$key} = $line;
                         }
-                            
+
                     } else {
                         $key = undef;
                     }
@@ -116,7 +116,7 @@ foreach my $dbFile ( @dbFiles ) {
         }
     }
     delete $tempFiles->{$dbFile};
-    
+
     # Now let's see what we have in the same directory.
     my $dir;
     if( $dbFile =~ m!^(.*/)[^/]+$! ) {
@@ -146,7 +146,7 @@ foreach my $dbFile ( @dbFiles ) {
             'filename' => $shortPackageFile,
             'filesize' => ( -s $packageFile )
         }; # keep some other data while we are at it
-        
+
         my $content = $packageTar->get_content( '.PKGINFO' );
         foreach my $line ( split /\n/, $content ) {
             if( $line =~ m!(\S+)\s*=\s*(\S*)! ) {
@@ -155,14 +155,14 @@ foreach my $dbFile ( @dbFiles ) {
             }
         }
         $foundPackages->{$packagePlusVersion} = $pkgInfo;
-        
+
         delete $tempFiles->{$packageFile};
     }
 
-    if( UBOS::Logging::isDebugActive() ) {
-        debug( "*** Packages mentioned in package database:\n", $definedPackages );
+    if( UBOS::Logging::isTraceActive() ) {
+        trace( "*** Packages mentioned in package database:\n", $definedPackages );
 
-        debug( "*** Packages actually found in filesystem:\n", $foundPackages );
+        trace( "*** Packages actually found in filesystem:\n", $foundPackages );
     }
 
     # Now let's do some matching. First: make sure all package files exist that are referenced in
@@ -179,7 +179,7 @@ foreach my $dbFile ( @dbFiles ) {
             }
         }
     }
-    
+
     # Now find package files that aren't in the database
     my $notInDb = {};
     foreach my $foundPackageNameVersion ( keys %$foundPackages ) {
@@ -193,11 +193,11 @@ foreach my $dbFile ( @dbFiles ) {
                     $notInDb->{$packageName} = [];
                 }
                 push @{$notInDb->{$packageName}}, $foundPackageNameVersion;
-                
+
             } elsif( !$obsoleteOnly ) {
                 error( 'Failed to parse package name/version:', $foundPackageNameVersion );
             }
-            
+
         } elsif( $verbose ) {
             if( $obsoleteOnly ) {
                 info( '# Package', $foundPackageNameVersion, 'found as expected' );
@@ -301,7 +301,7 @@ sub compareFoundDefined {
         }
     }
 }
-            
+
 #####
 # Print synopsis or help
 sub synopsisHelpQuit {
@@ -310,7 +310,7 @@ sub synopsisHelpQuit {
 pacsane [--verbose] [--essential] <dbfile>...
     where <dbfile> is the database file of a pacman repository in the local filesystem.
     --verbose:   print more info
-    --essential: only compare properties that are essential for the integrity of the 
+    --essential: only compare properties that are essential for the integrity of the
                  package database
 pacsane [--verbose] --obsolete-only <dbfile>...
     Print out a list of package files that is obsolete in the repository, e.g. because

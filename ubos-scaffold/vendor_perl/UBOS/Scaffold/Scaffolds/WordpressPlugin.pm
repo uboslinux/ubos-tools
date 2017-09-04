@@ -66,7 +66,7 @@ sub generate {
     my $pars = shift;
     my $dir  = shift;
 
-    my $packageName = 'wordpress-theme-' . $pars->{name};
+    my $packageName = 'wordpress-plugin-' . $pars->{name};
     unless( $dir ) {
         $dir = $packageName;
         UBOS::Scaffold::ScaffoldUtils::ensurePackageDirectory( $dir );
@@ -81,7 +81,7 @@ sub generate {
 
 developer='$pars->{developer}'
 url='url=https://wordpress.org/plugins/$pars->{name}/'
-maintainer='\${developer}'
+maintainer=\${developer}
 pkgname='$packageName'
 pkgver=$pars->{version}
 pkgrel=1

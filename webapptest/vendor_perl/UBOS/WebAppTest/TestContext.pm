@@ -78,7 +78,7 @@ sub new {
 # return: the test
 sub getTest {
     my $self = shift;
-    
+
     return $self->{testPlan}->getTest();
 }
 
@@ -168,7 +168,7 @@ sub clearHttpSession {
     my $cookieFile = File::Temp->new();
 
     $self->{cookieFile} = $cookieFile->filename;
-    
+
     $self->{curl} = "curl -s -v" # -v to get HTTP headers
                   . " --cookie-jar '$cookieFile' -b '$cookieFile'"
                   . " --insecure"
@@ -184,7 +184,7 @@ sub clearHttpSession {
 
 ##
 # Perform an HTTP GET request. If the URL does not contain a protocol and
-# hostname but starts with a slash, "http://hostname" with the hostname 
+# hostname but starts with a slash, "http://hostname" with the hostname
 # of the site being tested is prepended.
 # $url: URL to access
 # return: hash containing content and headers of the HTTP response
@@ -201,15 +201,15 @@ sub absGet {
         $url = $self->protocol() . '://' . $self->hostnameOrIp() . $url;
     }
 
-    debug( 'Accessing url', $url );
+    trace( 'Accessing url', $url );
 
     my $cmd = $self->{curl};
     $cmd .= " '$url'";
-    
+
     my $stdout;
     my $stderr;
     my $ret = {};
-    
+
     if( UBOS::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
         $ret->{error} = $self->error( 'HTTP request failed:', $stderr );
     }
@@ -233,7 +233,7 @@ sub get {
 
 ##
 # Perform an HTTP POST request. If the URL does not contain a protocol and
-# hostname but starts with a slash, "http://hostname" with the hostname 
+# hostname but starts with a slash, "http://hostname" with the hostname
 # of the site being tested is prepended.
 # $url: URL to access
 # $postPars: hash of posted parameters
@@ -251,16 +251,16 @@ sub absPost {
         $url = $self->protocol() . '://' . $self->hostnameOrIp() . $url;
     }
 
-    debug( 'Posting to url', $url );
+    trace( 'Posting to url', $url );
 
     my $postData = join(
             '&',
             map { UBOS::Utils::uri_escape( $_ ) . '=' . UBOS::Utils::uri_escape( $postPars->{$_} ) } keys %$postPars );
-    
+
     my $cmd = $self->{curl};
     $cmd .= " -d '$postData'";
     $cmd .= " '$url'";
-    
+
     my $stdout;
     my $stderr;
     my $ret = {};
@@ -307,7 +307,7 @@ sub getMustBe {
 
     my $response = $self->get( $relativeUrl );
     my $ret      = $self->mustBe( $response, $content, $errorMsg );
- 
+
     if( defined( $status )) {
         my $tmp = $self->mustStatus( $response, $status, $errorMsg );
         if( defined( $tmp->{error} )) {
@@ -359,7 +359,7 @@ sub getMustContain {
 
     my $response = $self->get( $relativeUrl );
     my $ret      = $self->mustContain( $response, $content, $errorMsg );
- 
+
     if( defined( $status )) {
         my $tmp = $self->mustStatus( $response, $status, $errorMsg );
         if( defined( $tmp->{error} )) {
@@ -510,7 +510,7 @@ sub getMustStatus {
 
     my $response = $self->get( $relativeUrl );
     my $ret      = $self->mustStatus( $response, $status, $errorMsg );
-    
+
     return $ret;
 }
 
@@ -599,7 +599,7 @@ sub mustMatch {
     my $response = shift;
     my $regex    = shift;
     my $errorMsg = shift;
-    
+
     my %ret = %$response; # make copy
     unless( $self->matches( $response, $regex )) {
         debugResponse( $response );
@@ -618,7 +618,7 @@ sub mustNotMatch {
     my $response = shift;
     my $regex    = shift;
     my $errorMsg = shift;
-    
+
     my %ret = %$response; # make copy
     unless( $self->notMatches( $response, $regex )) {
         debugResponse( $response );
@@ -771,7 +771,7 @@ sub matches {
     my $self     = shift;
     my $response = shift;
     my $regex    = shift;
-    
+
     if( $response->{content} !~ m!$regex! ) {
         return 0;
     }
@@ -878,22 +878,22 @@ sub absWaitForReady {
     my $url  = shift;
 
     my $until = time() + $maxWaitTillReady;
-    debug( 'Waiting until ready: ', $maxWaitTillReady, 'sec' );
+    trace( 'Waiting until ready: ', $maxWaitTillReady, 'sec' );
 
     while( 1 ) {
-        my $response = $self->get( $url );   
+        my $response = $self->get( $url );
         my $delta = $until - time();
 
         if( !$self->status( $response, '503' )) {
-            debug( 'Done waiting at:', $delta, 'sec' );
+            trace( 'Done waiting at:', $delta, 'sec' );
             return 1;
         }
 
         if( $delta < 0 ) {
-            debug( 'Returning at: ', $delta, 'sec' );
+            trace( 'Returning at: ', $delta, 'sec' );
             return 0;
         }
-        debug( 'Still 503, continuing to wait: ', $delta, 'sec' );
+        trace( 'Still 503, continuing to wait: ', $delta, 'sec' );
         sleep 5;
     }
 }
@@ -908,7 +908,7 @@ sub waitForReady {
 
     return $self->absWaitForReady( $self->context() . $relativeUrl );
 }
-    
+
 ##### (4) File testing methods #####
 
 ##
@@ -1048,12 +1048,12 @@ sub checkSymlink {
 ##### (5) Utility methods #####
 
 ##
-# Emit a response in the debug level of the log
+# Emit a response in the trace level of the log
 # $response: the response
 sub debugResponse {
     my $response = shift;
 
-    debug( sub { "Response:\n" . UBOS::Utils::hashAsColumns( $response ) } );
+    trace( sub { "Response:\n" . UBOS::Utils::hashAsColumns( $response ) } );
 }
 
 ##
@@ -1071,7 +1071,7 @@ sub error {
     }
 
     push @{$self->{errors}}, $msg;
-    
+
     return $msg;
 }
 
@@ -1109,7 +1109,7 @@ sub appendError {
         } else {
             $error = "1: $error$newError";
         }
-        
+
     } else {
         $hash->{error} = $error;
     }

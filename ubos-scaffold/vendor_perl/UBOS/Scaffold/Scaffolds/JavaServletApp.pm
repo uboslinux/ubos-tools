@@ -93,7 +93,7 @@ sub generate {
 
 developer='$pars->{developer}'
 url='$pars->{url}'
-maintainer='\${developer}'
+maintainer=\${developer}
 pkgname='$packageName'
 pkgver=0.1
 pkgrel=1

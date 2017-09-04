@@ -65,7 +65,7 @@ sub backupToLocal {
     $self->destroyBackup( $remoteFile );
 
     return $filename;
-}    
+}
 
 ##
 # Restore a site from a local file on the local machine
@@ -80,7 +80,7 @@ sub restoreFromLocal {
     my $cmd = 'sudo ubos-admin listsites';
     $cmd .= ( ' --verbose' x $self->{verbose} );
     $cmd .= ' --brief --backupfile ' . $filename;
-    
+
     my $siteIdInBackup;
     my $exit = UBOS::Utils::myexec( $cmd, undef, \$siteIdInBackup );
     if( $exit ) {
@@ -89,7 +89,7 @@ sub restoreFromLocal {
     }
     $siteIdInBackup =~ s!^\s+!!g;
     $siteIdInBackup =~ s!\s+$!!g;
-    
+
     my $remoteFile;
     $exit = $self->invokeOnTarget( 'mktemp webapptest-XXXXX.ubos-backup', undef, \$remoteFile );
     if( $exit ) {
@@ -184,7 +184,7 @@ sub copyFromTarget {
     }
     $scpCmd .= ' ' . $self->{sshUser} . '@' . $self->{sshHost} . ':' . $remoteFile;
     $scpCmd .= ' ' . $localFile;
-    debug( 'scp command:', $scpCmd );
+    trace( 'scp command:', $scpCmd );
 
     my $ret = UBOS::Utils::myexec( $scpCmd );
     return $ret;
@@ -255,5 +255,5 @@ SCRIPT
         return( $uname, $gname, $mode );
     }
 }
-               
+
 1;

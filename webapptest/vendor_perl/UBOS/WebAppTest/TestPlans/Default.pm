@@ -140,7 +140,7 @@ sub run {
         # March backwards, restore from backups
         my @statesBackupsReverseMinusOne = @statesBackupsReverse;
         shift @statesBackupsReverseMinusOne;
-        
+
         foreach my $stateBackup ( @statesBackupsReverseMinusOne ) {
             my( $currentState, $currentBackup ) = @$stateBackup;
 
@@ -150,7 +150,7 @@ sub run {
                 do {
                     $scaffold->undeploy( $siteJson );
                     $success = $scaffold->restore( $siteJson, $currentBackup );
-                
+
                     ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );
 
                 } while( $repeat );
@@ -174,7 +174,7 @@ sub run {
                 }
 
             } else {
-                debug( 'Skipping restoring and checking StateCheck', $currentState->getName() );
+                trace( 'Skipping restoring and checking StateCheck', $currentState->getName() );
             }
         }
 
@@ -187,7 +187,7 @@ sub run {
                 do {
                     $scaffold->undeploy( $siteJson );
                     $success = $scaffold->restore( $siteJson, $currentBackup );
-                
+
                     ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Restored state ' . $currentState->getName(), $interactive, $success, $ret );
 
                 } while( $repeat );
@@ -205,7 +205,7 @@ sub run {
                 }
 
             } else {
-                debug( 'Skipping restoring and checking StateCheck', $currentState->getName() );
+                trace( 'Skipping restoring and checking StateCheck', $currentState->getName() );
             }
         }
         $c->destroy();

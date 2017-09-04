@@ -48,7 +48,7 @@ if( $commandPackage ) {
         }
     }
 
-    debug( 'Invoking webapptest command', $commandPackage );
+    trace( 'Invoking webapptest command', $commandPackage );
 
     my $result = UBOS::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
 

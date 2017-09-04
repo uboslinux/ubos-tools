@@ -48,7 +48,7 @@ if( $commandPackage ) {
         }
     }
 
-    debug( 'Invoking ubos-scaffold command', $commandPackage );
+    trace( 'Invoking ubos-scaffold command', $commandPackage );
 
     my $result = UBOS::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
 

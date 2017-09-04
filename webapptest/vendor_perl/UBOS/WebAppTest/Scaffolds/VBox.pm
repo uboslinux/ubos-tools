@@ -56,7 +56,7 @@ sub setup {
     my $vmName = 'webapptest-' . UBOS::Utils::time2string( time() );
     $self->{vmName} = $vmName;
 
-    debug( 'Creating VBox VM', $vmName );
+    trace( 'Creating VBox VM', $vmName );
 
     unless( exists( $options->{vmdktemplate} )) {
         fatal( 'No value provided for vmdktemplate' );
@@ -153,41 +153,41 @@ sub setup {
 
     my $out;
     my $err;
-    
-    debug( 'Copying VMDK file to', $self->{vmdkFile} );
+
+    trace( 'Copying VMDK file to', $self->{vmdkFile} );
     if( UBOS::Utils::myexec( 'cp ' . $self->{vmdkTemplate} . ' ' . $self->{vmdkFile} )) {
         fatal( 'Copying VMDK file failed' );
     }
 
-    debug( 'Defining VM' );
+    trace( 'Defining VM' );
     if( UBOS::Utils::myexec( "VBoxManage createvm -name '$vmName' -ostype Linux_64 -register", undef, \$out, \$err )) {
         fatal( 'VBoxManage createvm failed:', $err );
     }
 
-    debug( 'Setting RAM' );
+    trace( 'Setting RAM' );
     if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --memory $ram" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
-    debug( 'Configuring hostonly if' );
+    trace( 'Configuring hostonly if' );
     # VBoxManage hostonlyif remove vboxnet0 manages to hang the machine! So we try not to do that any more.
-    
+
     UBOS::Utils::myexec( "ip link show " . $self->{hostonlyInterface} . " > /dev/null || VBoxManage hostonlyif create" );
     if( UBOS::Utils::myexec( "VBoxManage hostonlyif ipconfig " . $self->{hostonlyInterface} . " --ip 192.168.56.1" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
-    debug( 'Adding NIC1 in nat mode' );
+    trace( 'Adding NIC1 in nat mode' );
     if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --nic1 nat" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
-    
-    debug( 'Adding NIC2 in hostonly mode' );
+
+    trace( 'Adding NIC2 in hostonly mode' );
     if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --nic2 hostonly" )) {
         fatal( 'VBoxManage modifyvm failed' );
     }
-    
-    debug( 'Attaching storage controller, drive and making it the boot drive' );
+
+    trace( 'Attaching storage controller, drive and making it the boot drive' );
     # Storage controller with same name as the vm
     if( UBOS::Utils::myexec( "VBoxManage storagectl '$vmName' --name '$vmName' --add sata --bootable on" )) {
         fatal( 'VBoxManage storagectl failed' );
@@ -200,7 +200,7 @@ sub setup {
         fatal( 'VBoxManage modifyvm failed' );
     }
 
-    debug( 'Setting up host-only networking' );
+    trace( 'Setting up host-only networking' );
     if( UBOS::Utils::myexec( "ip link show dev " . $self->{hostonlyInterface}, undef, \$out, \$err )) {
         # doesn't exist
         if( UBOS::Utils::myexec( "VBoxManage hostonlyif create" )) {
@@ -218,10 +218,10 @@ sub setup {
         if( UBOS::Utils::myexec( "VBoxManage setproperty vrdeextpack VNC" )) {
             error( 'VBoxManage setproperty vrdeextpack failed' );
         }
-        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrde on" )) { 
+        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrde on" )) {
             error( 'VBoxManage modifyvm (enabling vrde) failed. You may not be able to connect via VNC.' );
         }
-        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeproperty 'VNCPassword=$vncSecret'" )) { 
+        if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeproperty 'VNCPassword=$vncSecret'" )) {
             error( 'VBoxManage modifyvm (setting VNC password) failed. You may not be able to connect via VNC.' );
         }
         if( UBOS::Utils::myexec( "VBoxManage modifyvm '$vmName' --vrdeauthlibrary null" )) {
@@ -234,7 +234,7 @@ sub setup {
         }
     }
 
-    debug( 'Creating ubos-staff config disk' );
+    trace( 'Creating ubos-staff config disk' );
     $self->{configVmdkFile} = $self->{vmdkFile} . '-config.vmdk';
     $self->createConfigDisk( $self->{configVmdkFile} );
 
@@ -242,7 +242,7 @@ sub setup {
         fatal( 'VBoxManage storageattach failed' );
     }
 
-    debug( 'Starting vm', $vmName );
+    trace( 'Starting vm', $vmName );
     if( UBOS::Utils::myexec( "VBoxManage startvm '$vmName' --type headless", undef, \$out, \$err )) {
         # This starts the VM in the background (unlike VBoxHeadless)
         fatal( 'VBoxManage startvm failed' );
@@ -270,8 +270,8 @@ sub teardown {
     info( 'Tearing down Scaffold VBox' );
 
     my $vmName = $self->{vmName};
-    
-    debug( 'Shutting down vm, unregistering, and deleting image file' );
+
+    trace( 'Shutting down vm, unregistering, and deleting image file' );
     if( UBOS::Utils::myexec( "VBoxManage controlvm '$vmName' acpipowerbutton" )) {
         error( 'VBoxManage controlvm failed' );
     }
@@ -283,7 +283,7 @@ sub teardown {
             error( 'VBoxManage showvminfo failed' );
         }
         if( $out =~ m!VMState="poweroff"! ) {
-            debug( 'VM state is poweroff' );
+            trace( 'VM state is poweroff' );
             last;
         }
         sleep 1;
@@ -345,7 +345,7 @@ sub waitUntilTargetReady {
         }
         sleep 5;
     }
-    debug( 'Pacman keys file not populated in time' );
+    trace( 'Pacman keys file not populated in time' );
 
     return $ret;
 }
@@ -412,5 +412,5 @@ Options:
     shutdown-max-seconds      (optional) -- the maximum number of seconds to wait until shutdown is complete
 TXT
 }
-                    
+
 1;

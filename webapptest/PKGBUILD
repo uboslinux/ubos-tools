@@ -2,7 +2,7 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.105
+pkgver=0.106
 pkgrel=1
 pkgdesc="Testing tools for UBOS web apps"
 arch=('any')
@@ -14,24 +14,22 @@ depends=(
 )
 optdepends=('virtualbox: run tests in VirtualBox virtual machines')
 options=('!strip')
+_vendor_perl=$(perl -V::vendorarch: | sed -e "s![' ]!!g")
 
 package() {
 # Code
-    mkdir -p $pkgdir/usr/bin
-    install -m755 $startdir/bin/webapptest $pkgdir/usr/bin/
+    install -D -m755 ${startdir}/bin/webapptest -t ${pkgdir}/usr/bin/
 
-    mkdir -p $pkgdir/usr/lib/perl5/vendor_perl/UBOS/WebAppTest/{Scaffolds,TestPlans,Commands}
-    for f in $startdir/vendor_perl/UBOS/WebAppTest/*.pm; do
-        install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/UBOS/WebAppTest/
+    for f in ${startdir}/vendor_perl/UBOS/WebAppTest/*.pm; do
+        install -D -m755 ${f} -t ${pkgdir}${_vendor_perl}/UBOS/WebAppTest/
     done
     for p in Scaffolds TestPlans Commands; do
-        for f in $startdir/vendor_perl/UBOS/WebAppTest/$p/*.pm; do
-            install -m755 $f $pkgdir/usr/lib/perl5/vendor_perl/UBOS/WebAppTest/$p
+        for f in ${startdir}/vendor_perl/UBOS/WebAppTest/${p}/*.pm; do
+            install -D -m755 ${f} -t ${pkgdir}${_vendor_perl}/UBOS/WebAppTest/$p
         done
     done
-    install -m755 $startdir/vendor_perl/UBOS/WebAppTest.pm $pkgdir/usr/lib/perl5/vendor_perl/UBOS/
+    install -D -m755 ${startdir}/vendor_perl/UBOS/WebAppTest.pm -t ${pkgdir}${_vendor_perl}/UBOS/
 
 # Example config files
-    mkdir -p $pkgdir/usr/share/doc/$pkgname/sample-configs/
-    install -m 644 $startdir/sample-configs/*.json $pkgdir/usr/share/doc/$pkgname/sample-configs/
+    install -D -m 644 ${startdir}/sample-configs/*.json -t ${pkgdir}/usr/share/doc/${pkgname}/sample-configs/
 }

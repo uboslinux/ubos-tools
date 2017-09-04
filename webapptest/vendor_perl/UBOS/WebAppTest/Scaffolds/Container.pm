@@ -56,7 +56,7 @@ sub setup {
     }
     $self->SUPER::setup( $options );
 
-    debug( 'Setting up Container scaffold with options', sub {
+    trace( 'Setting up Container scaffold with options', sub {
         join( ', ', map { "$_ => " . $options->{$_}} keys %$options )
     } );
 
@@ -176,7 +176,7 @@ sub setup {
         $self->{sshPrivateKeyFile} = $defaultPrivateKey;
     }
 
-    debug( 'Creating container', $self->{name} );
+    trace( 'Creating container', $self->{name} );
 
     unless( exists( $options->{directory} )) {
         fatal( 'No value provided for directory' );
@@ -222,7 +222,7 @@ sub setup {
         fatal( 'Unknown option(s) for Scaffold container:', join( ', ', keys %$options ));
     }
 
-    debug( 'Creating ubos-staff config directory' );
+    trace( 'Creating ubos-staff config directory' );
 
     my $ubosStaffDir = tempdir( CLEANUP => 1 );
     chmod 0755, $ubosStaffDir; # So it's consistent with the package
@@ -232,7 +232,7 @@ sub setup {
 
     $self->{nspawnLogFile} = File::Temp->new();
 
-    debug( 'Starting container' );
+    trace( 'Starting container' );
     my $cmd = "sudo systemd-nspawn";
     $cmd .= " --boot";
     $cmd .= " --ephemeral";
@@ -284,7 +284,7 @@ sub teardown {
             last;
         }
         $out =~ s!\s+! !g;
-        debug( 'Machine', $containerName, 'still has status', $out );
+        trace( 'Machine', $containerName, 'still has status', $out );
         sleep 1;
     }
 
@@ -322,7 +322,7 @@ sub waitUntilTargetReady {
                 if( defined( $best )) {
                     $self->{sshHost} = $best;
 
-                    debug( 'target', $name, 'is ready at', $self->{sshHost} );
+                    trace( 'target', $name, 'is ready at', $self->{sshHost} );
 
                     $ret = 1;
                     return $ret;

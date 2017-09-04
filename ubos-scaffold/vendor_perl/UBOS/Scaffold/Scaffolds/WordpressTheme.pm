@@ -81,7 +81,7 @@ sub generate {
 
 developer='$pars->{developer}'
 url='url=https://wordpress.org/themes/$pars->{name}/'
-maintainer='\${developer}'
+maintainer=\${developer}
 pkgname='$packageName'
 pkgver=$pars->{version}
 pkgrel=1
