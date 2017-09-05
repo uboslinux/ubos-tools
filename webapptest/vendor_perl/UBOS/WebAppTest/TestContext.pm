@@ -27,7 +27,7 @@ package UBOS::WebAppTest::TestContext;
 use fields qw( scaffold testPlan ip verbose curl cookieFile errors );
 
 use Fcntl;
-use UBOS::Logging qw( debug );
+use UBOS::Logging;
 use UBOS::Utils;
 use UBOS::WebAppTest::TestingUtils;
 
