@@ -3,7 +3,7 @@
 # Passed to an AppTest. Holds the run-time information the test needs to function.
 #
 # This file is part of webapptest.
-# (C) 2012-2015 Indie Computing Corp.
+# (C) 2012-2017 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ sub absGet {
     if( $url !~ m!^[a-z]+://! ) {
         if( $url !~ m!^/! ) {
             return {
-                'error' => $self->error( 'Cannot access URL without protocol or leading slash:', $url )
+                'error' => $self->myerror( 'Cannot access URL without protocol or leading slash:', $url )
             };
         }
         $url = $self->protocol() . '://' . $self->hostnameOrIp() . $url;
@@ -211,7 +211,7 @@ sub absGet {
     my $ret = {};
 
     if( UBOS::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
-        $ret->{error} = $self->error( 'HTTP request failed:', $stderr );
+        $ret->{error} = $self->myerror( 'HTTP request failed:', $stderr );
     }
     $ret->{content} = $stdout;
     $ret->{headers} = $stderr;
@@ -245,7 +245,7 @@ sub absPost {
 
     if( $url !~ m!^[a-z]+://! ) {
         if( $url !~ m!^/! ) {
-            $self->error( 'Cannot access URL without protocol or leading slash:', $url );
+            $self->myerror( 'Cannot access URL without protocol or leading slash:', $url );
             return {};
         }
         $url = $self->protocol() . '://' . $self->hostnameOrIp() . $url;
@@ -266,7 +266,7 @@ sub absPost {
     my $ret = {};
 
     if( UBOS::Utils::myexec( $cmd, undef, \$stdout, \$stderr )) {
-        $ret->{error} = $self->error( 'HTTP request failed:', $stderr );
+        $ret->{error} = $self->myerror( 'HTTP request failed:', $stderr );
     }
     $ret->{content}     = $stdout;
     $ret->{headers}     = $stderr;
@@ -528,7 +528,7 @@ sub mustBe {
     my %ret = %$response; # make copy
     unless( $self->is( $response, $content )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response content is not', $content );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content is not', $content );
     }
     return \%ret;
 }
@@ -546,7 +546,7 @@ sub mustNotBe {
     my %ret = %$response; # make copy
     unless( $self->NotIs( $response, $content )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response content is', $content );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content is', $content );
     }
     return \%ret;
 }
@@ -565,7 +565,7 @@ sub mustContain {
     my %ret = %$response; # make copy
     unless( $self->contains( $response, $content )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response content does not contain', $content );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content does not contain', $content );
     }
     return \%ret;
 }
@@ -584,7 +584,7 @@ sub mustNotContain {
     my %ret = %$response; # make copy
     unless( $self->notContains( $response, $content )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response content contains', $content );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content contains', $content );
     }
     return \%ret;
 }
@@ -603,7 +603,7 @@ sub mustMatch {
     my %ret = %$response; # make copy
     unless( $self->matches( $response, $regex )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content does not match regex', $regex );
     }
     return \%ret;
 }
@@ -622,7 +622,7 @@ sub mustNotMatch {
     my %ret = %$response; # make copy
     unless( $self->notMatches( $response, $regex )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response content does not match regex', $regex );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content does not match regex', $regex );
     }
     return \%ret;
 }
@@ -641,7 +641,7 @@ sub mustRedirect {
     my %ret = %$response; # make copy
     unless( $self->redirects( $response, $target )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response is not redirecting to', $target );
+        $ret{error} = $self->myerror( $errorMsg, 'Response is not redirecting to', $target );
     }
     return \%ret;
 }
@@ -660,7 +660,7 @@ sub mustNotRedirect {
     my %ret = %$response; # make copy
     unless( $self->notRedirects( $response, $target )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response is redirecting to', $target );
+        $ret{error} = $self->myerror( $errorMsg, 'Response is redirecting to', $target );
     }
     return \%ret;
 }
@@ -679,7 +679,7 @@ sub mustStatus {
     my %ret = %$response; # make copy
     unless( $self->status( $response, $status )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response does not have HTTP status', $status );
+        $ret{error} = $self->myerror( $errorMsg, 'Response does not have HTTP status', $status );
     }
     return \%ret;
 }
@@ -698,7 +698,7 @@ sub mustNotStatus {
     my %ret = %$response; # make copy
     unless( $self->notStatus( $response, $status )) {
         debugResponse( $response );
-        $ret{error} = $self->error( $errorMsg, 'Response has HTTP status',  $status );
+        $ret{error} = $self->myerror( $errorMsg, 'Response has HTTP status',  $status );
     }
     return \%ret;
 }
@@ -804,7 +804,7 @@ sub redirects {
 
     if( $target !~ m!^https?://! ) {
         if( $target !~ m!^/! ) {
-            $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
+            $self->myerror( 'Cannot look for target URL without protocol or leading slash', $target );
             return 0;
         }
         $target = $self->fullContext() . $target;
@@ -827,7 +827,7 @@ sub notRedirects {
 
     if( $target !~ m!^https?://! ) {
         if( $target !~ m!^/! ) {
-            $self->error( 'Cannot look for target URL without protocol or leading slash', $target );
+            $self->myerror( 'Cannot look for target URL without protocol or leading slash', $target );
             return 0;
         }
         $target = $self->fullContext() . $target;
@@ -929,14 +929,14 @@ sub checkFile {
 
     my( $uname, $gname, $mode, $localContent ) = $self->{scaffold}->getFileInfo( $fileName, defined( $testMethod ));
     unless( defined( $uname )) {
-        $self->error( 'File does not exist, or error when accessing it:', $fileName );
+        $self->myerror( 'File does not exist, or error when accessing it:', $fileName );
         return 0;
     }
 
     my $ret = 1;
 
     unless( Fcntl::S_ISREG( $mode )) {
-        $self->error( 'Not a regular file:', $fileName );
+        $self->myerror( 'Not a regular file:', $fileName );
         $ret = 0;
     }
 
@@ -944,19 +944,19 @@ sub checkFile {
         my $realFileMode = ( $fileMode =~ m!^0! ) ? oct( $fileMode ) : $fileMode;
         my $realMode     = $mode & 07777; # ignore special file bits
         if( $realFileMode != $realMode ) {
-            $self->error( 'File', $fileName, 'has wrong permissions:', sprintf( '0%o vs 0%o', $realFileMode, $realMode ));
+            $self->myerror( 'File', $fileName, 'has wrong permissions:', sprintf( '0%o vs 0%o', $realFileMode, $realMode ));
             $ret = 0;
         }
     }
     if( defined( $fileUname )) {
         if( $fileUname ne $uname ) {
-            $self->error( 'File', $fileName, 'has wrong owner:', $fileUname, 'vs.', $uname );
+            $self->myerror( 'File', $fileName, 'has wrong owner:', $fileUname, 'vs.', $uname );
             $ret = 0;
         }
     }
     if( defined( $fileGname )) {
         if( $fileGname ne $gname ) {
-            $self->error( 'File', $fileName, 'has wrong group:', $fileGname, 'vs.', $gname );
+            $self->myerror( 'File', $fileName, 'has wrong group:', $fileGname, 'vs.', $gname );
             $ret = 0;
         }
     }
@@ -982,13 +982,13 @@ sub checkDir {
 
     my( $uname, $gname, $mode ) = $self->{scaffold}->getFileInfo( $dirName );
     unless( defined( $uname )) {
-        $self->error( 'Directory does not exist:', $dirName );
+        $self->myerror( 'Directory does not exist:', $dirName );
         return 0;
     }
     my $ret = 1;
 
     unless( Fcntl::S_ISDIR( $mode )) {
-        $self->error( 'Not a directory:', $dirName );
+        $self->myerror( 'Not a directory:', $dirName );
         $ret = 0;
     }
 
@@ -996,19 +996,19 @@ sub checkDir {
         my $realDirMode = ( $dirMode =~ m!^0! ) ? oct( $dirMode ) : $dirMode;
         my $realMode    = $mode & 07777; # ignore special file bits
         if( $realDirMode != $realMode ) {
-            $self->error( 'Directory', $dirName, 'has wrong permissions:', sprintf( '0%o vs 0%o', $realDirMode, $realMode ));
+            $self->myerror( 'Directory', $dirName, 'has wrong permissions:', sprintf( '0%o vs 0%o', $realDirMode, $realMode ));
             $ret = 0;
         }
     }
     if( defined( $dirUname )) {
         if( $dirUname ne $uname ) {
-            $self->error( 'Directory', $dirName, 'has wrong owner:', $dirUname, 'vs.', $uname );
+            $self->myerror( 'Directory', $dirName, 'has wrong owner:', $dirUname, 'vs.', $uname );
             $ret = 0;
         }
     }
     if( defined( $dirGname )) {
         if( $dirGname ne $gname ) {
-            $self->error( 'Directory', $dirName, 'has wrong group:', $dirGname, 'vs.', $gname );
+            $self->myerror( 'Directory', $dirName, 'has wrong group:', $dirGname, 'vs.', $gname );
             $ret = 0;
         }
     }
@@ -1028,18 +1028,18 @@ sub checkSymlink {
 
     my( $uname, $gname, $mode, $localContent ) = $self->{scaffold}->getFileInfo( $link, 1 );
     unless( defined( $uname )) {
-        $self->error( 'Symbolic link does not exist:', $link );
+        $self->myerror( 'Symbolic link does not exist:', $link );
         return 0;
     }
 
     my $ret = 1;
     unless( Fcntl::S_ISLNK( $mode )) {
-        $self->error( 'Not a symlink:', $link );
+        $self->myerror( 'Not a symlink:', $link );
         $ret = 0;
     }
     my $content = readlink( $link );
     if( $target ne $localContent ) {
-        $self->error( 'Wrong target for symbolic link:', $target, 'vs.', $localContent );
+        $self->myerror( 'Wrong target for symbolic link:', $target, 'vs.', $localContent );
         $ret = 0;
     }
     return $ret;
@@ -1059,7 +1059,7 @@ sub debugResponse {
 ##
 # Report an error.
 # @args: error message
-sub error {
+sub myerror {
     my $self = shift;
     my @args = @_;
 
