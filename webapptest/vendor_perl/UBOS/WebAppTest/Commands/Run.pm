@@ -45,7 +45,6 @@ sub run {
     my @testPlanOpts;
     my $tlsKeyFile;
     my $tlsCrtFile;
-    my $tlsCrtChainFile;
     my $tlsData = undef;
 
     my $parseOk = GetOptionsFromArray(
@@ -57,8 +56,7 @@ sub run {
             'scaffold=s'        => \@scaffoldOpts,
             'testplan=s'        => \@testPlanOpts,
             'tlskeyfile=s'      => \$tlsKeyFile,
-            'tlscrtfile=s'      => \$tlsCrtFile,
-            'tlscrtchainfile=s' => \$tlsCrtChainFile );
+            'tlscrtfile=s'      => \$tlsCrtFile );
 
     UBOS::Logging::initialize( 'webapptest', 'run', $verbose, $logConfigFile );
 
@@ -92,13 +90,10 @@ sub run {
         if( !$tlsCrtFile && exists( $configData->{tlscrtfile} )) {
             $tlsCrtFile = $configData->{tlscrtfile};
         }
-        if( !$tlsCrtChainFile && exists( $configData->{tlscrtchainfile} )) {
-            $tlsCrtChainFile = $configData->{tlscrtchainfile};
-        }
     }
 
     my $tlsCount = 0;
-    foreach my $arg ( $tlsKeyFile, $tlsCrtFile, $tlsCrtChainFile ) {
+    foreach my $arg ( $tlsKeyFile, $tlsCrtFile ) {
         if( $arg ) {
             ++$tlsCount;
             unless( -r $arg ) {
@@ -106,17 +101,14 @@ sub run {
             }
         }
     }
-    if( $tlsCount == 1 || $tlsCount == 2 ) {
-        fatal( 'If providing TLS options, must provide all three options: tlskeyfile, tlscrtfile, tlscrtchainfile' );
+    if( $tlsCount && $tlsCount != 2 ) {
+        fatal( 'If providing TLS options, must provide both options: tlskeyfile, tlscrtfile' );
     }
     if( $tlsKeyFile ) {
         $tlsData->{key} = UBOS::Utils::slurpFile( $tlsKeyFile );
     }
     if( $tlsCrtFile ) {
         $tlsData->{crt} = UBOS::Utils::slurpFile( $tlsCrtFile );
-    }
-    if( $tlsCrtChainFile ) {
-        $tlsData->{crtchain} = UBOS::Utils::slurpFile( $tlsCrtChainFile );
     }
 
     my %scaffoldPackagesWithOptions;
@@ -225,7 +217,6 @@ sub run {
     my $abort;
     my $quit;
 
-
     foreach my $scaffoldPackage ( sort keys %scaffoldPackagesWithOptions ) {
         my $scaffoldOptions = $scaffoldPackagesWithOptions{$scaffoldPackage};
 
@@ -263,6 +254,15 @@ sub run {
                 if( $printTest ) {
                     print "Running AppTest " . $appTest->name . "\n";
                 }
+                # Check whether additional repositories needed to be added for this test,
+                if( exists( $appTest->{reposToAdd} ) {
+                    if( ref( $appTest->{reposToAdd} ) eq 'HASH' ) {
+                        $scaffold->installAdditionalRepositories( $appTest->{reposToAdd} );
+                    } else {
+                        warning( 'AppTest', $appTest->name, ' - test entry reposToAdd is not a hash: ignoring' );
+                    }
+                }
+}
                 foreach my $testPlanPackage ( sort keys %testPlanPackagesWithArgsToRun ) { # consistent sequence
                     my $testPlanOptions = $testPlanPackagesWithArgsToRun{$testPlanPackage};
 
@@ -305,7 +305,7 @@ sub run {
 sub synopsisHelp {
     return {
         <<SSS => <<HHH,
-    [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold>] [--testplan <testplan>] [--tlskeyfile <tlskeyfile> --tlscrtfile <tlscrtfile> --tlscrtchainfile <tlscrtchainfile> ] <apptest>...
+    [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold>] [--testplan <testplan>] [--tlskeyfile <tlskeyfile> --tlscrtfile <tlscrtfile>] <apptest>...
 SSS
     Run the test apptest.
     --interactive: stop at important points and wait for user input
@@ -315,9 +315,9 @@ SSS
     <testplan>:   use this named testplan instead of the default. If given as
                   "abc:def=ghi:jkl=mno", "abc" represents the name of the testplan,
                   and "def" and "jkl" are scaffold-specific options
-    <tlskeyfile>, <tlscrtfile>, <tlscrtchainfile>: files containing
-                  TLS key, certificate, certicate chain, and client certificate chain
-                  if test is supposed to be run with TLS
+    <tlskeyfile>, <tlscrtfile>: files containing TLS key certificate, and
+                  all required certificates up the chain in one file if test
+                  is supposed to be run with TLS
 HHH
         <<SSS => <<HHH
     [--verbose | --logConfig <file>] --configfile <configfile> <apptest>...

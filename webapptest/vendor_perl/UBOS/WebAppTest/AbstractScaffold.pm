@@ -38,7 +38,7 @@ sub setup {
     my $options = shift;
 
     unless( ref $self ) {
-        fatal( 'Must override Scaffold' );
+        fatal( 'Must override Scaffold::setup' );
     }
 
     if( exists( $options->{verbose} )) {
@@ -318,6 +318,48 @@ CMD
 
     } elsif( $err =~ /Respect the privacy of others/ ) {
         error( "Failed to edit /etc/hosts file to add depot.ubos.net. sudo problem:", $out, $err );
+        return 0;
+    }
+    return 1;
+}
+
+##
+# Additional repositories need to be added before a test can be successfully run
+# $repos: hash of short repo file name to directory
+# return: 1 if successful
+my installAdditionalRepositories {
+    my $self  = shift;
+    my $repos = shift;
+
+    my $cmd = <<'CMD';
+use strict;
+use warnings;
+
+use UBOS::Utils;
+
+CMD
+
+    foreach my $name ( sort keys %$repos ) {
+        my $url = $repos->{$name};
+
+        $cmd .= <<CMD
+UBOS::Utils::saveFile( '/etc/pacman.d/repositories.d/$name', <<DATA );
+[$name]
+Server = $url
+DATA
+CMD
+    }
+
+    $cmd .= <<'CMD';
+
+UBOS::Utils::myexec( "ubos-admin update" );
+
+1;
+CMD
+    my $out;
+    my $err;
+    if( $self->invokeOnTarget( 'sudo /bin/bash -c /usr/bin/perl', $cmd, \$out, \$err )) {
+        error( "Failed to add repositories:\nout:$out\nerr:$err\ncmd:$cmd" );
         return 0;
     }
     return 1;

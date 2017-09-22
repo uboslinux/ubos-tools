@@ -58,7 +58,7 @@ sub run {
     my $interactive = shift;
     my $verbose     = shift;
 
-    error( 'Must override UBOS::WebAppTest::AbstractTestPlan::run' );
+    fatal( 'Must override UBOS::WebAppTest::AbstractTestPlan::run' );
 }
 
 ##
