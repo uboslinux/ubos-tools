@@ -255,14 +255,14 @@ sub run {
                     print "Running AppTest " . $appTest->name . "\n";
                 }
                 # Check whether additional repositories needed to be added for this test,
-                if( exists( $appTest->{reposToAdd} ) {
+                if( exists( $appTest->{reposToAdd} )) {
                     if( ref( $appTest->{reposToAdd} ) eq 'HASH' ) {
                         $scaffold->installAdditionalRepositories( $appTest->{reposToAdd} );
                     } else {
                         warning( 'AppTest', $appTest->name, ' - test entry reposToAdd is not a hash: ignoring' );
                     }
                 }
-}
+
                 foreach my $testPlanPackage ( sort keys %testPlanPackagesWithArgsToRun ) { # consistent sequence
                     my $testPlanOptions = $testPlanPackagesWithArgsToRun{$testPlanPackage};
 
