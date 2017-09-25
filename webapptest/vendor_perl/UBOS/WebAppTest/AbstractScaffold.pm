@@ -327,7 +327,7 @@ CMD
 # Additional repositories need to be added before a test can be successfully run
 # $repos: hash of short repo file name to directory
 # return: 1 if successful
-my installAdditionalRepositories {
+sub installAdditionalRepositories {
     my $self  = shift;
     my $repos = shift;
 
