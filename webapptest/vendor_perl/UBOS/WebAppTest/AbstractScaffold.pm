@@ -324,10 +324,10 @@ CMD
 }
 
 ##
-# Additional repositories need to be added before a test can be successfully run
-# $repos: hash of short repo file name to directory
+# Additional package dbs need to be added before a test can be successfully run
+# $repos: hash of section name to URL
 # return: 1 if successful
-sub installAdditionalRepositories {
+sub installAdditionalPackageDbs {
     my $self  = shift;
     my $repos = shift;
 

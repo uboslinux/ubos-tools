@@ -4,7 +4,7 @@
 # UBOS web app tests.
 #
 # This file is part of webapptest.
-# (C) 2012-2015 Indie Computing Corp.
+# (C) 2012-2017 Indie Computing Corp.
 #
 # webapptest is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ use fields qw(
         name
         description
         packageName
+        packageDbsToAdd
         fixedTestContext
         customizationPointValues
         statesTransitions );
@@ -43,13 +44,14 @@ use fields qw(
 sub new {
     my $self = shift;
     my %pars = @_;
-    
+
     my $packageName       = $pars{appToTest};
     my $name              = $pars{name};
     my $fixedTestContext  = $pars{fixedTestContext};
     my $description       = $pars{description};
     my $custPointValues   = $pars{customizationPointValues};
     my $statesTransitions = $pars{checks};
+    my $packageDbsToAdd   = $pars{packageDbsToAdd}
 
     unless( $packageName ) {
         fatal( 'AppTest must identify the application package being tested. Use parameter named "appToTest".' );
@@ -70,6 +72,9 @@ sub new {
     }
     if( ref( $description )) {
         fatal( 'AppTest description name must be a string.' );
+    }
+    if( defined( $packageDbsToAdd ) && ref( $packageDbsToAdd ) ne 'HASH' ) {
+        fatal( 'AppTest packageDbsToAdd must be a hash, mapping section name to URL' );
     }
     if( $custPointValues ) {
         if( ref( $custPointValues ) ne 'HASH' ) {
@@ -99,8 +104,8 @@ sub new {
             }
         }
         ++$i;
-    }    
-    
+    }
+
     unless( @$statesTransitions % 2 ) {
         fatal( 'Array of StateChecks and StateTransitions must alternate and end with a StateCheck.' );
     }
@@ -111,6 +116,7 @@ sub new {
     $self->{name}                     = $name;
     $self->{description}              = $description;
     $self->{packageName}              = $packageName;
+    $self->{packageDbsToAdd}          = $packageDbsToAdd;
     $self->{fixedTestContext}         = $fixedTestContext;
     $self->{customizationPointValues} = $custPointValues;
     $self->{statesTransitions}        = $statesTransitions;
@@ -199,6 +205,16 @@ sub getTransitionFrom {
     return undef;
 }
 
+##
+# Determine which non-standard package dbs need to be installed so the
+# test can succeed.
+# return: hash (which may be empty)
+sub getPackageDbsToAdd {
+    my $self = shift;
+
+    return $self->{packageDbsToAdd};
+}
+
 ################################################################################
 
 package UBOS::WebAppTest::StatesTransitions;
@@ -284,12 +300,12 @@ sub check {
     my $c    = shift;
 
     $c->clearHttpSession(); # always before a new StateCheck
-                        
+
     eval { &{$self->{function}}( $c ); };
-    
+
     my $errors = $c->errorsAndClear;
     my $msg    = 'failed.';
-    
+
     my $ret;
     if( $errors ) {
         $msg = 'failed.';
@@ -304,7 +320,7 @@ sub check {
     unless( $ret ) {
         error( 'StateCheck', $self->{name}, ':', $msg );
     }
-        
+
     return $ret;
 }
 
@@ -353,7 +369,7 @@ sub checkWellKnown {
     return $ret;
 }
 
-    
+
 ################################################################################
 
 package UBOS::WebAppTest::StateTransition;
@@ -408,7 +424,7 @@ sub execute {
 
     my $errors = $c->errorsAndClear;
     my $msg    = 'failed.';
-    
+
     my $ret;
     if( $errors ) {
         $msg = 'failed.';
@@ -423,7 +439,7 @@ sub execute {
     unless( $ret ) {
         error( 'StateTransition', $self->{name}, ':', $msg );
     }
-        
+
     return $ret;
 }
 
