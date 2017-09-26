@@ -331,6 +331,12 @@ sub installAdditionalPackageDbs {
     my $self  = shift;
     my $repos = shift;
 
+    if( %$repos == 0 ) {
+        return 1;
+    }
+
+    trace( 'Installing additional package dbs:', keys %$repos );
+
     my $cmd = <<'CMD';
 use strict;
 use warnings;
@@ -343,7 +349,7 @@ CMD
         my $url = $repos->{$name};
 
         $cmd .= <<CMD
-UBOS::Utils::saveFile( '/etc/pacman.d/repositories.d/$name', <<DATA );
+UBOS::Utils::saveFile( '/etc/pacman.d/repositories.d/$name', <<'DATA' );
 [$name]
 Server = $url
 DATA

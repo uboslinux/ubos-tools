@@ -51,7 +51,7 @@ sub new {
     my $description       = $pars{description};
     my $custPointValues   = $pars{customizationPointValues};
     my $statesTransitions = $pars{checks};
-    my $packageDbsToAdd   = $pars{packageDbsToAdd}
+    my $packageDbsToAdd   = $pars{packageDbsToAdd};
 
     unless( $packageName ) {
         fatal( 'AppTest must identify the application package being tested. Use parameter named "appToTest".' );
