@@ -212,7 +212,7 @@ sub getTransitionFrom {
 sub getPackageDbsToAdd {
     my $self = shift;
 
-    return $self->{packageDbsToAdd};
+    return $self->{packageDbsToAdd} || {};
 }
 
 ################################################################################
