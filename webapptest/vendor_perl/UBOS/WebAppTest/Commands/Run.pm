@@ -70,9 +70,12 @@ sub run {
     my $configData = undef;
     if( $configFile ) {
         unless( -r $configFile ) {
-            fatal( 'Cannot read configfile', $configFile );
+            fatal( 'Cannot read configfile:', $configFile );
         }
         $configData = UBOS::Utils::readJsonFromFile( $configFile );
+        unless( $configData ) {
+            fatal();
+        }
 
         if( !$interactive && exists( $configData->{interactive} )) {
             $interactive = $configData->{interactive};
