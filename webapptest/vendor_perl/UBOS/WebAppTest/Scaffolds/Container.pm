@@ -243,6 +243,7 @@ sub setup {
     if( $bind ) {
         $cmd .= " --bind '$bind'";
     }
+    $cmd .= " --system-call-filter=set_tls"; # Bug in systemd: https://github.com/systemd/systemd/issues/7135
     $cmd .= " > '" . $self->{nspawnLogFile}->filename . "'";
     $cmd .= " 2>&1";
     $cmd .= " &";                                          # run in background; we don't want the login prompt
