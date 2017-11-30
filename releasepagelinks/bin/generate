@@ -1,0 +1,160 @@
+#!/usr/bin/perl
+#
+# Generate an HTML page that has the upstream release page links in it
+#
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+
+use Cwd;
+use File::Find;
+use UBOS::Logging;
+use UBOS::Utils;
+
+my $verbose       = 0;
+my $logConfigFile = undef;
+my $dir;
+my $out;
+my $help          = 0;
+
+my $parseOk = GetOptions(
+        'verbose+'    => \$verbose,
+        'logConfig=s' => \$logConfigFile,
+        'directory=s' => \$dir,
+        'out=s'       => \$out,
+        'h|help'      => \$help );
+
+UBOS::Logging::initialize( 'releasepagelinks', 'generate', $verbose, $logConfigFile, 0 );
+
+if( !$parseOk ) {
+    synopsisHelpQuit( 0 );
+}
+if( $help ) {
+    synopsisHelpQuit( 1 );
+}
+
+unless( $dir ) {
+    $dir = getcwd();
+}
+
+my @dirsWithPkgbuilds = ();
+my %packages          = ();
+
+find (
+        sub {
+            my $name = $_;
+            if( $name eq 'PKGBUILD' ) {
+                push @dirsWithPkgbuilds, $File::Find::dir;
+            }
+        },
+        $dir );
+
+info( "Found dirs with PKGBUILDS:", @dirsWithPkgbuilds );
+
+foreach my $dirWith ( @dirsWithPkgbuilds ) {
+    my $out;
+    UBOS::Utils::myexec(
+            "cd '$dirWith' && /bin/bash",
+            ". 'PKGBUILD'; echo pkgname=\$pkgname ; echo pkgver=\$pkgver ; echo releasepage=\$releasepage",
+            \$out );
+
+    my %found = ();
+    foreach my $line( split /\n/, $out ) {
+        if( $line =~ m!^(.+)=(.+)$! ) { # ignore keys that don't have a value
+            $found{$1} = $2;
+        }
+    }
+    if( exists( $found{releasepage} )) {
+        $packages{$found{pkgname}} = \%found;
+    }
+}
+
+my ( $sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst ) = gmtime( time() );
+my $tstamp = sprintf "%.4d-%.2d-%.2d %.2d:%.2d:%.2d", ($year+1900), ( $mon+1 ), $mday, $hour, $min, $sec;
+
+my $html = <<HTML;
+<html>
+ <head>
+  <title>UBOS upstream packages to check</title>
+  <style>
+body {
+    margin: 0;
+    padding: 10px 20px;
+}
+table.packages {
+    width: 100%;
+    border-collapse: collapse;
+}
+td, th {
+    border: 1px solid #a0a0a0;
+    padding: 5px;
+}
+  </style>
+ </head>
+ <body>
+  <h1>UBOS upstream packages to check</h1>
+  <p>As of $tstamp</p>
+  <table class="packages">
+   <thead>
+    <tr>
+     <th>Package name</th>
+     <th>UBOS has version</th>
+     <th>Release page upstream</th>
+    </tr>
+   </thead>
+   <tbody>
+HTML
+
+foreach my $packageName ( sort keys %packages ) {
+    my $packageData = $packages{$packageName};
+
+    $html .= "    <tr>\n";
+    $html .= "     <td>$packageName</td>\n";
+    $html .= "     <td>$packageData->{pkgver}</td>\n";
+    $html .= "     <td><a href='$packageData->{releasepage}'>$packageData->{releasepage}</a></td>\n";
+    $html .= "    </tr>\n";
+}
+
+$html .= <<HTML;
+   </tbody>
+  </table>
+  <p>The end.</p>
+ </body>
+</html>
+HTML
+
+if( $out ) {
+    UBOS::Utils::saveFile( $out, $html );
+} else {
+    print $html;
+}
+exit 0;
+
+#####
+# Print synopsis or help
+# $long: if true, print long help
+# $exit: exit code
+sub synopsisHelpQuit {
+    my $long = shift;
+    my $exit = shift || 0;
+
+    if( $long ) {
+        print <<END;
+Generate an HTML page that has links to all upstream packages' release pages, and current versions in UBOS>
+END
+    }
+    print "Synopsis:\n";
+    print "    $0 [--directory <dir>] [--out <outfile>]\n";
+    if( $long ) {
+        print <<END;
+    <dir> -- the root directory from which PKGBUILD files will be searched, defaults to the current directory
+    <out> -- filename of the HTML output file, defaults to stdout        
+END
+    }
+    exit 0;
+}
+
+1;
+
