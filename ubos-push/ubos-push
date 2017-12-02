@@ -36,19 +36,24 @@ if( $identityFile && ! -e $identityFile ) {
 
 UBOS::Logging::initialize( 'ubos-push', undef, $verbose, $logConfigFile );
 
-my $sshCmd   = 'ssh shepherd@' . $host;
+my $sshCmd   = 'ssh -T shepherd@' . $host;
 my $rsyncCmd = 'rsync -e "ssh';
 if( $identityFile ) {
     $sshCmd   .= " -i '$identityFile'";
     $rsyncCmd .= " -i '$identityFile'";
 }
+$rsyncCmd .= '"';
 
 my $wd = '/var/tmp';
 my $out;
 
-my $cmd = "mktemp --directory $wd/ubos-push-XXX";
-if( UBOS::Utils::myexec( "$sshCmd $cmd", undef, \$out )) {
-    fatal( 'Cannot create temp directory in', $wd, 'on host', $host );
+# We are trying to reduce the number of round-trips ...
+my $cmd = "( pacman -Qi rsync > /dev/null 2>&1 || sudo pacman -S --noconfirm rsync ) > /dev/null && mktemp --directory $wd/ubos-push-XXX";
+if( UBOS::Utils::myexec( $sshCmd, $cmd, \$out )) {
+    fatal( 'Cannot prepare destination host', $host );
+}
+if( $out =~ m!^error! ) {
+    fatal( 'An error occurred:', $out );
 }
 my $dest = $out;
 $dest =~ s!\s+$!!;
