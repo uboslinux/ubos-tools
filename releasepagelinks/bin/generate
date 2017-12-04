@@ -8,7 +8,6 @@ use warnings;
 
 use Getopt::Long;
 
-use Cwd;
 use File::Find;
 use UBOS::Logging;
 use UBOS::Utils;
@@ -36,11 +35,11 @@ if( $help ) {
 }
 
 unless( $dir ) {
-    $dir = getcwd();
+    $dir = '.';
 }
 
 my @dirsWithPkgbuilds = ();
-my %packages          = ();
+my $projects          = (); # 'ubos-wordpress' -> 'wordpress' -> data
 
 find (
         sub {
@@ -57,17 +56,24 @@ foreach my $dirWith ( @dirsWithPkgbuilds ) {
     my $out;
     UBOS::Utils::myexec(
             "cd '$dirWith' && /bin/bash",
-            ". 'PKGBUILD'; echo pkgname=\$pkgname ; echo pkgver=\$pkgver ; echo releasepage=\$releasepage",
+            ". 'PKGBUILD'; echo pkgname=\$pkgname ; echo pkgver=\$pkgver ; echo releasepage=\${releasepage[@]}",
             \$out );
 
     my %found = ();
     foreach my $line( split /\n/, $out ) {
         if( $line =~ m!^(.+)=(.+)$! ) { # ignore keys that don't have a value
-            $found{$1} = $2;
+            if( $1 eq 'releasepage' ) {
+                $found{$1} = [ split( /\s/, $2 ) ];
+            } else {
+                $found{$1} = $2;
+            }
         }
     }
     if( exists( $found{releasepage} )) {
-        $packages{$found{pkgname}} = \%found;
+        my $projectName = $dirWith;
+        $projectName =~ s!^\.\.?/!!;
+        $projectName =~ s!/.*!!;
+        $projects->{$projectName}->{$found{pkgname}} = \%found;
     }
 }
 
@@ -82,15 +88,20 @@ my $html = <<HTML;
 body {
     margin: 0;
     padding: 10px 20px;
+    font-family: sans-serif;
 }
 table.packages {
     width: 100%;
     border-collapse: collapse;
 }
+thead, tbody {
+    border: 2px solid #404040;
+}
 td, th {
     border: 1px solid #a0a0a0;
     padding: 5px;
 }
+
   </style>
  </head>
  <body>
@@ -99,26 +110,30 @@ td, th {
   <table class="packages">
    <thead>
     <tr>
+     <th>Project name</th>
      <th>Package name</th>
      <th>UBOS has version</th>
      <th>Release page upstream</th>
     </tr>
    </thead>
-   <tbody>
 HTML
 
-foreach my $packageName ( sort keys %packages ) {
-    my $packageData = $packages{$packageName};
+foreach my $projectName ( sort keys %$projects ) {
+    $html .= "    <tbody>\n";
+    foreach my $packageName ( sort keys %{$projects->{$projectName}} ) {
+        my $packageData = $projects->{$projectName}->{$packageName};
 
-    $html .= "    <tr>\n";
-    $html .= "     <td>$packageName</td>\n";
-    $html .= "     <td>$packageData->{pkgver}</td>\n";
-    $html .= "     <td><a href='$packageData->{releasepage}'>$packageData->{releasepage}</a></td>\n";
-    $html .= "    </tr>\n";
+        $html .= "     <tr>\n";
+        $html .= "      <td>$projectName</td>\n";
+        $html .= "      <td>$packageName</td>\n";
+        $html .= "      <td>$packageData->{pkgver}</td>\n";
+        $html .= "      <td>" . join( "<br>", map { "<a href='$_'>visit</a>" } sort @{$packageData->{releasepage}} ) . "</td>\n";
+        $html .= "     </tr>\n";
+    }
+    $html .= "    </tbody>\n";
 }
 
 $html .= <<HTML;
-   </tbody>
   </table>
   <p>The end.</p>
  </body>
