@@ -7,6 +7,7 @@ pkgrel=1
 pkgdesc='A query language for JSON'
 arch=('any')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/jmespath/jmespath.py/archive/${pkgver}.tar.gz")
+releasepage=('https://github.com/jmespath/jmespath.py/releases')
 depends=('python')
 makedepends=('python-setuptools')
 license=('Apache')
