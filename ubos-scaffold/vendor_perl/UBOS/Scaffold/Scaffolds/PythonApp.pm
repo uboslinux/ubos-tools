@@ -164,7 +164,7 @@ END
         "apache2" : {
             "defaultcontext" : "/$pars->{name}",
             "depends" : [
-                "mod_wsgi2"
+                "mod_wsgi"
             ],
             "apache2modules" : [
                 "wsgi"
