@@ -25,6 +25,7 @@ use warnings;
 package UBOS::WebAppTest::TestPlans::DeployUpdate;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
+use fields qw( upgradeToChannel );
 
 use UBOS::Logging;
 use UBOS::Utils;
@@ -46,6 +47,11 @@ sub new {
         $self = fields::new( $self );
     }
     $self = $self->SUPER::new( $test, $options, $tlsData );
+
+    if( exists( $options->{'upgrade-to-channel'} )) {
+        $self->{upgradeToChannel} = $options->{'upgrade-to-channel'};
+        delete $options->{hostname};
+    }
 
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for TestPlan DeployUpdate:', join( ', ', keys %$options ));
@@ -101,10 +107,14 @@ sub run {
         my $currentState = $self->getTest()->getVirginStateTest();
 
         do {
-            do { 
-                info( 'Updating' );
-
-                $success = $scaffold->update();
+            do {
+                if( $self->{upgradeToChannel} ) {
+                    info( 'Switching to channel', $self->{upgradeToChannel}, 'and updating' );
+                    $success = $scaffold->switchChannelUpdate( $self->{upgradeToChannel} );
+                } else { 
+                    info( 'Updating' );
+                    $success = $scaffold->update();
+                }
 
                ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed update', $interactive, $success, $ret );
             } while( $repeat );

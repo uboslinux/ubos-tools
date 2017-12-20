@@ -104,6 +104,20 @@ sub update {
 }
 
 ##
+# Switch the release channel on the target and update all code on the target
+# $newChannel: the new channel
+sub switchChannelUpdate {
+    my $self       = shift;
+    my $newChannel = shift;
+
+    my $cmd = "echo $newChannel | sudo cat > /etc/ubos/channel && sudo ubos-admin update";
+    $cmd .= ( ' --verbose' x $self->{verbose} );
+
+    my $exit = $self->invokeOnTarget( $cmd );
+    return !$exit;
+}
+
+##
 # Backup a site. This does not move the backup from the target to
 # the local machine if the target is remote.
 # $site: site JSON
