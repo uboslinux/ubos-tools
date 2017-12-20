@@ -191,6 +191,30 @@ sub copyFromTarget {
 }
 
 ##
+# Copy a local file to the remote machine
+# $localFile: the name of the file on the local machine
+# $remoteFile: the name of the file on the remote machine
+sub copyToTarget {
+    my $self       = shift;
+    my $localFile  = shift;
+    my $remoteFile = shift;
+
+    my $scpCmd = 'scp -q';
+    $scpCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
+            # don't put into known_hosts file, and don't print resulting warnings
+    if( $self->{sshPrivateKeyFile} ) {
+        $scpCmd .= ' -i ' . $self->{sshPrivateKeyFile};
+    }
+    $scpCmd .= ' ' . $localFile;
+    $scpCmd .= ' ' . $self->{sshUser} . '@' . $self->{sshHost} . ':' . $remoteFile;
+    trace( 'scp command:', $scpCmd );
+
+    my $ret = UBOS::Utils::myexec( $scpCmd );
+    return $ret;
+}
+
+
+##
 # Obtain information about a file on the target. This must be overridden by
 # subclasses.
 # $fileName: full path name of the file on the target
