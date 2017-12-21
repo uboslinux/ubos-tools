@@ -11,7 +11,7 @@ releasepage=('https://github.com/boto/s3transfer/releases')
 depends=('python')
 makedepends=('python-setuptools')
 license=('Apache')
-sha512sums=('9d8b2ef688e90809c8edff42e3ea9a9c5d4a4f908cbcd7d90ab9630eb4a5cdd3326b9a4f3f9b4534e494d9accc9a236c43a5fa627048d6f79a2d3d7650e64e37')
+sha512sums=('3f692775cb5c5264087e3d255813ed787bd76661ebb1a3883e6c01f36098571a22deb601e5d975412ea303b911353f98c687a5ab0d385c969cdf6b166b5497af')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
