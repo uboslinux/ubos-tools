@@ -25,6 +25,7 @@ use warnings;
 use Archive::Tar;
 use File::Temp;
 use Getopt::Long;
+use UBOS::Host;
 use UBOS::Logging;
 
 # Keep tempfiles around while the program is running
@@ -39,7 +40,7 @@ my $exit = 0;
 GetOptions( 'essential'     => \$essential,
             'obsolete-only' => \$obsoleteOnly,
             'help'          => \$help,
-            'verbose'       => \$verbose );
+            'verbose+'      => \$verbose );
 
 if( $help ) {
     synopsisHelpQuit();
@@ -51,6 +52,10 @@ unless( @ARGV ) {
     synopsisHelpQuit();
 }
 my @dbFiles = @ARGV;
+
+UBOS::Logging::initialize( 'pacsane', undef, $verbose, undef );
+
+my $tmpDir = UBOS::Host::config()->get( 'host.tmp', '/tmp' )
 
 my %compareFields = (
     'pkgname'   => 'NAME',
@@ -70,13 +75,12 @@ unless( $essential ) {
 }
 
 foreach my $dbFile ( @dbFiles ) {
-    if( $verbose ) {
-        if( $obsoleteOnly ) {
-            print "# Package db file: $dbFile\n";
-        } else {
-            print "Package db file: $dbFile\n";
-        }
+    if( $obsoleteOnly ) {
+        info( '# Package db file:', $dbFile );
+    } else {
+        info( 'Package db file:', $dbFile );
     }
+
     unless( -r $dbFile ) {
         fatal( 'Cannot read file:', $dbFile );
     }
@@ -89,6 +93,8 @@ foreach my $dbFile ( @dbFiles ) {
 
     my $definedPackages = {};
     foreach my $dbTarFile ( @dbTarFiles ) {
+        trace( 'dbTarFile:', $dbTarFile );
+
         my $dbTarPath = $dbTarFile->full_path;
         if( $dbTarPath =~ m!^(.*)/desc$! ) {
             my $packageName = $1;
@@ -124,9 +130,12 @@ foreach my $dbFile ( @dbFiles ) {
     } else {
         $dir = '';
     } # can't have trailing /, we wouldn't have been able to read file earlier
+
     my @packageFiles = grep { ! m!\.sig$! } <$dir*.pkg.*>;
     my $foundPackages = {};
     foreach my $packageFile ( @packageFiles ) {
+        trace( 'packageFile:', $packageFile );
+
         my $shortPackageFile = $packageFile;
         if( $dir ) {
             $shortPackageFile =~ s!^$dir!!;
@@ -159,17 +168,15 @@ foreach my $dbFile ( @dbFiles ) {
         delete $tempFiles->{$packageFile};
     }
 
-    if( UBOS::Logging::isTraceActive() ) {
-        trace( "*** Packages mentioned in package database:\n", $definedPackages );
-
-        trace( "*** Packages actually found in filesystem:\n", $foundPackages );
-    }
+    info( 'Packages mentioned in package database:', $definedPackages );
+    info( 'Packages actually found in filesystem:', $foundPackages );
 
     # Now let's do some matching. First: make sure all package files exist that are referenced in
     # the package database, and are consistent
     unless( $obsoleteOnly ) {
         foreach my $definedPackageNameVersion ( keys %$definedPackages ) {
             my $definedPackageInfo = $definedPackages->{$definedPackageNameVersion};
+            trace( 'Package files exist with versions:', $definedPackageNameVersion, $definedPackageInfo );
 
             my $foundPackageInfo = $foundPackages->{$definedPackageNameVersion};
             if( $foundPackageInfo ) {
@@ -184,6 +191,7 @@ foreach my $dbFile ( @dbFiles ) {
     my $notInDb = {};
     foreach my $foundPackageNameVersion ( keys %$foundPackages ) {
         my $foundPackageInfo = $foundPackages->{$foundPackageNameVersion};
+        trace( 'Package files that do not exist:', $foundPackageNameVersion, $foundPackageInfo );
 
         unless( $definedPackages->{$foundPackageNameVersion} ) {
             # let's also report on alternate versions found of the same package
@@ -256,11 +264,11 @@ sub readTar {
 
     my $tarFile;
     if( $file =~ m!\.xz$! ) {
-        my $uncompressed = File::Temp->new( UNLINK => 1 );
+        my $uncompressed = File::Temp->new( UNLINK => 1, DIR => $tmpDir );
         $tempFiles->{$file} = $uncompressed;
 
         $tarFile = $uncompressed->filename;
-        system( "xzcat '$file' > '$tarFile'" ) == 0 or fatal( 'xzcat failed:', $? );
+        UBOS::Utils::myexec( "xzcat '$file' > '$tarFile'" ) == 0 or fatal( 'xzcat failed:', $? );
     } else {
         $tarFile = $file;
     }
