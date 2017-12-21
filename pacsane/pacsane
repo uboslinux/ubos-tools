@@ -22,14 +22,10 @@
 use strict;
 use warnings;
 
-use Archive::Tar;
 use File::Temp;
 use Getopt::Long;
 use UBOS::Host;
 use UBOS::Logging;
-
-# Keep tempfiles around while the program is running
-my $tempFiles = {};
 
 my $essential;
 my $obsoleteOnly;
@@ -55,7 +51,7 @@ my @dbFiles = @ARGV;
 
 UBOS::Logging::initialize( 'pacsane', undef, $verbose, undef );
 
-my $tmpDir = UBOS::Host::config()->get( 'host.tmp', '/tmp' )
+my $tmpDir = UBOS::Host::config()->get( 'host.tmpdir', '/tmp' );
 
 my %compareFields = (
     'pkgname'   => 'NAME',
@@ -85,43 +81,53 @@ foreach my $dbFile ( @dbFiles ) {
         fatal( 'Cannot read file:', $dbFile );
     }
 
-    my $dbTar = readTar( $dbFile );
-    unless( $dbTar ) {
+    my $unpackedDbDir = File::Temp->newdir( UNLINK => 1, DIR => $tmpDir );
+    if( UBOS::Utils::myexec( "cd '$unpackedDbDir' && tar xfJ '$dbFile' --warning=no-unknown-keyword" )) {
         fatal( 'Cannot unpack. Is this a package db file?', $dbFile );
     }
-    my @dbTarFiles = $dbTar->get_files;
 
-    my $definedPackages = {};
-    foreach my $dbTarFile ( @dbTarFiles ) {
-        trace( 'dbTarFile:', $dbTarFile );
-
-        my $dbTarPath = $dbTarFile->full_path;
-        if( $dbTarPath =~ m!^(.*)/desc$! ) {
-            my $packageName = $1;
-            my $content     = $dbTarFile->get_content;
-
-            my $packageData = {};
-            my $key;
-            foreach my $line ( split /\n/, $content ) {
-                if( $key ) {
-                    if( $line ) {
-                        if( $packageData->{$key} ) {
-                            $packageData->{$key} .= "\n$line";
-                        } else {
-                            $packageData->{$key} = $line;
-                        }
-
-                    } else {
-                        $key = undef;
-                    }
-                } elsif( $line =~ m!^%(.+)%$! ) {
-                    $key = $1;
-                }
+    my @dbFileDirs = ();
+    unless( opendir( DIR, $unpackedDbDir )) {
+        error( $! );
+    }
+    while( my $file = readdir( DIR )) {
+        if( $file ne '.' && $file ne '..' ) {
+            if( -d "$unpackedDbDir/$file" && -e "$unpackedDbDir/$file/desc" ) {
+                push @dbFileDirs, "$unpackedDbDir/$file";
             }
-            $definedPackages->{$packageName} = $packageData;
         }
     }
-    delete $tempFiles->{$dbFile};
+    closedir( DIR );
+
+    my $definedPackages = {};
+    foreach my $dbFileDir ( @dbFileDirs ) {
+        trace( 'dbFileDir:', $dbFileDir );
+
+        my $packageName = $dbFileDir;
+        $packageName =~ s!^.*/!!; # greedy
+        my $content = UBOS::Utils::slurpFile( "$dbFileDir/desc" );
+
+        my $packageData = {};
+        my $key;
+        foreach my $line ( split /\n/, $content ) {
+            if( $key ) {
+                if( $line ) {
+                    if( $packageData->{$key} ) {
+                        $packageData->{$key} .= "\n$line";
+                    } else {
+                        $packageData->{$key} = $line;
+                    }
+
+                } else {
+                    $key = undef;
+                }
+            } elsif( $line =~ m!^%(.+)%$! ) {
+                $key = $1;
+            }
+        }
+        $definedPackages->{$packageName} = $packageData;
+    }
+    $unpackedDbDir = undef; # delete when going out of scope
 
     # Now let's see what we have in the same directory.
     my $dir;
@@ -143,20 +149,17 @@ foreach my $dbFile ( @dbFiles ) {
         my $packagePlusVersion = $shortPackageFile;
         $packagePlusVersion =~ s!-[a-z0-9_]+\.pkg\..*!!;
 
-        my $packageTar = readTar( $packageFile );
-        unless( $packageTar ) {
-            next;
+        my $packageTarDir = File::Temp->newdir( UNLINK => 1, DIR => $tmpDir );
+        if( UBOS::Utils::myexec( "cd '$packageTarDir' && tar xfJ '$packageFile' .PKGINFO --warning=no-unknown-keyword" )) {
+            fatal( 'Cannot unpack. Is this a package file?', $packageFile );
         }
-        unless( $packageTar->contains_file( '.PKGINFO' )) {
-            error( 'Supposed package file', $packageTar, 'does not contain required .PKGINFO entry' );
-            next;
-        }
+
         my $pkgInfo = {
             'filename' => $shortPackageFile,
             'filesize' => ( -s $packageFile )
         }; # keep some other data while we are at it
 
-        my $content = $packageTar->get_content( '.PKGINFO' );
+        my $content = UBOS::Utils::slurpFile( "$packageTarDir/.PKGINFO" );
         foreach my $line ( split /\n/, $content ) {
             if( $line =~ m!(\S+)\s*=\s*(\S*)! ) {
                 my ( $key, $value ) = ( $1, $2 );
@@ -164,8 +167,6 @@ foreach my $dbFile ( @dbFiles ) {
             }
         }
         $foundPackages->{$packagePlusVersion} = $pkgInfo;
-
-        delete $tempFiles->{$packageFile};
     }
 
     info( 'Packages mentioned in package database:', $definedPackages );
@@ -249,35 +250,9 @@ foreach my $dbFile ( @dbFiles ) {
         }
     }
 }
-if( %$tempFiles ) {
-    error( 'Something wrong with the cleanup code', keys %$tempFiles );
-}
 
 exit $exit;
 
-
-#####
-# Read a tar.xz file.
-# Archive::Tar doesn't know how to deal with .xz files, we first uncompress
-sub readTar {
-    my $file = shift;
-
-    my $tarFile;
-    if( $file =~ m!\.xz$! ) {
-        my $uncompressed = File::Temp->new( UNLINK => 1, DIR => $tmpDir );
-        $tempFiles->{$file} = $uncompressed;
-
-        $tarFile = $uncompressed->filename;
-        UBOS::Utils::myexec( "xzcat '$file' > '$tarFile'" ) == 0 or fatal( 'xzcat failed:', $? );
-    } else {
-        $tarFile = $file;
-    }
-    my $tar = Archive::Tar->new( $tarFile );
-    unless( $tar ) {
-        error( 'Failed to read tar file', $tarFile );
-    }
-    return $tar;
-}
 
 #####
 # Compare the found and the defined package info
