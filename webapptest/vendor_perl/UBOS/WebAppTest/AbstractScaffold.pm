@@ -131,7 +131,7 @@ sub backup {
     my $cmd = 'F=$(mktemp webapptest-XXXXX.ubos-backup);';
     $cmd .= ' sudo ubos-admin backup';
     $cmd .= ( ' --verbose' x $self->{verbose} );
-    $cmd .= ' --siteid ' . $site->{siteid} . ' --out $F;';
+    $cmd .= ' --siteid ' . $site->{siteid} . ' --force --out $F;';
     $cmd .= ' echo $F';
 
     my $exit = $self->invokeOnTarget( $cmd, undef, \$file );
