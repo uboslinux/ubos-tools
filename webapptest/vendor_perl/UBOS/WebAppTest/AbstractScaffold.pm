@@ -42,7 +42,7 @@ sub setup {
     }
 
     if( exists( $options->{verbose} )) {
-        $self->{verbose} = $options->{verbose} || 0;
+        $self->{verbose} = ( delete $options->{verbose} ) || 0;
     } else {
         $self->{verbose} = 0;
     }
