@@ -51,7 +51,7 @@ my @dbFiles = @ARGV;
 
 UBOS::Logging::initialize( 'pacsane', undef, $verbose, undef );
 
-my $tmpDir = UBOS::Host::config()->get( 'host.tmpdir', '/tmp' );
+my $tmpDir = UBOS::Host::vars()->get( 'host.tmpdir', '/tmp' );
 
 my %compareFields = (
     'pkgname'   => 'NAME',
