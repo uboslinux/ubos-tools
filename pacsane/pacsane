@@ -256,9 +256,9 @@ exit $exit;
 #####
 # Helper method to unpack a tar file with the right command
 sub _unpackTar {
-    my $packageTarFile = shift;
-    my $packageFile    = shift;
-    my $tarArgs        = shift;
+    my $packageTarDir = shift;
+    my $packageFile   = shift;
+    my $tarArgs       = shift;
 
     my $cmd = "cd '$packageTarDir' && tar ";
     if( $packageFile =~ m!\.xz$! ) {
