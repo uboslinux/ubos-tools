@@ -82,7 +82,7 @@ foreach my $dbFile ( @dbFiles ) {
     }
 
     my $unpackedDbDir = File::Temp->newdir( UNLINK => 1, DIR => $tmpDir );
-    if( UBOS::Utils::myexec( "cd '$unpackedDbDir' && tar xfJ '$dbFile' --warning=no-unknown-keyword" )) {
+    if( _unpackTar( $unpackedDbDir, $dbFile, '--warning=no-unknown-keyword' )) {
         fatal( 'Cannot unpack. Is this a package db file?', $dbFile );
     }
 
@@ -150,7 +150,7 @@ foreach my $dbFile ( @dbFiles ) {
         $packagePlusVersion =~ s!-[a-z0-9_]+\.pkg\..*!!;
 
         my $packageTarDir = File::Temp->newdir( UNLINK => 1, DIR => $tmpDir );
-        if( UBOS::Utils::myexec( "cd '$packageTarDir' && tar xfJ '$packageFile' .PKGINFO --warning=no-unknown-keyword" )) {
+        if( _unpackTar( $packageTarDir, $packageFile, '.PKGINFO --warning=no-unknown-keyword' )) {
             fatal( 'Cannot unpack. Is this a package file?', $packageFile );
         }
 
@@ -253,6 +253,26 @@ foreach my $dbFile ( @dbFiles ) {
 
 exit $exit;
 
+#####
+# Helper method to unpack a tar file with the right command
+sub _unpackTar {
+    my $packageTarFile = shift;
+    my $packageFile    = shift;
+    my $tarArgs        = shift;
+
+    my $cmd = "cd '$packageTarDir' && tar ";
+    if( $packageFile =~ m!\.xz$! ) {
+        $cmd .= 'xfJ';
+    } else {
+        $cmd .= 'xfz';
+    }
+    $cmd .= " '$packageFile'";
+
+    if( $tarArgs ) {
+        $cmd .= " $tarArgs";
+    }
+    return UBOS::Utils::myexec( $cmd );
+}
 
 #####
 # Compare the found and the defined package info
