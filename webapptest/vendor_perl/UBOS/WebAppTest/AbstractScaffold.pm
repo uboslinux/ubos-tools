@@ -218,6 +218,7 @@ sub teardown {
 # $stdin: content to pipe into stdin
 # $stdout: content captured from stdout
 # $stderr: content captured from stderr
+# return: exit code
 sub invokeOnTarget {
     my $self   = shift;
     my $cmd    = shift;
@@ -227,7 +228,7 @@ sub invokeOnTarget {
 
     error( 'Must override Scaffold::invokeOnTarget' );
 
-    return 0;
+    return 1;
 }
 
 ##
