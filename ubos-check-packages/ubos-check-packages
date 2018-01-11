@@ -27,8 +27,14 @@ my %REQUIRED_REGEXES = (
     'arch'       => '^(any|x86_64|armv6h|armv7h|aarch64)$',
     'license'    => '^(GPL|GPL2|GPL3|AGPL|AGPL2|AGPL3|Apache|custom:.+)$'
 );
+my %OPTIONAL_REGEXES = (
+    'releasepage' => $urlRegex
+);
 
 my @REQUIRED_FIELDS = keys %REQUIRED_REGEXES;
+my @OPTIONAL_FIELDS = keys %OPTIONAL_REGEXES;
+
+my $COPYRIGHTLINE = "(C) Indie Computing Corp. For license, see this package's PKGBUILD file.";
 
 my $verbose       = 0;
 my $logConfigFile = undef;
@@ -85,6 +91,7 @@ sub processPkgbuild {
     # We are already in the correct directory
 
     checkPkgbuild( $dir );
+    checkCopyright( $dir );
 }
 
 #####
@@ -107,6 +114,7 @@ echo arch=${arch:-x_x_x}
 echo license=${license[@]:-x_x_x}
 echo depends=${depends[@]:-x_x_x}
 echo backup=${backup[@]:-x_x_x}
+echo releasepage=${releasepage:-x_x_x}
 SCRIPT
 
     my $out;
@@ -129,6 +137,11 @@ SCRIPT
             error( 'PKGBUILD in', $dir, ', field:', $required, 'does not match regex', $REQUIRED_REGEXES{$required}, 'is:', $values->{$required} );
         }
     }
+    foreach my $optional ( @OPTIONAL_FIELDS ) {
+        if( $values->{$optional} ne 'x_x_x' && $values->{$optional} !~ m!$OPTIONAL_REGEXES{$optional}!) {
+            error( 'PKGBUILD in', $dir, ', field:', $optional, 'does not match regex', $OPTIONAL_REGEXES{$optional}, 'is:', $values->{$optional} );
+        }
+    }
 
     if( $values->{'license'} =~ m!^custom:(.*)$! ) {
         my $licenseName = $1;
@@ -140,6 +153,7 @@ SCRIPT
                 . $values->{'pkgrel'} . '-' . $values->{'arch'} . '.pkg.tar.xz';
         if( ! -e "$dir/$archiveName" ) {
             warning( 'Archive does not exist:', "$dir/$archiveName" );
+
         } else {
             UBOS::Utils::myexec( "tar xfJ '$dir/$archiveName' 'usr/share/licenses/'" . $values->{'pkgname'} . ' -O', undef, \$out );
             if( length( $out ) < 100 ) {
@@ -147,6 +161,46 @@ SCRIPT
             }
         }
     }
+}
+
+#####
+# Check that all relevant files have the right copyright notice
+# $dir: the directory that contains the PKGBUILD
+sub checkCopyright {
+    my $dir = shift;
+
+    find(
+        {
+            'no_chdir' => 1,
+            'wanted' => sub {
+                unless( -f $File::Find::name ) {
+                    return;
+                }
+                my $relativeName = $File::Find::name;
+                $relativeName =~ s!^$dir!!;
+
+                # This is a heuristic here
+
+                if( $relativeName eq 'ubos-manifest.json' || $relativeName eq 'PKGBUILD' ) {
+                    return;
+                }
+                if( $relativeName =~ m!src/! || $relativeName =~ m!pkg/! || $relativeName =~ m!upstream/! ) {
+                    return;
+                }
+                if( $relativeName =~ m!\.pkg.tar.xz$! ) {
+                    return;
+                }
+
+                my $content = UBOS::Utils::slurpFile( "$dir$relativeName" );
+                while( $content =~ m!^(.*\(C\).*)$!mg ) {
+                    my $line = $1;
+                    if( $line !~ m!\Q$COPYRIGHTLINE\E! ) {
+                        error( 'Fix copyright in:', "$dir$relativeName", ', is', $line );
+                    }
+                }
+            }
+        },
+        $dir );
 }
 
 #####
