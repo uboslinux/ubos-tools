@@ -1,0 +1,167 @@
+#!/usr/bin/perl
+#
+# Check that packages in a directory hierarchy follow the UBOS
+# conventions.
+#
+# (C) Indie Computing Corp. License: see owning package
+#
+
+use strict;
+use warnings;
+
+use File::Find;
+use Getopt::Long;
+use UBOS::Logging;
+use UBOS::Utils;
+
+my $urlRegex = '^https?://';
+
+my %REQUIRED_REGEXES = (
+    'developer'  => $urlRegex,
+    'url'        => $urlRegex,
+    'maintainer' => $urlRegex,
+    'pkgname'    => '^[-_a-z0-9]+$',
+    'pkgver'     => '^[0-9.:]+$',
+    'pkgrel'     => '^[0-9]+$',
+    'pkgdesc'    => '.',
+    'arch'       => '^(any|x86_64|armv6h|armv7h|aarch64)$',
+    'license'    => '^(GPL|GPL2|GPL3|AGPL|AGPL2|AGPL3|Apache|custom:.+)$'
+);
+
+my @REQUIRED_FIELDS = keys %REQUIRED_REGEXES;
+
+my $verbose       = 0;
+my $logConfigFile = undef;
+my $help          = 0;
+my $exitCode      = 0;
+
+my $parseOk = GetOptions(
+        'verbose+'    => \$verbose,
+        'logConfig=s' => \$logConfigFile,
+        'help'        => \$help );
+
+UBOS::Logging::initialize( 'check-pkgbuilds', undef, $verbose, $logConfigFile, 0 );
+
+my @dirs = @ARGV;
+
+if( $help ) {
+    helpQuit();
+}    
+if(    !$parseOk
+    || ( $verbose && $logConfigFile )
+    || !@dirs )
+{
+    $exitCode = 1;
+    helpQuit();
+}
+
+my @pkgbuilds = ();
+find( sub {
+            if( m/PKGBUILD/ ) {
+                push @pkgbuilds, $File::Find::name;
+            }
+        },
+        @dirs );
+
+foreach my $pkgbuild ( @pkgbuilds ) {
+    processPkgbuild( $pkgbuild );
+}
+
+exit $exitCode;
+
+#####
+# A PKGBUILD was found
+# $pkgbuild: the PKGBUILD file with path
+sub processPkgbuild {
+    my $filename = shift;
+
+    my $dir = $filename;
+    if( $dir =~ m!^(.*/)! ) { # greedy
+        $dir = $1;
+    }
+
+    info( 'Processing', $filename );
+
+    # We are already in the correct directory
+
+    checkPkgbuild( $dir );
+}
+
+#####
+# Check that the PKGBUILD in the provided directory is valid
+# $dir: the directory that contains the PKGBUILD
+sub checkPkgbuild {
+    my $dir = shift;
+
+    my $bashScript = "cd '$dir'\n";
+    $bashScript .= <<'SCRIPT';
+. PKGBUILD
+echo developer=${developer:-x_x_x}
+echo url=${url:-x_x_x}
+echo maintainer=${maintainer:-x_x_x}
+echo pkgname=${pkgname:-x_x_x}
+echo pkgver=${pkgver:-x_x_x}
+echo pkgrel=${pkgrel:-x_x_x}
+echo pkgdesc=${pkgver:-x_x_x}
+echo arch=${arch:-x_x_x}
+echo license=${license[@]:-x_x_x}
+echo depends=${depends[@]:-x_x_x}
+echo backup=${backup[@]:-x_x_x}
+SCRIPT
+
+    my $out;
+    my $values = {};
+
+    if( UBOS::Utils::myexec( '/bin/bash', $bashScript, \$out )) {
+        error( 'Failed to read PKGBUILD in:', $dir );
+    } else {
+        foreach my $line ( split( /\n/, $out )) {
+            if( $line =~ m!^([^=]+)=(.*)$! ) {
+                $values->{$1} = $2;
+            }
+        }
+    }
+
+    foreach my $required ( @REQUIRED_FIELDS ) {
+        if( $values->{$required} eq 'x_x_x' ) {
+            error( 'PKGBUILD in', $dir, 'is missing required field:', $required );
+        } elsif( $values->{$required} !~ m!$REQUIRED_REGEXES{$required}! ) {
+            error( 'PKGBUILD in', $dir, ', field:', $required, 'does not match regex', $REQUIRED_REGEXES{$required}, 'is:', $values->{$required} );
+        }
+    }
+
+    if( $values->{'license'} =~ m!^custom:(.*)$! ) {
+        my $licenseName = $1;
+        if( $licenseName ne $values->{'pkgname'} ) {
+            error( 'Custom license name must be name of the package: PKGBUILD in', $dir );
+        }
+
+        my $archiveName = $values->{'pkgname'} . '-' . $values->{'pkgver'} . '-'
+                . $values->{'pkgrel'} . '-' . $values->{'arch'} . '.pkg.tar.xz';
+        if( ! -e "$dir/$archiveName" ) {
+            warning( 'Archive does not exist:', "$dir/$archiveName" );
+        } else {
+            UBOS::Utils::myexec( "tar xfJ '$dir/$archiveName' 'usr/share/licenses/'" . $values->{'pkgname'} . ' -O', undef, \$out );
+            if( length( $out ) < 100 ) {
+                error( 'Custom license file for package appaears to short;', $dir );
+            }
+        }
+    }
+}
+
+#####
+
+sub helpQuit {
+    print STDERR <<END;
+Synopsis:
+    $0 [--verbose | --logConfig <logConfig> ] <dir>...
+        <dir> -- one or more directories in which to recursively look for PKGBUILD files,
+                 which indicate the top-level directory of a package
+    $0 --help
+        This help.
+END
+    exit 0;
+}
+
+1;
+
