@@ -2,11 +2,11 @@ developer=http://indiecomputing.com/
 url="https://github.com/uboslinux/tools"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.16
-pkgrel=2
+pkgver=0.17
+pkgrel=1
 pkgdesc="Check pacman database for internal consistency"
 arch=( 'any' )
-license=('GPL')
+license=('AGPL3')
 depends=('perl' 'xz' 'ubos-perl-utils' 'ubos-admin')
 
 package() {

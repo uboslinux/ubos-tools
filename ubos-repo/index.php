@@ -1,4 +1,8 @@
 <?php
+//
+// Copyright (C) 2014 and later, Indie Computing Corp. All rights reserved. License: see package.
+//
+
 $dir     = NULL;
 $context = getenv( 'CONTEXT' );
 $uri     = $_SERVER['REQUEST_URI'];

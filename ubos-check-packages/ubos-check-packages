@@ -3,7 +3,7 @@
 # Check that packages in a directory hierarchy follow the UBOS
 # conventions.
 #
-# (C) Indie Computing Corp. License: see owning package
+# Copyright (C) 2018 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
 use strict;
@@ -17,24 +17,45 @@ use UBOS::Utils;
 my $urlRegex = '^https?://';
 
 my %REQUIRED_REGEXES = (
-    'developer'  => $urlRegex,
     'url'        => $urlRegex,
     'maintainer' => $urlRegex,
     'pkgname'    => '^[-_a-z0-9]+$',
-    'pkgver'     => '^[0-9.:]+$',
+    'pkgver'     => '^[0-9a-zA-Z_.:]+$',
     'pkgrel'     => '^[0-9]+$',
     'pkgdesc'    => '.',
-    'arch'       => '^(any|x86_64|armv6h|armv7h|aarch64)$',
-    'license'    => '^(GPL|GPL2|GPL3|AGPL|AGPL2|AGPL3|Apache|custom:.+)$'
+    'arch'       => '^(any|x86_64|armv6h|armv7h|aarch64)(\s+(any|x86_64|armv6h|armv7h|aarch64))*$',
+    'license'    => '^(GPL|GPL2|GPL3|AGPL|AGPL2|AGPL3|Apache|EPL|PerlArtistic|RUBY|custom:\S+)(\s+(GPL|GPL2|GPL3|AGPL|AGPL2|AGPL3|Apache|EPL|PerlArtistic|RUBY|custom:\S+))*$'
 );
 my %OPTIONAL_REGEXES = (
+    'developer'   => $urlRegex,
     'releasepage' => $urlRegex
 );
 
 my @REQUIRED_FIELDS = keys %REQUIRED_REGEXES;
 my @OPTIONAL_FIELDS = keys %OPTIONAL_REGEXES;
 
-my $COPYRIGHTLINE = "(C) Indie Computing Corp. For license, see this package's PKGBUILD file.";
+my %EXTENSIONS_NEED_COPYRIGHT = (
+    'c'    => 1,
+    'java' => 1,
+    'php'  => 1,
+    'pl'   => 1,
+    'pm'   => 1,
+    'sql'  => 1,
+    'tmpl' => 1,
+    'txt'  => 1,
+    'xml'  => 1
+);
+
+my $COPYRIGHTLINE = "\QCopyright (C)\E \\d\\d\\d\\d \Qand later, Indie Computing Corp. All rights reserved. License: see package.\E";
+
+my %ARCHIVE_EXTENSIONS = (
+    'bz2'  => 1,
+    'gz'   => 1,
+    'gzip' => 1,
+    'tgz'  => 1,
+    'xz'   => 1,
+    'zip'  => 1
+);
 
 my $verbose       = 0;
 my $logConfigFile = undef;
@@ -62,9 +83,14 @@ if(    !$parseOk
 }
 
 my @pkgbuilds = ();
-find( sub {
-            if( m/PKGBUILD/ ) {
-                push @pkgbuilds, $File::Find::name;
+find(  {
+           'wanted' => sub {
+                if( m/PKGBUILD/ ) {
+                    push @pkgbuilds, $File::Find::name;
+                }
+            },
+            'preprocess' => sub {
+                return sort( @_ );
             }
         },
         @dirs );
@@ -110,7 +136,7 @@ echo pkgname=${pkgname:-x_x_x}
 echo pkgver=${pkgver:-x_x_x}
 echo pkgrel=${pkgrel:-x_x_x}
 echo pkgdesc=${pkgver:-x_x_x}
-echo arch=${arch:-x_x_x}
+echo arch=${arch[@]:-x_x_x}
 echo license=${license[@]:-x_x_x}
 echo depends=${depends[@]:-x_x_x}
 echo backup=${backup[@]:-x_x_x}
@@ -149,16 +175,23 @@ SCRIPT
             error( 'Custom license name must be name of the package: PKGBUILD in', $dir );
         }
 
-        my $archiveName = $values->{'pkgname'} . '-' . $values->{'pkgver'} . '-'
-                . $values->{'pkgrel'} . '-' . $values->{'arch'} . '.pkg.tar.xz';
-        if( ! -e "$dir/$archiveName" ) {
-            warning( 'Archive does not exist:', "$dir/$archiveName" );
+        my $foundArchive = 0;
+        foreach my $arch ( split /\s+/, $values->{'arch'} ) {
 
-        } else {
-            UBOS::Utils::myexec( "tar xfJ '$dir/$archiveName' 'usr/share/licenses/'" . $values->{'pkgname'} . ' -O', undef, \$out );
-            if( length( $out ) < 100 ) {
-                error( 'Custom license file for package appaears to short;', $dir );
+            my $archiveName = $values->{'pkgname'} . '-' . $values->{'pkgver'} . '-'
+                    . $values->{'pkgrel'} . '-' . $arch . '.pkg.tar.xz';
+
+            if( -e "$dir$archiveName" ) {
+                $foundArchive = 1;
+                UBOS::Utils::myexec( "tar xfJ '$dir$archiveName' 'usr/share/licenses/'" . $values->{'pkgname'} . ' -O', undef, \$out );
+                if( length( $out ) < 100 ) {
+                    error( 'Custom license file for package appaears to short;', $dir );
+                }
             }
+        }
+
+        unless( $foundArchive ) {
+            warning( 'Archive does not exist in:', $dir );
         }
     }
 }
@@ -169,6 +202,15 @@ SCRIPT
 sub checkCopyright {
     my $dir = shift;
 
+    my @skipList = qw( src pkg ubos-manifest.json PKGBUILD LICENSE LICENSE.txt );
+
+    if( -e "$dir/.ubos-check-packages-ignore" ) {
+        my $ignore = UBOS::Utils::slurpFile( "$dir/.ubos-check-packages-ignore" );
+        push @skipList, grep{ $_ } split( /\n/, $ignore );
+    }
+
+    trace( 'Skip list in', $dir, ':', @skipList );
+
     find(
         {
             'no_chdir' => 1,
@@ -178,26 +220,44 @@ sub checkCopyright {
                 }
                 my $relativeName = $File::Find::name;
                 $relativeName =~ s!^$dir!!;
+                my $ext = undef;
+                if( $relativeName =~ m!\.([^.]+)$! ) {
+                    $ext = $1;
+                }
 
                 # This is a heuristic here
 
-                if( $relativeName eq 'ubos-manifest.json' || $relativeName eq 'PKGBUILD' ) {
-                    return;
+                foreach my $skip ( @skipList ) {
+                    if( length( $relativeName ) >= length( $skip )) {
+                        if( $relativeName eq $skip ) {
+                            return;
+                        }
+                        if( substr( $relativeName, length( $skip ), 1 ) eq '/' ) {
+                            return;
+                        }
+                    }
                 }
-                if( $relativeName =~ m!src/! || $relativeName =~ m!pkg/! || $relativeName =~ m!upstream/! ) {
-                    return;
-                }
-                if( $relativeName =~ m!\.pkg.tar.xz$! ) {
+                if( $ext && exists( $ARCHIVE_EXTENSIONS{$ext} )) {
                     return;
                 }
 
                 my $content = UBOS::Utils::slurpFile( "$dir$relativeName" );
+                my $foundCopyright = 0;
                 while( $content =~ m!^(.*\(C\).*)$!mg ) {
                     my $line = $1;
-                    if( $line !~ m!\Q$COPYRIGHTLINE\E! ) {
+
+                    $foundCopyright = 1;
+
+                    if( $line !~ m!$COPYRIGHTLINE! ) {
                         error( 'Fix copyright in:', "$dir$relativeName", ', is', $line );
                     }
                 }
+                if( !$foundCopyright && $ext && $EXTENSIONS_NEED_COPYRIGHT{$ext} ) {
+                    error( 'Needs copyright but does not have it:', "$dir$relativeName" );
+                }
+            },
+            'preprocess' => sub {
+                return sort( @_ );
             }
         },
         $dir );

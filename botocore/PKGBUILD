@@ -3,14 +3,14 @@ url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
 pkgver=1.8.18
-pkgrel=1
+pkgrel=2
 pkgdesc='The low-level, core functionality of boto 3'
 arch=('any')
 source=("${pkgname}-${pkgver}.tar.gz::https://github.com/boto/botocore/archive/${pkgver}.tar.gz")
 releasepage=('https://github.com/boto/botocore/releases')
 depends=('python')
 makedepends=('python-setuptools')
-license=('Apache')
+license=("custom:${pkgname}")
 sha512sums=('33d3d31f24ef1e4be73836680ada4f59d5e4ed5c4562bf4eb7a94253300ab9dac9e2b32ffcec914ba41e98f9d1b270c7a4b28afa03b0156fd0aa6976abade1ee')
 
 package() {

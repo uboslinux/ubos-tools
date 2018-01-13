@@ -16,6 +16,9 @@
 # To implement this, we need to update the authorized_keys file every time
 # an AppConfiguration is added or removed. THe authorized_keys file contains
 # calls to safe-rsync.pl and provides allowed appconfigids as arguments.
+#
+# Copyright (C) 2014 and later, Indie Computing Corp. All rights reserved. License: see package.
+#
 
 use strict;
 use warnings;

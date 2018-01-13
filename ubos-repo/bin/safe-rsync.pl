@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 #
 # Limit rsync to the appconfig's data directory
+#
+# Copyright (C) 2014 and later, Indie Computing Corp. All rights reserved. License: see package.
+#
 
 use strict;
 use warnings;
