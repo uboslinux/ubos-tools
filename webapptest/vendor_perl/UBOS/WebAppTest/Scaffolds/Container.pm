@@ -277,7 +277,7 @@ sub teardown {
 
     if( -d $self->{staffDir} ) {
         # may contain root-owned files
-        UBOS:::Utils::myexec( "sudo rm -rf '" . $self->{staffDir} . "'" );
+        UBOS::Utils::myexec( "sudo rm -rf '" . $self->{staffDir} . "'" );
     }
 
     return 1;
