@@ -19,7 +19,7 @@ package UBOS::WebAppTest::Scaffolds::Container;
 use base qw( UBOS::WebAppTest::AbstractRemoteScaffold );
 use fields qw( directory name sshPublicKeyFile
                bootMaxSeconds shutdownMaxSeconds
-               nspawnLogFile );
+               nspawnLogFile staffDir );
 
 use File::Temp qw( tempdir );
 use Socket;
@@ -210,9 +210,9 @@ sub setup {
 
     trace( 'Creating ubos-staff config directory' );
 
-    my $ubosStaffDir = tempdir( CLEANUP => 1 );
-    chmod 0755, $ubosStaffDir; # So it's consistent with the package
-    $self->populateConfigDir( $ubosStaffDir );
+    $self->{staffDir} = tempdir( CLEANUP => 0 ); # need to manually clean up, may contain root-owned files
+    chmod 0755, $self->{staffDir}; # So it's consistent with the package
+    $self->populateConfigDir( $self->{staffDir} );
 
     info( 'Creating Scaffold container' );
 
@@ -273,6 +273,11 @@ sub teardown {
         $out =~ s!\s+! !g;
         trace( 'Machine', $containerName, 'still has status', $out );
         sleep 1;
+    }
+
+    if( -d $self->{staffDir} ) {
+        # may contain root-owned files
+        UBOS:::Utils::myexec( "sudo rm -rf '" . $self->{staffDir} . "'" );
     }
 
     return 1;
