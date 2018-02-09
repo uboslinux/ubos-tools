@@ -225,7 +225,7 @@ sub setup {
     $cmd .= " --network-veth";
     $cmd .= " --machine=" . $self->{name};
     $cmd .= " --directory '" . $self->{directory} . "'";
-    $cmd .= " --bind '" . $ubosStaffDir . ":/UBOS-STAFF'"; # UBOS staff
+    $cmd .= " --bind '" . $self->{staffDir} . ":/UBOS-STAFF'"; # UBOS staff
     if( $bind ) {
         $cmd .= " --bind '$bind'";
     }
