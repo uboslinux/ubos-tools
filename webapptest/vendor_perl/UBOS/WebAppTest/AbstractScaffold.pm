@@ -96,7 +96,7 @@ sub switchChannelUpdate {
     my $self       = shift;
     my $newChannel = shift;
 
-    my $cmd = "sudo /bin/bash -c 'echo $newChannel > /etc/ubos/channel' && sudo ubos-admin update";
+    my $cmd = "sudo /bin/bash -c \"echo $newChannel > /etc/ubos/channel\" && sudo ubos-admin update";
     $cmd .= ( ' --verbose' x $self->{verbose} );
 
     my $exit = $self->invokeOnTarget( $cmd );
