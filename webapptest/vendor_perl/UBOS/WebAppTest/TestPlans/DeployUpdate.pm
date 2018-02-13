@@ -36,7 +36,7 @@ sub new {
 
     if( exists( $options->{'upgrade-to-channel'} )) {
         $self->{upgradeToChannel} = $options->{'upgrade-to-channel'};
-        delete $options->{hostname};
+        delete $options->{'upgrade-to-channel'};
     }
 
     if( defined( $options ) && %$options ) {
