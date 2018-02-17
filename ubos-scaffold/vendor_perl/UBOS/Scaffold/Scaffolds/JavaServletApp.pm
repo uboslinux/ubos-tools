@@ -245,9 +245,9 @@ END
             url="jdbc:mysql://\${appconfig.mysql.dbhost.maindb}/\${appconfig.mysql.dbname.maindb}"
             username="\${appconfig.mysql.dbuser.maindb}"
             password="\${escapeDquote( appconfig.mysql.dbusercredential.maindb )}"
-            maxActive="20"
+            maxTotal="20"
             maxIdle="10"
-            maxWait="-1"/>
+            maxWaitMillis="-1"/>
 </Context>
 END
 
