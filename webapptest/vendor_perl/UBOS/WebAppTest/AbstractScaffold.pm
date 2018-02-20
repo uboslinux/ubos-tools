@@ -96,7 +96,7 @@ sub update {
 sub switchChannelUpdate {
     my $self       = shift;
     my $newChannel = shift;
-    my $cmd        = 'sudo ubos-admin update';
+    my $cmd        = shift || 'sudo ubos-admin update';
 
     my $script = <<SCRIPT;
 echo $newChannel > /etc/ubos/channel
@@ -104,9 +104,9 @@ $cmd
 SCRIPT
 
     my $out;
-    my $exit = $self->invokeOnTarget( 'sudo /bin/bash', \$script, \$out, \$out );
+    my $exit = $self->invokeOnTarget( 'sudo /bin/bash', $script, \$out, \$out );
     if( $exit ) {
-        error( 'Channel switch failed:', $out );
+        error( 'Channel switch failed:', "script:\n$script\nout:\n$out" );
     }
     return !$exit;
 }
