@@ -92,11 +92,13 @@ sub update {
 ##
 # Switch the release channel on the target and update all code on the target
 # $newChannel: the new channel
+# $cmd: command to perform the switch
 sub switchChannelUpdate {
     my $self       = shift;
     my $newChannel = shift;
+    my $cmd        = 'sudo ubos-admin update';
 
-    my $cmd = "sudo /bin/bash -c \"echo $newChannel > /etc/ubos/channel\" && sudo ubos-admin update";
+    my $cmd = "sudo /bin/bash -c \"echo $newChannel > /etc/ubos/channel\" && $cmd";
     $cmd .= ( ' --verbose' x $self->{verbose} );
 
     my $exit = $self->invokeOnTarget( $cmd );

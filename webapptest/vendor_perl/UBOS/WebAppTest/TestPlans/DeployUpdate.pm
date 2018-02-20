@@ -11,7 +11,7 @@ use warnings;
 package UBOS::WebAppTest::TestPlans::DeployUpdate;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
-use fields qw( upgradeToChannel );
+use fields qw( upgradeToChannel switchChannelCommand );
 
 use UBOS::Logging;
 use UBOS::Utils;
@@ -37,6 +37,10 @@ sub new {
     if( exists( $options->{'upgrade-to-channel'} )) {
         $self->{upgradeToChannel} = $options->{'upgrade-to-channel'};
         delete $options->{'upgrade-to-channel'};
+    }
+    if( exists( $options->{'switch-channel-command'} )) {
+        $self->{switchChannelCommand} = $options->{'switch-channel-command'};
+        delete $options->{'switch-channel-command'};
     }
 
     if( defined( $options ) && %$options ) {
@@ -96,7 +100,7 @@ sub run {
             do {
                 if( $self->{upgradeToChannel} ) {
                     info( 'Switching to channel', $self->{upgradeToChannel}, 'and updating' );
-                    $success = $scaffold->switchChannelUpdate( $self->{upgradeToChannel} );
+                    $success = $scaffold->switchChannelUpdate( $self->{upgradeToChannel}, $self->{switchChannelCommand} );
                 } else { 
                     info( 'Updating' );
                     $success = $scaffold->update();
