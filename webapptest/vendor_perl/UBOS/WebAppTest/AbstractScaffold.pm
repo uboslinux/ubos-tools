@@ -104,7 +104,7 @@ $cmd
 SCRIPT
 
     my $out;
-    my $exit = $self->invokeOnTarget( 'sudo /bin/bash', \$out, \$out );
+    my $exit = $self->invokeOnTarget( 'sudo /bin/bash', \$script, \$out, \$out );
     if( $exit ) {
         error( 'Channel switch failed:', $out );
     }
