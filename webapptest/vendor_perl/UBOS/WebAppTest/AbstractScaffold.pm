@@ -98,7 +98,7 @@ sub switchChannelUpdate {
     my $newChannel = shift;
     my $cmd        = 'sudo ubos-admin update';
 
-    my $script = <<SCRIPT
+    my $script = <<SCRIPT;
 echo $newChannel > /etc/ubos/channel
 $cmd
 SCRIPT
