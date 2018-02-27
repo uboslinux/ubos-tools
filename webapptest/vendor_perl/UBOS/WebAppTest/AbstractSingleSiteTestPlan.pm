@@ -86,8 +86,11 @@ sub new {
         $self->{appConfigJson} = {
             'context'     => $context,
             'appconfigid' =>  'a' . UBOS::Utils::randomHex( 40 ),
-            'appid'       => $test->packageName()
+            'appid'       => $test->appPackageName()
         };
+        if( $test->accessoryPackageNames() ) {
+            $self->{appConfigJson}->{accessoryids} = [ $test->accessoryPackageNames() ];
+        }
 
         my $custPointValues = $test->getCustomizationPointValues();
         if( $custPointValues ) {

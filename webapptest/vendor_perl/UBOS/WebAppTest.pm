@@ -16,7 +16,8 @@ use UBOS::Logging;
 use fields qw(
         name
         description
-        packageName
+        appPackageName
+        accessoryPackageNames
         packageDbsToAdd
         fixedTestContext
         customizationPointValues
@@ -24,23 +25,25 @@ use fields qw(
 
 ##
 # Constructor.
-# $packageName: name of the application's package to be tested
-# $description: human-readable description of the test
 # @_: parameters
 sub new {
     my $self = shift;
     my %pars = @_;
 
-    my $packageName       = $pars{appToTest};
-    my $name              = $pars{name};
-    my $fixedTestContext  = $pars{fixedTestContext};
-    my $description       = $pars{description};
-    my $custPointValues   = $pars{customizationPointValues};
-    my $statesTransitions = $pars{checks};
-    my $packageDbsToAdd   = $pars{packageDbsToAdd};
+    my $appPackageName        = $pars{appToTest};
+    my $accessoryPackageNames = $pars{accessoriesToTest};
+    my $name                  = $pars{name};
+    my $fixedTestContext      = $pars{fixedTestContext};
+    my $description           = $pars{description};
+    my $custPointValues       = $pars{customizationPointValues};
+    my $statesTransitions     = $pars{checks};
+    my $packageDbsToAdd       = $pars{packageDbsToAdd};
 
-    unless( $packageName ) {
+    unless( $appPackageName ) {
         fatal( 'AppTest must identify the application package being tested. Use parameter named "appToTest".' );
+    }
+    if( $accessoryPackageNames && 'ARRAY' ne ref( $accessoryPackageNames )) {
+        fatal( 'If accessoriesToTest is given, it must be an array of package names' );
     }
     if( ref( $name )) {
         fatal( 'AppTest name name must be a string.' );
@@ -101,7 +104,8 @@ sub new {
     }
     $self->{name}                     = $name;
     $self->{description}              = $description;
-    $self->{packageName}              = $packageName;
+    $self->{appPackageName}           = $appPackageName;
+    $self->{accessoryPackageNames}    = $accessoryPackageNames;
     $self->{packageDbsToAdd}          = $packageDbsToAdd;
     $self->{fixedTestContext}         = $fixedTestContext;
     $self->{customizationPointValues} = $custPointValues;
@@ -130,12 +134,26 @@ sub setName {
 }
 
 ##
-# Obtain the name of the package being tested
+# Obtain the name of the app package being tested
 # return: the package name
-sub packageName {
+sub appPackageName {
     my $self = shift;
 
-    return $self->{packageName};
+    return $self->{appPackageName};
+}
+
+##
+# Obtain the name of the accessory packages being tested
+# return: the package names, as array
+sub accessoryPackageNames {
+    my $self = shift;
+
+    my $almost = $self->{accessoryPackageNames};
+    if( $almost ) {
+        return @$almost;
+    } else {
+        return ();
+    }
 }
 
 ##
