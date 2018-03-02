@@ -76,7 +76,7 @@ sub new {
                 fatal( 'Entries in CustomizationPointValues reference a hash of name-value paris' );
             }
             foreach my $name ( keys %$valuesForPackage ) {
-                if( ref( $name ) || ref( $value )) {
+                if( ref( $name ) || ref( $valuesForPackage->{$name} )) {
                     fatal( 'CustomizationPointValues must contain hashes that have simple name-value pairs in it.' );
                 }
             }
