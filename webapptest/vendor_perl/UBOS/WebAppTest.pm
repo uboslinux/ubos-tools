@@ -69,11 +69,16 @@ sub new {
         if( ref( $custPointValues ) ne 'HASH' ) {
             fatal( 'CustomizationPointValues must be a hash' );
         }
-        foreach my $name ( keys %$custPointValues ) {
-            my $value = $custPointValues->{$name};
+        foreach my $package ( keys %$custPointValues ) {
+            my $valuesForPackage = $custPointValues->{$package};
 
-            if( ref( $name ) || ref( $value )) {
-                fatal( 'CustomizationPointValues must be a hash with simple name-value pairs in it.' );
+            if( ref( $valuesForPackage ) ne 'HASH' ) {
+                fatal( 'Entries in CustomizationPointValues reference a hash of name-value paris' );
+            }
+            foreach my $name ( keys %$valuesForPackage ) {
+                if( ref( $name ) || ref( $value )) {
+                    fatal( 'CustomizationPointValues must contain hashes that have simple name-value pairs in it.' );
+                }
             }
         }
     }
