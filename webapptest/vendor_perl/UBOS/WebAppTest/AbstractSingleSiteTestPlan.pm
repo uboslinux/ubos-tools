@@ -94,13 +94,17 @@ sub new {
 
         my $custPointValues = $test->getCustomizationPointValues();
         if( $custPointValues ) {
-            my $jsonHash = {};
-            $self->{appConfigJson}->{customizationpoints}->{$test->{packageName}} = $jsonHash;
+            foreach my $package ( $test->appPackageName(), $test->accessoryPackageNames()) {
+                if( exists( $custPointValues->{$package} )) {
+                    my $jsonHash = {};
+                    $self->{appConfigJson}->{customizationpoints}->{$package} = $jsonHash;
 
-            foreach my $name ( keys %$custPointValues ) {
-                my $value = $custPointValues->{$name};
+                    foreach my $name ( keys %{$custPointValues->{$package}} ) {
+                        my $value = $custPointValues->{$package}->{$name};
 
-                $jsonHash->{$name}->{value} = $value;
+                        $jsonHash->{$name}->{value} = $value;
+                    }
+                }
             }
         }
 
