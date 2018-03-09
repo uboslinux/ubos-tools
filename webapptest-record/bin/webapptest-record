@@ -1,0 +1,154 @@
+#!/usr/bin/perl
+#
+# Run a proxy in front of a website. Record traffic and save it suitably
+# for webapptest to run as test cases.
+#
+# Copyright (C) 2018 and later, Indie Computing Corp. All rights reserved. License: see package.
+#
+
+use strict;
+use warnings;
+
+use File::Temp qw( :POSIX );
+use Getopt::Long;
+use IO::Select;
+use IO::Socket::INET;
+use UBOS::Logging;
+use UBOS::Utils;
+
+my $verbose           = 0;
+my $logConfigFile     = undef;
+my $debug             = undef;
+my $localHost         = '0.0.0.0';
+my $localPort         = 80;
+my $remotePort        = undef;
+my $remoteHost        = undef;
+my $help              = 0;
+
+my $parseOk = GetOptions(
+    'verbose+'        => \$verbose,
+    'logConfig=s'     => \$logConfigFile,
+    'debug'           => \$debug,
+    'local-host=s'    => \$localHost,
+    'local-port=s'    => \$localPort,
+    'remote-host=s'   => \$remoteHost,
+    'remote-port=s'   => \$remotePort,
+    'help'            => \$help );
+
+if( $help ) {
+    synopsisHelpQuit( 1 );
+}
+if(    !$parseOk
+    || !$remoteHost )
+{
+    synopsisHelpQuit();
+}
+
+unless( $remotePort ) {
+    $remotePort = $localPort;
+}
+
+UBOS::Logging::initialize( 'webapptest-record', undef, $verbose, $logConfigFile, $debug );
+
+info( 'Listening on', "$localHost:$localPort => $remoteHost:$remotePort" );
+info( 'Hit return to quit.' );
+
+my $localSocket = IO::Socket::INET->new(
+        LocalAddr => $localHost,
+        LocalPort => $localPort,
+        Listen    => 10 );
+
+unless( $localSocket ) {
+    fatal( "Unable to listen on $localHost:$localPort: $!" );
+}
+
+my $ioset = IO::Select->new;
+$ioset->add( \*STDIN );
+$ioset->add( $localSocket );
+
+# Only support a single connection
+my $clientSocket;
+my $serverSocket;
+
+my $done = 0;
+while( !$done ) {
+    for my $socket( $ioset->can_read ) {
+        my $buffer;
+        my $read;
+
+        if( $socket == \*STDIN ) {
+            $read = $socket->sysread( $buffer, 4096 );
+            $done = 1;
+
+        } elsif( $socket == $localSocket ) {
+            unless( $serverSocket ) {
+                # accept the connection, but one connection only at a time
+                # accept the connection
+                $serverSocket = $localSocket->accept;
+                $clientSocket = IO::Socket::INET->new(
+                        PeerAddr => $remoteHost,
+                        PeerPort => $remotePort );
+                unless( $clientSocket ) {
+                    fatal( "Unable to connect to $remoteHost:$remotePort: $!" );
+                }
+                $ioset->add( $clientSocket );
+                $ioset->add( $serverSocket );
+            }
+
+        } else {
+            if( $socket == $serverSocket ) {
+                $read = $serverSocket->sysread( $buffer, 4096 );
+                if( $read ) {
+                    logRequest( $read );
+                    $clientSocket->syswrite( $buffer );
+                }
+            } else {
+                $read = $clientSocket->sysread( $buffer, 4096 );
+                if( $read ) {
+                    logResponse( $read );
+                    $serverSocket->syswrite( $buffer );
+                }
+            }
+            unless( $read ) {
+                $ioset->remove( $clientSocket );
+                $ioset->remove( $serverSocket );
+                $clientSocket->close;
+                $serverSocket->close;
+                $clientSocket = undef;
+                $serverSocket = undef;
+            }
+        }
+    }
+}
+
+#####
+# Some request data has been received
+# $data: the data
+sub logRequest {
+    my $data = shift;
+}
+
+
+#####
+# Some response data has been received
+# $data: the data
+sub logResponse {
+    my $data = shift;
+}
+
+
+#####
+sub synopsisHelpQuit {
+    my $long = shift || 0;
+
+    print <<END;
+webapptest-record ...
+END
+    
+    if( $long ) {
+        print <<END;
+Synopsis: webapptest-record ...
+END
+    }
+    exit 0;
+}
