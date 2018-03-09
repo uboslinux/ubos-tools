@@ -9,10 +9,12 @@
 use strict;
 use warnings;
 
-use File::Temp qw( :POSIX );
+use File::Temp qw(:POSIX);
 use Getopt::Long;
 use IO::Select;
 use IO::Socket::INET;
+use POSIX qw(strftime);
+use Time::HiRes qw(time);
 use UBOS::Logging;
 use UBOS::Utils;
 
@@ -202,6 +204,9 @@ sub parseRequestData {
         map { my( $key, $value ) = split( /: /, $_, 2 ); $request->{headers}->{$key} = $value } split( /\r\n/, $4 );
         my $remainder       = $5;
 
+        my $now = time;
+        $request->{when} = strftime( "%Y/%m/%d-%H:%M:%S", gmtime( $now )) . sprintf( ".%03d", ( $now * 1000 ) % 1000 );
+
         if( !exists( $request->{headers}->{'Content-Length'} )) {
             push @requests, $request;
             $currentRequestData = $remainder;
@@ -235,6 +240,9 @@ sub parseResponseData {
         $response->{statusText} = $3;
         map { my( $key, $value ) = split( /: /, $_, 2 ); $response->{headers}->{$key} = $value } split( /\r\n/, $4 );
         my $remainder           = $5;
+
+        my $now = time;
+        $response->{when} = strftime( "%Y/%m/%d-%H:%M:%S", gmtime( $now )) . sprintf( ".%03d", ( $now * 1000 ) % 1000 );
 
         if( !exists( $response->{headers}->{'Content-Length'} )) {            
             push @responses, $response;
