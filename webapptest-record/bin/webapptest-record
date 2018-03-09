@@ -23,6 +23,7 @@ my $localHost         = '0.0.0.0';
 my $localPort         = 80;
 my $remotePort        = undef;
 my $remoteHost        = undef;
+my $out               = undef;
 my $help              = 0;
 
 my $parseOk = GetOptions(
@@ -33,6 +34,7 @@ my $parseOk = GetOptions(
     'local-port=s'    => \$localPort,
     'remote-host=s'   => \$remoteHost,
     'remote-port=s'   => \$remotePort,
+    'out=s'           => \$out,
     'help'            => \$help );
 
 if( $help ) {
@@ -70,6 +72,12 @@ $ioset->add( $localSocket );
 my $clientSocket;
 my $serverSocket;
 
+my $currentRequestData;
+my $currentResponseData;
+
+my @requests = ();
+my @responses = ();
+
 my $done = 0;
 while( !$done ) {
     for my $socket( $ioset->can_read ) {
@@ -79,6 +87,7 @@ while( !$done ) {
         if( $socket == \*STDIN ) {
             $read = $socket->sysread( $buffer, 4096 );
             $done = 1;
+            last;
 
         } elsif( $socket == $localSocket ) {
             unless( $serverSocket ) {
@@ -99,13 +108,13 @@ while( !$done ) {
             if( $socket == $serverSocket ) {
                 $read = $serverSocket->sysread( $buffer, 4096 );
                 if( $read ) {
-                    logRequest( $read );
+                    logRequestData( $buffer );
                     $clientSocket->syswrite( $buffer );
                 }
             } else {
                 $read = $clientSocket->sysread( $buffer, 4096 );
                 if( $read ) {
-                    logResponse( $read );
+                    logResponseData( $buffer );
                     $serverSocket->syswrite( $buffer );
                 }
             }
@@ -121,21 +130,125 @@ while( !$done ) {
     }
 }
 
+my $max = @requests;
+if( @requests < @responses ) {
+    warning( 'Fewer requests logged than responses:', scalar( @requests ), 'vs', scalar( @responses ));
+} elsif( @requests < @responses ) {
+    warning( 'more requests logged than responses:', scalar( @requests ), 'vs', scalar( @responses ));
+    $max = @responses;
+}
+my $json = {};
+$json->{steps} = [];
+for( my $i=0 ; $i<$max ; ++$i ) {
+    push @{$json->{steps}}, {
+        'request' => $requests[$i],
+        'response' => $responses[$i],
+    };
+}
+if( $out ) {
+    UBOS::Utils::writeJsonToFile( $out, $json );
+} else {
+    UBOS::Utils::writeJsonToStdout( $json );
+}
+
+END {
+    if( $clientSocket ) {
+        $ioset->remove( $clientSocket );
+        $clientSocket->close;
+    }
+    if( $clientSocket ) {
+        $ioset->remove( $serverSocket );
+        $serverSocket->close;
+    }
+}
+
 #####
 # Some request data has been received
 # $data: the data
-sub logRequest {
+sub logRequestData {
     my $data = shift;
-}
 
+    $currentRequestData .= $data;
+    parseRequestData();
+}
 
 #####
 # Some response data has been received
 # $data: the data
-sub logResponse {
+sub logResponseData {
     my $data = shift;
+
+    $currentResponseData .= $data;
+    parseResponseData();
 }
 
+
+#####
+# Data has been added to the request data buffer. Let's try to find
+# a full request.
+sub parseRequestData {
+    while( 1 ) {
+        if( $currentRequestData !~ m!(.*?)\r\n\r\n! ) {
+            # don't have a full set of headers yet
+            return;
+        }
+        unless( $currentRequestData =~ m!^([A-Z]+) ([^\s]+) HTTP/([\d\.]+)\r\n(.*?)\r\n\r\n(.*)$!s ) {
+            fatal( 'Not a valid HTTP request:', $currentRequestData );
+        }
+        my $request = {};
+        $request->{verb}    = $1;
+        $request->{path}    = $2;
+        $request->{version} = $3;
+        map { my( $key, $value ) = split( /: /, $_, 2 ); $request->{headers}->{$key} = $value } split( /\r\n/, $4 );
+        my $remainder       = $5;
+
+        if( !exists( $request->{headers}->{'Content-Length'} )) {
+            push @requests, $request;
+            $currentRequestData = $remainder;
+        } else {
+            my $contentLength = $request->{headers}->{'Content-Length'};
+            if( length( $remainder ) >= $contentLength ) {
+                $request->{content} = substr( $remainder, 0, $contentLength );
+                push @requests, $request;
+                $currentRequestData = substr( $remainder, $contentLength );
+            }
+        }
+    }
+}
+
+#####
+# Data has been added to the response data buffer. Let's try to find
+# a full response.
+sub parseResponseData {
+    while( 1 ) {
+
+        if( $currentResponseData !~ m!(.*?)\r\n\r\n! ) {
+            # don't have a full set of headers yet
+            return;
+        }
+        unless( $currentResponseData =~ m!^HTTP/([\d\.]+) (\d+) (.*?)\r\n(.*?)\r\n\r\n(.*)$!s ) {
+            fatal( 'Not a valid HTTP response:', $currentResponseData );
+        }
+        my $response = {};
+        $response->{version}    = $1;
+        $response->{status}     = $2;
+        $response->{statusText} = $3;
+        map { my( $key, $value ) = split( /: /, $_, 2 ); $response->{headers}->{$key} = $value } split( /\r\n/, $4 );
+        my $remainder           = $5;
+
+        if( !exists( $response->{headers}->{'Content-Length'} )) {            
+            push @responses, $response;
+            $currentResponseData = $remainder;
+        } else {
+            my $contentLength = $response->{headers}->{'Content-Length'};
+            if( length( $remainder ) >= $contentLength ) {
+                $response->{content} = substr( $remainder, 0, $contentLength );
+                push @responses, $response;
+                $currentResponseData = substr( $remainder, $contentLength );
+            }
+        }
+    }
+}
 
 #####
 sub synopsisHelpQuit {
