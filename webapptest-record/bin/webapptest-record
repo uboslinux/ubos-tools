@@ -55,7 +55,7 @@ unless( $remotePort ) {
 UBOS::Logging::initialize( 'webapptest-record', undef, $verbose, $logConfigFile, $debug );
 
 info( 'Listening on', "$localHost:$localPort => $remoteHost:$remotePort" );
-info( 'Hit return to quit.' );
+info( 'Type QUIT to quit, all other input will be logged.' );
 
 my $localSocket = IO::Socket::INET->new(
         LocalAddr => $localHost,
@@ -77,8 +77,9 @@ my $serverSocket;
 my $currentRequestData;
 my $currentResponseData;
 
-my @requests = ();
+my @requests  = ();
 my @responses = ();
+my @labels    = ();
 
 my $done = 0;
 while( !$done ) {
@@ -88,8 +89,19 @@ while( !$done ) {
 
         if( $socket == \*STDIN ) {
             $read = $socket->sysread( $buffer, 4096 );
-            $done = 1;
-            last;
+            if( $buffer =~ m!^\s*QUIT\s*$!i ) {
+                $done = 1;
+                last;
+            } else {
+                $buffer =~ s!^\s+!!;
+                $buffer =~ s!\s+$!!;
+                my $label = {
+                    'when'  => now(),
+                    'label' => $buffer
+                };
+                push @labels, $label;
+print "Adding label\n";
+            }
 
         } elsif( $socket == $localSocket ) {
             unless( $serverSocket ) {
@@ -139,14 +151,31 @@ if( @requests < @responses ) {
     warning( 'more requests logged than responses:', scalar( @requests ), 'vs', scalar( @responses ));
     $max = @responses;
 }
+
 my $json = {};
 $json->{steps} = [];
+my $labelIndex = 0;
 for( my $i=0 ; $i<$max ; ++$i ) {
+    # interleave labels with requests into a chronological sequence
+    while( $labelIndex < @labels ) {
+        my $labelWhen = $labels[$labelIndex]->{when};
+        if( $labelWhen lt $requests[$i]->{when} ) {
+            push @{$json->{steps}}, $labels[$labelIndex];
+            ++$labelIndex;
+        } else {
+            last;
+        }
+    }
     push @{$json->{steps}}, {
-        'request' => $requests[$i],
+        'request'  => $requests[$i],
         'response' => $responses[$i],
     };
 }
+while( $labelIndex < @labels ) {
+    push @{$json->{steps}}, $labels[$labelIndex];
+    ++$labelIndex;
+}
+
 if( $out ) {
     UBOS::Utils::writeJsonToFile( $out, $json );
 } else {
@@ -204,8 +233,7 @@ sub parseRequestData {
         map { my( $key, $value ) = split( /: /, $_, 2 ); $request->{headers}->{$key} = $value } split( /\r\n/, $4 );
         my $remainder       = $5;
 
-        my $now = time;
-        $request->{when} = strftime( "%Y/%m/%d-%H:%M:%S", gmtime( $now )) . sprintf( ".%03d", ( $now * 1000 ) % 1000 );
+        $request->{when} = now();
 
         if( !exists( $request->{headers}->{'Content-Length'} )) {
             push @requests, $request;
@@ -241,8 +269,7 @@ sub parseResponseData {
         map { my( $key, $value ) = split( /: /, $_, 2 ); $response->{headers}->{$key} = $value } split( /\r\n/, $4 );
         my $remainder           = $5;
 
-        my $now = time;
-        $response->{when} = strftime( "%Y/%m/%d-%H:%M:%S", gmtime( $now )) . sprintf( ".%03d", ( $now * 1000 ) % 1000 );
+        $response->{when} = now();
 
         if( !exists( $response->{headers}->{'Content-Length'} )) {            
             push @responses, $response;
@@ -259,16 +286,44 @@ sub parseResponseData {
 }
 
 #####
+# Construct a time stamp
+sub now {
+    my $now = time;
+    return strftime( "%Y/%m/%d-%H:%M:%S", gmtime( $now )) . sprintf( ".%03d", ( $now * 1000 ) % 1000 );
+}
+
+#####
 sub synopsisHelpQuit {
     my $long = shift || 0;
 
-    print <<END;
-webapptest-record ...
-END
-    
     if( $long ) {
         print <<END;
-Synopsis: webapptest-record ...
+Synopsis:
+    webapptest-record --remote-host <host>
+        Proxy port 80 locally to remote host <host>, and print recording to stdout upon quit.
+
+    webapptest-record --help
+        This help text.
+
+Optional flags:
+    --local-host <ip>
+        Bind to local IP address <ip>
+    --local-port <port>
+        Proxy local port <port> instead of port 80
+    --remote-port <port>
+        Proxy to remote port <port> instead of to port 80
+    --out <file>
+        Save recording to file <file> instead of stdout
+    --verbose
+        More output
+    --logConfig <file>
+        Use the specified logging config file
+    --debug
+        Enter debug mode
+END
+    } else {
+        print <<END;
+webapptest-record --remote-host <host> [--out <file>][--remote-port <port>][--local-host <ip>][--local-port <port>][--verbose]
 END
     }
     exit 0;
