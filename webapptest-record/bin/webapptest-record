@@ -55,7 +55,10 @@ unless( $remotePort ) {
 UBOS::Logging::initialize( 'webapptest-record', undef, $verbose, $logConfigFile, $debug );
 
 info( 'Listening on', "$localHost:$localPort => $remoteHost:$remotePort" );
-info( 'Type QUIT to quit, all other input will be logged.' );
+info( 'Type "QUIT" to quit.' );
+info( 'Type "TRANSITION name" to record actions that change the state of the app.' );
+info( 'Type "STATE name" to record actions that check the state of the app.' );
+info( 'Now record actions for "STATE virgin", and then alternate between TRANSITION and STATE until QUIT.' );
 
 my $localSocket = IO::Socket::INET->new(
         LocalAddr => $localHost,
@@ -79,7 +82,13 @@ my $currentResponseData;
 
 my @requests  = ();
 my @responses = ();
-my @labels    = ();
+my @labels    = (
+    {
+        'when' => now(),
+        'type' => 'state',
+        'name' => 'virgin'
+    }
+);
 
 my $done = 0;
 while( !$done ) {
@@ -89,18 +98,31 @@ while( !$done ) {
 
         if( $socket == \*STDIN ) {
             $read = $socket->sysread( $buffer, 4096 );
-            if( $buffer =~ m!^\s*QUIT\s*$!i ) {
+            $buffer =~ s!^\s+!!;
+            $buffer =~ s!\s+$!!;
+
+            if( $buffer =~ m!^QUIT$!i ) {
                 $done = 1;
                 last;
-            } else {
-                $buffer =~ s!^\s+!!;
-                $buffer =~ s!\s+$!!;
+
+            } elsif( $buffer =~ m!^STATE\s+(.*)$!i ) {
                 my $label = {
-                    'when'  => now(),
-                    'label' => $buffer
+                    'when' => now(),
+                    'type' => 'state',
+                    'name' => $1
                 };
                 push @labels, $label;
-print "Adding label\n";
+
+            } elsif( $buffer =~ m!^TRANSITION\s+(.*)$!i ) {
+                my $label = {
+                    'when' => now(),
+                    'type' => 'transition',
+                    'name' => $1
+                };
+                push @labels, $label;
+
+            } else {
+                warning( 'Cannot parse, ignoring:', $buffer );
             }
 
         } elsif( $socket == $localSocket ) {
@@ -167,6 +189,7 @@ for( my $i=0 ; $i<$max ; ++$i ) {
         }
     }
     push @{$json->{steps}}, {
+        'type'     => 'request-response',
         'request'  => $requests[$i],
         'response' => $responses[$i],
     };
