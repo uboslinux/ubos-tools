@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Command-line arguments
+ * Command-line arguments for JCommander.
  */
 public class Args
 {

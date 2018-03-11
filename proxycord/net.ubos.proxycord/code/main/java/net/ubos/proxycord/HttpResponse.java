@@ -1,5 +1,5 @@
 //
-// Copyright (C) 1998 and later, Johannes Ernst. All rights reserved. License: see package.
+// Copyright (C) 2018 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
 package net.ubos.proxycord;
@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *
+ * An HTTP response.
  */
 public class HttpResponse
     extends
@@ -18,7 +18,7 @@ public class HttpResponse
      * Factory method.
      *
      * @param data the data to parse
-     * @return the created instance
+     * @return the created HttpResponse, or null if not enough data
      */
     public static HttpResponse findHttpResponse(
             byte [] data )

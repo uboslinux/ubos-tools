@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Handles one or more HTTP Exchanges on a given socket connection.
+ * Handles the request side of a connection.
  */
 public class HttpRequestHandler
     implements
@@ -22,15 +22,18 @@ public class HttpRequestHandler
     /**
      * Constructor.
      * 
+     * @param app the application
      * @param serverSideSocket the server-side socket
      * @param remoteHost host to connect to
      * @param remotePort port to connect to
      */
     public HttpRequestHandler(
-            Socket serverSideSocket,
-            String remoteHost,
-            int    remotePort )
+            Proxycord app,
+            Socket    serverSideSocket,
+            String    remoteHost,
+            int       remotePort )
     {
+        theApp              = app;
         theServerSideSocket = serverSideSocket;
         theRemoteHost       = remoteHost;
         theRemotePort       = remotePort;
@@ -46,7 +49,7 @@ public class HttpRequestHandler
             return;
         }
 
-        Main.theWorkerThreads.submit( new HttpResponseHandler( this ));
+        theApp.submitTask( new HttpResponseHandler( this ));
 
         BufferedInputStream  serverInStream  = null;
         BufferedOutputStream clientOutStream = null;
@@ -169,7 +172,7 @@ public class HttpRequestHandler
         HttpResponse response = HttpResponse.findHttpResponse( soFar );
         if( response != null ) {
             HttpRequest request = theQueuedRequests.remove( 0 );
-            Main.logExchange( request, response );
+            theApp.logExchange( request, response );
 
             theResponseStreamBuffer = new ByteArrayOutputStream();
             byte [] leftover        = response.getLeftoverData();
@@ -183,6 +186,11 @@ public class HttpRequestHandler
             }
         }
     }
+
+    /**
+     * The application
+     */
+    protected Proxycord theApp;
 
     /**
      * The server-side socket that was spawned due to an incoming request.

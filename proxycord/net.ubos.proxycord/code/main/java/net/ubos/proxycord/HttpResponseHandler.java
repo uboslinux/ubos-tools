@@ -1,5 +1,5 @@
 //
-// Copyright (C) 1998 and later, Johannes Ernst. All rights reserved. License: see package.
+// Copyright (C) 2018 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
 package net.ubos.proxycord;
@@ -9,7 +9,7 @@ import java.io.BufferedOutputStream;
 import java.net.SocketException;
 
 /**
- *
+ * Handles the response side of a connection.
  */
 public class HttpResponseHandler
     implements

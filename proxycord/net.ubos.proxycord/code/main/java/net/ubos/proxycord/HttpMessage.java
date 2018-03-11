@@ -1,5 +1,5 @@
 //
-// Copyright (C) 1998 and later, Johannes Ernst. All rights reserved. License: see package.
+// Copyright (C) 2018 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
 package net.ubos.proxycord;
@@ -8,7 +8,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Common superclass for HttpRequest and HttpResponse because parsing either
@@ -17,14 +16,11 @@ import java.util.regex.Pattern;
 public abstract class HttpMessage
 {
     /**
-     * Private constructor, use factory method.
-     */
-    protected HttpMessage()
-    {
-    }
-
-    /**
-     * Parse some data to determine the HttpRequest.
+     * Parse some data to set values on the instance (of a subclass) of HttpMessage.
+     * This returns true if the entire HttpMessage was successfully parsed, and
+     * false if not enough data was present to be able to parse the HttpMessage.
+     * If successful, property LeftoverData contains data after the end of the
+     * HttpMessage.
      * 
      * @param data the data to parse
      * @return true if successfully parsed
@@ -107,8 +103,13 @@ public abstract class HttpMessage
                     
                     if( chunkLength == 0 ) { // we are done
                         pos = i+2;
-                        i   = pos;
                         theContent = buf.toByteArray();
+                        if( pos < data.length ) {
+                            theLeftoverData = new byte[ data.length - pos ];
+                            System.arraycopy( data, pos, theLeftoverData, 0, data.length - pos );
+                        } else {
+                            theLeftoverData = null; // let's be explicit
+                        }
                         break;
                         
                     } else if( data.length - i >= chunkLength+2 ) {
@@ -133,7 +134,8 @@ public abstract class HttpMessage
     }
     
     /**
-     * The first line is different, so this is defined in subclasses.
+     * The first line is different between HttpRequest and HttpResponse, so how to
+     * parse it is defined in subclasses.
      * 
      * @param firstLine the first line
      * @return true if successfully parsed
@@ -143,9 +145,9 @@ public abstract class HttpMessage
 
     /**
      * Obtain any leftover data in the passed-in data array that was not used
-     * for this request.
+     * for this HttpMessage.
      * 
-     * @return leftover data
+     * @return leftover data, or null
      */
     public byte [] getLeftoverData()
     {
@@ -173,7 +175,7 @@ public abstract class HttpMessage
     }
 
     /**
-     * Obtain the content. May be null.
+     * Obtain the message content. May be null.
      * 
      * @return the content
      */

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 1998 and later, Johannes Ernst. All rights reserved. License: see package.
+// Copyright (C) 2018 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
 package net.ubos.proxycord;
@@ -13,7 +13,8 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 /**
- *
+ * Handles incoming HTTP connection requests to the opened ServerSocket and
+ * dispatches them to worker Threads.
  */
 public class HttpConnectionHandler
     implements
@@ -22,6 +23,7 @@ public class HttpConnectionHandler
     /**
      * Constructor.
      * 
+     * @param app the application
      * @param localHost local IP address to bind to
      * @param localPort local port to open
      * @param remoteHost remote host to connect to
@@ -29,13 +31,15 @@ public class HttpConnectionHandler
      * @throws IOException
      */
     protected HttpConnectionHandler(
-            String localHost,
-            int    localPort,
-            String remoteHost,
-            int    remotePort )
+            Proxycord app,
+            String    localHost,
+            int       localPort,
+            String    remoteHost,
+            int       remotePort )
         throws
             IOException
     {
+        theApp        = app;
         theLocalHost  = localHost;
         theLocalPort  = localPort;
         theRemoteHost = remoteHost;
@@ -55,13 +59,16 @@ public class HttpConnectionHandler
     public void run()
     {
         while( theIsActive ) {
-            Socket serverSideSocket = null;
             try {
-                serverSideSocket = theServerSocket.accept();
+                Socket serverSideSocket = theServerSocket.accept();
 
                 if( theIsActive ) {
-                    HttpRequestHandler requestHandler = new HttpRequestHandler( serverSideSocket, theRemoteHost, theRemotePort );
-                    Main.theWorkerThreads.submit( requestHandler );
+                    HttpRequestHandler requestHandler = new HttpRequestHandler(
+                            theApp,
+                            serverSideSocket,
+                            theRemoteHost,
+                            theRemotePort );
+                    theApp.submitTask( requestHandler );
                 }
 
             } catch( SocketTimeoutException ex ) {
@@ -99,6 +106,11 @@ public class HttpConnectionHandler
             }
         }
     }
+
+    /**
+     * The application.
+     */
+    protected Proxycord theApp;
 
     /**
      * Continue processing while this flag is true.

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 1998 and later, Johannes Ernst. All rights reserved. License: see package.
+// Copyright (C) 2018 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
 package net.ubos.proxycord;
@@ -17,14 +17,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *
+ * A recorded Step that is a completed HTTP exchange.
  */
 public class HttpRequestResponseStep
     extends
         Step
 {
     /**
-     * Private constructor, use factory method.
+     * Constructor.
      * 
      * @param request the received request
      * @param response the received response
@@ -133,7 +133,8 @@ public class HttpRequestResponseStep
     protected HttpResponse theResponse;
 
     /**
-     * Set of known text mime types.
+     * Set of known text mime types which can be inlined into JSON without
+     * encoding.
      */
     protected static final Set<String> TEXT_MIME_TYPES = new HashSet<>();
     static {
