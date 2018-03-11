@@ -7,13 +7,28 @@ pkgrel=1
 pkgdesc="Records web app interactions and generates webapptest tests"
 arch=('any')
 license=('AGPL3')
+makedepends=(
+    'maven'
+    'jdk8-openjdk')
 depends=(
-    'ubos-perl-utils'
-)
+    'java-runtime')
 options=('!strip')
-_vendor_perl=$(perl -V::vendorarch: | sed -e "s![' ]!!g")
+
+prepare() {
+    # Set pom.xml versions correctly; depends on XML-comment-based markup in pom.xml files
+    find ${startdir} -name pkg -and -type d -prune -or -name pom.xml -exec perl -pi -e "s/(?<=\<\!-- PKGVER -->)(\d+(\.\d+)+)(?=\<\!-- \/PKGVER -->)/${pkgver}/g" {} \;
+}
+
+build() {
+    cd ${startdir}/net.ubos.webapptest.record
+    mvn package install ${MVN_OPTS}
+}
 
 package() {
-# Code
-    install -D -m755 ${startdir}/bin/* -t ${pkgdir}/usr/bin/
+    installJar 'net.ubos.webapptest.record'
+}
+
+installJar() {
+    local name=$1
+    install -m644 -D ${startdir}/${name}/target/${name}-${pkgver}.jar ${pkgdir}/usr/lib/java/ubos/net/webapptest/record/${name}/${pkgver}/${name}-${pkgver}.jar
 }

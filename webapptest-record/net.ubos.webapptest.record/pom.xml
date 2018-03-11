@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>net.ubos</groupId>
+    <artifactId>net.ubos.webapptest.record</artifactId>
+    <packaging>jar</packaging>
+    <name>net.ubos.webapptest.record</name>
+    <url>https://github.com/uboslinux/ubos-tools/</url>
+    <version><!-- PKGVER -->0.1<!-- /PKGVER --></version> 
+    
+    <build>
+        <sourceDirectory>${basedir}/code/main/java</sourceDirectory>
+    </build>
+    
+    <dependencies>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>${jcommander.version}</version>
+        </dependency>
+    </dependencies>
+    
+    <properties>
+        <jcommander.version>1.72</jcommander.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+</project>
