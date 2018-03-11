@@ -59,23 +59,22 @@ public class HttpConnectionHandler
             try {
                 serverSideSocket = theServerSocket.accept();
 
+                if( theIsActive ) {
+                    HttpRequestHandler requestHandler = new HttpRequestHandler( serverSideSocket, theRemoteHost, theRemotePort );
+                    Main.theWorkerThreads.submit( requestHandler );
+                }
+
             } catch( SocketTimeoutException ex ) {
                 // that's fine, do nothing, go right back
+                break;
             } catch( SocketException ex ) {
                 // probably too much load, wait a tiny bit
-                try {
-                    Thread.sleep( 10L );
-                } catch( Throwable t ) {
-                    ex.printStackTrace();
-                }
+                break;
             } catch( IOException ex ) {
                 ex.printStackTrace();
+                break;
             }
             
-            if( theIsActive && serverSideSocket != null ) {
-                HttpRequestHandler requestHandler = new HttpRequestHandler( serverSideSocket, theRemoteHost, theRemotePort );
-                Main.theWorkerThreads.submit( requestHandler );
-            }
         }
 
         try {
@@ -92,6 +91,13 @@ public class HttpConnectionHandler
     public void setInactive()
     {
         theIsActive = false;
+        if( theServerSocket != null ) {
+            try {
+                theServerSocket.close();
+            } catch( IOException ex ) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     /**

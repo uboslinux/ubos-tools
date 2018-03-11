@@ -6,7 +6,6 @@ package net.ubos.webapptest.record;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.net.Socket;
 import java.net.SocketException;
 
 /**
@@ -19,15 +18,12 @@ public class HttpResponseHandler
     /**
      * Constructor.
      * 
-     * @param clientSideSocket the socket from which responses are read
-     * @param serverSideSocket the socket to which responses are written
+     * @param requestHandler the HttpRequestHandler to which this HttpResponseHandler belongs
      */
     public HttpResponseHandler(
-            Socket clientSideSocket,
-            Socket serverSideSocket )
+            HttpRequestHandler requestHandler )
     {
-        theClientSideSocket = clientSideSocket;
-        theServerSideSocket = serverSideSocket;
+        theRequestHandler = requestHandler;
     }
     
     @Override
@@ -38,13 +34,15 @@ public class HttpResponseHandler
         
         byte [] buf = new byte[4096];
         try {
-            clientInStream  = new BufferedInputStream( theClientSideSocket.getInputStream() );
-            serverOutStream = new BufferedOutputStream( theServerSideSocket.getOutputStream() );
+            clientInStream  = new BufferedInputStream(  theRequestHandler.getClientSideSocket().getInputStream() );
+            serverOutStream = new BufferedOutputStream( theRequestHandler.getServerSideSocket().getOutputStream() );
 
             int read;
             while( ( read = clientInStream.read( buf )) > 0 ) {
                 serverOutStream.write( buf, 0, read );
                 serverOutStream.flush();
+
+                theRequestHandler.logResponseData( buf, read );
             }
         
         } catch( SocketException ex ) {
@@ -66,12 +64,7 @@ public class HttpResponseHandler
     }
 
     /**
-     * The Socket from which responses are read.
+     * The HttpRequestHandler to which this HttpResponseHandler belongs.
      */
-    protected Socket theClientSideSocket;
-    
-    /**
-     * The Socket to which responses are written.
-     */
-    protected Socket theServerSideSocket;
+    protected HttpRequestHandler theRequestHandler;
 }

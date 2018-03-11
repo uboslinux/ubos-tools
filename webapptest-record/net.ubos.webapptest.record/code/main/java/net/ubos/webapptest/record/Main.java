@@ -6,10 +6,18 @@ package net.ubos.webapptest.record;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -70,6 +78,8 @@ public class Main
         BufferedReader inReader = new BufferedReader( new InputStreamReader( System.in ));
         
         while( !consoleDone ) {
+            System.out.print( "Enter a command> " );
+            System.out.flush();
 
             String [] lineWords;
             try {
@@ -91,6 +101,28 @@ public class Main
         theConnectionAcceptThread.interrupt();
 
         theConnectionAcceptThread.join();
+        
+        Gson       gson      = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+        JsonObject jsonRet   = new JsonObject();
+        JsonArray  jsonSteps = new JsonArray();
+        jsonRet.add( "steps", jsonSteps );
+        
+        for( Step s : theSteps ) {
+            jsonSteps.add( s.asJson() );
+        }
+        
+        String jsonString = gson.toJson( jsonRet );
+
+        PrintStream outStream;
+        if( args.out != null ) {
+            outStream = new PrintStream( new FileOutputStream( args.out ), false, "UTF-8" );
+        } else {
+            outStream = System.out;
+        }
+        outStream.print( jsonString );
+        
+        outStream.flush();
+        outStream.close();
         
         return 0;
     }
@@ -127,6 +159,19 @@ public class Main
     }
     
     /**
+     * A full request-response pair has been found.
+     * 
+     * @param request the found request
+     * @param response the found response
+     */
+    public static void logExchange(
+            HttpRequest  request,
+            HttpResponse response )
+    {
+        theSteps.add( new HttpRequestResponseStep( request, response ));
+    }
+
+    /**
      * The Thread that accepts incoming connections.
      */
     protected static Thread theConnectionAcceptThread;
@@ -140,6 +185,11 @@ public class Main
      * Flag that indicates whether the main console loop should continue to run.
      */
     protected static boolean consoleDone = false;
+
+    /**
+     * The Steps recorded so far.
+     */
+    protected static List<Step> theSteps = new ArrayList<>();
 
     /**
      * The available console commands.

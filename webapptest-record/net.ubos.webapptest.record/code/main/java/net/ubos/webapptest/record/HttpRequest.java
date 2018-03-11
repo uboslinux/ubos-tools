@@ -1,0 +1,90 @@
+//
+// Copyright (C) 1998 and later, Johannes Ernst. All rights reserved. License: see package.
+//
+
+package net.ubos.webapptest.record;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ *
+ */
+public class HttpRequest
+    extends
+        HttpMessage
+{
+    /**
+     * Factory method.
+     *
+     * @param data the data to parse
+     * @return the created instance
+     */
+    public static HttpRequest findHttpRequest(
+            byte [] data )
+    {
+        HttpRequest ret = new HttpRequest();
+        if( ret.parse( data )) {
+            return ret;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Private constructor, use factory method.
+     */
+    protected HttpRequest()
+    {}
+
+    @Override
+    protected boolean parseFirstLine(
+            String firstLine )
+    {
+        Matcher firstLineMatcher = FIRST_LINE_PATTERN.matcher( firstLine );
+        if( !firstLineMatcher.matches() ) {
+            return false;
+        }
+        theVerb    = firstLineMatcher.group( 1 );
+        thePath    = firstLineMatcher.group( 2 );
+        theVersion = firstLineMatcher.group( 3 );
+        
+        return true;
+    }
+
+    /**
+     * Obtain the HTTP verb.
+     * 
+     * @return the verb
+     */
+    public String getVerb()
+    {
+        return theVerb;
+    }
+    
+    /**
+     * Obtain the HTTP path.
+     * 
+     * @return the path
+     */
+    public String getPath()
+    {
+        return thePath;
+    }
+
+    /**
+     * The HTTP verb of the request.
+     */
+    protected String theVerb;
+    
+    /**
+     * The path of the request (not hostname or protocol)
+     */
+    protected String thePath;
+
+    /**
+     * Regex for the first line in the HTTP request.
+     */
+    protected static final Pattern FIRST_LINE_PATTERN = Pattern.compile(
+            "^([A-Z]+) ([^\\s]+) HTTP/([\\d\\.]+)$" );
+}
