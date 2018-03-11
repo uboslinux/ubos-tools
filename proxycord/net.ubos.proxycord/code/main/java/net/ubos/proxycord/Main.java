@@ -21,11 +21,17 @@ public class Main
             String [] argv )
     {
         Args args = parseCommandLine( argv );
-        
+
         Proxycord app = Proxycord.create();
         int status = 1;
         try {
-            status = app.run( args );
+            status = app.run(
+                    args.localHost,
+                    args.localPort,
+                    args.remoteHost,
+                    args.remotePort );
+
+            app.writeJsonOutput( args.out );
 
         } catch( Throwable t ) {
             t.printStackTrace();
@@ -35,7 +41,6 @@ public class Main
         }
         System.exit( status );
     }
-    
     
     /**
      * Parse the command-line arguments or quit.

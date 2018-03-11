@@ -8,10 +8,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,54 +43,55 @@ public class Proxycord
     /**
      * Main functionality without exception handling and cleanup
      * 
-     * @param args the parsed command-line arguments
+     * @param localHost local IP address to bind to
+     * @param localPort local port to open
+     * @param remoteHost remote host to connect to
+     * @param remotePort remote port to connect to
      * @return exit code
      * @throws IOException an I/O problem occurred
      * @throws InterruptedException should not happen
      */
     public int run(
-            Args args )
+            String    localHost,
+            int       localPort,
+            String    remoteHost,
+            int       remotePort )
         throws
             IOException,
             InterruptedException
     {
         theHandler = new HttpConnectionHandler(
                 this,
-                args.localHost,
-                args.localPort,
-                args.remoteHost,
-                args.remotePort );
+                localHost,
+                localPort,
+                remoteHost,
+                remotePort );
 
         theConnectionAcceptThread = new Thread( theHandler );
         theConnectionAcceptThread.start();
 
-        BufferedReader inReader = new BufferedReader( new InputStreamReader( System.in ));
-        
-        while( !consoleDone ) {
-            System.out.print( "Enter a command> " );
-            System.out.flush();
-
-            String [] lineWords;
-            try {
-                lineWords = inReader.readLine().trim().split( "\\s+ " );
-
-            } catch( IOException ex ) {
-                ex.printStackTrace();
-                continue;
-            }
-
-            Command cmd = theConsoleCommands.get( lineWords[0] );
-            if( cmd == null ) {
-                cmd = theConsoleCommands.get( "help" );
-            }
-            cmd.run( this, lineWords );
-        }
+        CommandInterpreter interpreter = CommandInterpreter.create( this );
+        interpreter.run();
 
         theHandler.setInactive();
         theConnectionAcceptThread.interrupt();
 
         theConnectionAcceptThread.join();
         
+        return 0;
+    }
+    
+    /**
+     * Output the recorded steps.
+     * 
+     * @param out the name of the output file, or null if stdout
+     * @throws IOException if an i/o problem occurred
+     */
+    public void writeJsonOutput(
+            String out )
+        throws
+            IOException
+    {
         Gson       gson      = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         JsonObject jsonRet   = new JsonObject();
         JsonArray  jsonSteps = new JsonArray();
@@ -105,8 +104,8 @@ public class Proxycord
         String jsonString = gson.toJson( jsonRet );
 
         PrintStream outStream;
-        if( args.out != null ) {
-            outStream = new PrintStream( new FileOutputStream( args.out ), false, "UTF-8" );
+        if( out != null ) {
+            outStream = new PrintStream( new FileOutputStream( out ), false, "UTF-8" );
         } else {
             outStream = System.out;
         }
@@ -114,17 +113,15 @@ public class Proxycord
         
         outStream.flush();
         outStream.close();
-        
-        return 0;
     }
-    
+
     /**
      * Finish and clean up.
      */
     public void end()
     {
         if( theHandler != null ) {
-            theHandler.setInactive();
+            theHandler.setInactive(); // do again in case an exception occurred earlier
         }
         theWorkerThreads.shutdownNow();
     }
@@ -164,11 +161,6 @@ public class Proxycord
     protected HttpConnectionHandler theHandler;
     
     /**
-     * Flag that indicates whether the main console loop should continue to run.
-     */
-    protected boolean consoleDone = false;
-
-    /**
      * The Steps recorded so far.
      */
     protected List<Step> theSteps = new ArrayList<>();
@@ -177,23 +169,4 @@ public class Proxycord
      * Worker threads.
      */
     protected final ExecutorService theWorkerThreads = Executors.newFixedThreadPool( 20 );
-
-    /**
-     * The available console commands.
-     */
-    protected static final Map<String,Command> theConsoleCommands = new HashMap<>();
-    static {
-        theConsoleCommands.put(
-                "help",
-                ( Proxycord app, String ... args ) -> {
-                    System.out.println( "Available commands are: " + String.join( ", ", theConsoleCommands.keySet()) );
-                    return true;
-                });
-        theConsoleCommands.put(
-                "quit",
-                ( Proxycord app, String ... args ) -> {
-                    app.consoleDone = true;
-                    return true;
-                } );                
-    }
 }
