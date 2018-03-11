@@ -2,7 +2,7 @@
 // Copyright (C) 2018 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
-package net.ubos.webapptest.record;
+package net.ubos.proxycord;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;

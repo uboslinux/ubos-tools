@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+# Invoke Proxycord
+#
+# Copyright (C) 2018 and later, Indie Computing Corp. All rights reserved. License: see package.
+#
+
+java -jar /usr/lib/java/net/ubos/net.ubos.proxycord/${PKGVER}/net.ubos.proxycord-${PKGVER}.jar

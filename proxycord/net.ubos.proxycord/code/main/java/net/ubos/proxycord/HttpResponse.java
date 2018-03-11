@@ -2,7 +2,7 @@
 // Copyright (C) 1998 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
-package net.ubos.webapptest.record;
+package net.ubos.proxycord;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 /**
  *
  */
-public class HttpRequest
+public class HttpResponse
     extends
         HttpMessage
 {
@@ -20,10 +20,10 @@ public class HttpRequest
      * @param data the data to parse
      * @return the created instance
      */
-    public static HttpRequest findHttpRequest(
+    public static HttpResponse findHttpResponse(
             byte [] data )
     {
-        HttpRequest ret = new HttpRequest();
+        HttpResponse ret = new HttpResponse();
         if( ret.parse( data )) {
             return ret;
         } else {
@@ -34,9 +34,9 @@ public class HttpRequest
     /**
      * Private constructor, use factory method.
      */
-    protected HttpRequest()
+    protected HttpResponse()
     {}
-
+    
     @Override
     protected boolean parseFirstLine(
             String firstLine )
@@ -45,46 +45,30 @@ public class HttpRequest
         if( !firstLineMatcher.matches() ) {
             return false;
         }
-        theVerb    = firstLineMatcher.group( 1 );
-        thePath    = firstLineMatcher.group( 2 );
-        theVersion = firstLineMatcher.group( 3 );
+        theVersion = firstLineMatcher.group( 1 );
+        theStatus  = Integer.parseInt( firstLineMatcher.group( 2 ));
         
         return true;
     }
 
     /**
-     * Obtain the HTTP verb.
+     * Obtain the HTTP status.
      * 
-     * @return the verb
+     * @return the HTTP status
      */
-    public String getVerb()
+    public int getStatus()
     {
-        return theVerb;
-    }
-    
-    /**
-     * Obtain the HTTP path.
-     * 
-     * @return the path
-     */
-    public String getPath()
-    {
-        return thePath;
+        return theStatus;
     }
 
     /**
-     * The HTTP verb of the request.
+     * The HTTP status.
      */
-    protected String theVerb;
-    
-    /**
-     * The path of the request (not hostname or protocol)
-     */
-    protected String thePath;
+    protected int theStatus;
 
     /**
-     * Regex for the first line in the HTTP request.
+     * Regex for the first line in the HTTP response.
      */
     protected static final Pattern FIRST_LINE_PATTERN = Pattern.compile(
-            "^([A-Z]+) ([^\\s]+) HTTP/([\\d\\.]+)$" );
+            "^HTTP/([\\d\\.]+) (\\d+) ([a-zA-Z0-9 ]+)$" );
 }

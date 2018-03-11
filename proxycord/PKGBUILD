@@ -4,12 +4,13 @@ maintainer=$developer
 pkgname=$(basename $(pwd))
 pkgver=0.1
 pkgrel=1
-pkgdesc="Records web app interactions and generates webapptest tests"
+pkgdesc="Records a web browsing session through a proxy"
 arch=('any')
 license=('AGPL3')
 makedepends=(
     'maven'
-    'jdk8-openjdk')
+    'jdk8-openjdk'
+    'perl')
 depends=(
     'java-runtime')
 options=('!strip')
@@ -20,15 +21,18 @@ prepare() {
 }
 
 build() {
-    cd ${startdir}/net.ubos.webapptest.record
-    mvn package install ${MVN_OPTS}
+    cd ${startdir}/net.ubos.proxycord
+    mvn package -Ppkgbuild ${MVN_OPTS}
 }
 
 package() {
-    installJar 'net.ubos.webapptest.record'
+    installJar 'net.ubos.proxycord'
+
+    install -D -m755 ${startdir}/bin/proxycord -t ${pkgdir}/usr/bin/
+    perl -pi -e "s!\\\$\{PKGVER\}!${pkgver}!g" ${pkgdir}/usr/bin/proxycord
 }
 
 installJar() {
     local name=$1
-    install -m644 -D ${startdir}/${name}/target/${name}-${pkgver}.jar ${pkgdir}/usr/lib/java/ubos/net/webapptest/record/${name}/${pkgver}/${name}-${pkgver}.jar
+    install -m644 -D ${startdir}/src/maven-target/${name}-${pkgver}.jar ${pkgdir}/usr/lib/java/net/ubos/${name}/${pkgver}/${name}-${pkgver}.jar
 }

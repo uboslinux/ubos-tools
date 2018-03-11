@@ -1,4 +1,4 @@
-package net.ubos.webapptest.record;
+package net.ubos.proxycord;
 
 //#!/usr/bin/perl
 //#

@@ -2,7 +2,7 @@
 // Copyright (C) 2018 and later, Johannes Ernst. All rights reserved. License: see package.
 //
 
-package net.ubos.webapptest.record;
+package net.ubos.proxycord;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

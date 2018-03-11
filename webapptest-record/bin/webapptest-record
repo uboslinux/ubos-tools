@@ -1,9 +1,0 @@
-#!/usr/bin/perl
-#
-# Run a proxy in front of a website. Record traffic and save it suitably
-# for webapptest to run as test cases.
-#
-# Copyright (C) 2018 and later, Indie Computing Corp. All rights reserved. License: see package.
-#
-
-java -jar /usr/share/java/net/ubos/webapptest/record/${VERSION}/net.ubos.webapptest.record-${VERSION}.jar
