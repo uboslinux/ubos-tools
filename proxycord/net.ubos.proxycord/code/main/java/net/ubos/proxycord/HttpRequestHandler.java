@@ -61,10 +61,11 @@ public class HttpRequestHandler
 
             int read;
             while( ( read = serverInStream.read( buf )) > 0 ) {
+                logRequestData( buf, read );
+
                 clientOutStream.write( buf, 0, read );
                 clientOutStream.flush();
                 
-                logRequestData( buf, read );
             }
             
             
@@ -172,7 +173,7 @@ public class HttpRequestHandler
         HttpResponse response = HttpResponse.findHttpResponse( soFar );
         if( response != null ) {
             HttpRequest request = theQueuedRequests.remove( 0 );
-            theApp.logExchange( request, response );
+            theApp.logStep( new HttpRequestResponseStep( request, response ));
 
             theResponseStreamBuffer = new ByteArrayOutputStream();
             byte [] leftover        = response.getLeftoverData();

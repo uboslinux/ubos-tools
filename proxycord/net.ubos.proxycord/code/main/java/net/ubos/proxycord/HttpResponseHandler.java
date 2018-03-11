@@ -39,10 +39,11 @@ public class HttpResponseHandler
 
             int read;
             while( ( read = clientInStream.read( buf )) > 0 ) {
+                theRequestHandler.logResponseData( buf, read );
+
                 serverOutStream.write( buf, 0, read );
                 serverOutStream.flush();
 
-                theRequestHandler.logResponseData( buf, read );
             }
         
         } catch( SocketException ex ) {

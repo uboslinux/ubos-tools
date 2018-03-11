@@ -1,0 +1,4 @@
+proxycord-*-any.pkg*
+build/
+target/
+nbactions.xml

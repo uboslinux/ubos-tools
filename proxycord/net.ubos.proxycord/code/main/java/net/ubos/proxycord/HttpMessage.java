@@ -102,7 +102,7 @@ public abstract class HttpMessage
                     int    chunkLength       = Integer.parseInt( chunkLengthString, 16 );
                     
                     if( chunkLength == 0 ) { // we are done
-                        pos = i+2;
+                        pos = i+4; // two sets of \r\n
                         theContent = buf.toByteArray();
                         if( pos < data.length ) {
                             theLeftoverData = new byte[ data.length - pos ];

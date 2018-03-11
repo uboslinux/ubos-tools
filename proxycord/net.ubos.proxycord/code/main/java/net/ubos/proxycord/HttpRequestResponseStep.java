@@ -36,7 +36,7 @@ public class HttpRequestResponseStep
         theRequest  = request;
         theResponse = response;
     }
-    
+
     @Override
     public JsonElement asJson()
     {
@@ -82,6 +82,7 @@ public class HttpRequestResponseStep
         }
 
         JsonObject jsonRet = new JsonObject();
+        jsonRet.add( "type",     new JsonPrimitive( "HttpRequestResponse" ));
         jsonRet.add( "request",  jsonRequest );
         jsonRet.add( "response", jsonResponse );
         return jsonRet;
@@ -120,6 +121,26 @@ public class HttpRequestResponseStep
                 }
             }
         }
+    }
+
+    /**
+     * Convert to String, for output on the console.
+     * 
+     * @return as String
+     */
+    @Override
+    public String toString()
+    {
+        byte [] responseContent = theResponse.getContent();
+
+        return    theRequest.getVerb()
+                + " "
+                + theRequest.getPath()
+                + " => status "
+                + theResponse.getStatus()
+                + ", "
+                + ( responseContent != null ? responseContent.length : "0" )
+                + " bytes";
     }
 
     /**

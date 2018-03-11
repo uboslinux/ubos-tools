@@ -70,6 +70,17 @@ public class Proxycord
         theConnectionAcceptThread = new Thread( theHandler );
         theConnectionAcceptThread.start();
 
+        System.out.println(
+                "Proxying to http://"
+                + remoteHost
+                + ":"
+                + remotePort
+                + "/. You can now connect to http://"
+                + ( "0.0.0.0".equals( localHost ) ? "localhost" : localHost )
+                + ":"
+                + localPort
+                + "/" );
+
         CommandInterpreter interpreter = CommandInterpreter.create( this );
         interpreter.run();
 
@@ -81,6 +92,35 @@ public class Proxycord
         return 0;
     }
     
+    /**
+     * Obtain the steps recorded so far.
+     * 
+     * @return the Steps
+     */
+    public Step [] getSteps()
+    {
+        return getSteps( Integer.MAX_VALUE );
+    }
+
+    /**
+     * Obtain the steps recorded so far, but no more than n
+     * 
+     * @param n maximum number of steps to return
+     * @return the Steps
+     */
+    public Step [] getSteps(
+            int n )
+    {
+        if( n >= theSteps.size() ) {
+            return theSteps.toArray( new Step[ theSteps.size() ] );
+        } else {
+            Step [] ret = new Step[ n ];
+            System.arraycopy( theSteps.toArray(), theSteps.size()-n, ret, 0, n );
+            
+            return ret;
+        }
+    }
+
     /**
      * Output the recorded steps.
      * 
@@ -138,16 +178,27 @@ public class Proxycord
     }
 
     /**
-     * A full request-response pair has been found.
+     * A new Step needs to be logged.
      * 
-     * @param request the found request
-     * @param response the found response
+     * @param step the Step to be logged
      */
-    public void logExchange(
-            HttpRequest  request,
-            HttpResponse response )
+    public void logStep(
+            Step step )
     {
-        theSteps.add( new HttpRequestResponseStep( request, response ));
+        theSteps.add( step );
+    }
+
+    /**
+     * Drop the n most recent steps from the log.
+     * 
+     * @param n the number of Steps to drop
+     */
+    public void dropMostRecentSteps(
+            int n )
+    {
+        for( int i = theSteps.size()-1 ; n > 0 && i >= 0 ; --i, --n ) {
+            theSteps.remove( i );
+        }
     }
 
     /**

@@ -7,6 +7,10 @@ package net.ubos.proxycord;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,7 +55,7 @@ public class CommandInterpreter
 
             String [] lineWords;
             try {
-                lineWords = inReader.readLine().trim().split( "\\s+ " );
+                lineWords = inReader.readLine().trim().split( "\\s+" );
 
             } catch( IOException ex ) {
                 ex.printStackTrace();
@@ -66,6 +70,25 @@ public class CommandInterpreter
         }
     }
     
+    /**
+     * Print steps.
+     * 
+     * @param steps the steps to print
+     */
+    protected void printSteps(
+            Step [] steps )
+    {
+        PrintStream o = System.out;
+
+        for( int i=0 ; i<steps.length ; ++i ) {
+            o.println( String.format(
+                    "%3d (%s): %s",
+                    i-steps.length,
+                    DATE_FORMAT.format( new Date( steps[i].getTimeCreated() )),
+                    steps[i].toString() ));
+        }
+    }
+
     /**
      * The application.
      */
@@ -82,18 +105,62 @@ public class CommandInterpreter
     protected static final Map<String,Command> theConsoleCommands = new HashMap<>();
     static {
         theConsoleCommands.put(
-                "help",
+                "mark",
                 ( CommandInterpreter interpreter, String ... args ) -> {
-                    System.out.println( "Available commands are: " + String.join( ", ", theConsoleCommands.keySet()) );
+                    MarkStep step;
+                    if( args.length == 2 ) {
+                        step = MarkStep.create( args[1] );
+                    } else {
+                        step = MarkStep.create();
+                    }
+                    interpreter.theApp.logStep( step );
                     return true;
-                });
+                } );
+                
+        theConsoleCommands.put(
+                "drop",
+                ( CommandInterpreter interpreter, String ... args ) -> {
+                    int n = 1;
+                    if( args.length == 2 ) {
+                        n = Integer.parseInt( args[1] );
+                    }
+                    interpreter.theApp.dropMostRecentSteps( n );
+                    return true;
+                } );
+
+        theConsoleCommands.put(
+                "list",
+                ( CommandInterpreter interpreter, String ... args ) -> {
+                    Step [] steps;
+                    if( args.length == 2 ) {
+                        steps = interpreter.theApp.getSteps( Integer.parseInt( args[1] ));
+                    } else {
+                        steps = interpreter.theApp.getSteps();
+                    }
+                    interpreter.printSteps( steps );
+                    return true;
+                } );
+
         theConsoleCommands.put(
                 "quit",
                 ( CommandInterpreter interpreter, String ... args ) -> {
                     interpreter.consoleDone = true;
                     return true;
-                } );                
+                } );
+
+        theConsoleCommands.put(
+                "help",
+                ( CommandInterpreter interpreter, String ... args ) -> {
+                    System.out.println( "Available commands are: " + String.join( ", ", theConsoleCommands.keySet()) );
+                    return true;
+                });
     }
+
+    /**
+     * Format for printing time stamps.
+     */
+    protected static final DateFormat DATE_FORMAT
+            = new SimpleDateFormat( "yyyy/MM/dd-HH:mm:ss.SSS" );
 
     /**
      * A command that can be executed from the terminal.
