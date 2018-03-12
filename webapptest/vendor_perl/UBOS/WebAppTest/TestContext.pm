@@ -433,6 +433,57 @@ sub getMustNotMatch {
 }
 
 ##
+# Test that an HTTP GET on a relative URL returns a page that has a particular length.
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $length: length in bytes
+# $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustHaveLength {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $length      = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret      = $self->mustHaveLength( $response, $length, $errorMsg );
+    if( defined( $status )) {
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
+    }
+    return $ret;
+}
+
+##
+# Test that an HTTP GET on a relative URL returns a page that does not
+# have a particular length
+# Convenience method to make tests more concise.
+# $relativeUrl: appended to the application's context URL
+# $length: length in bytes
+# $status: optional HTTP status to look for
+# $errorMsg: if the test fails, report this error message
+sub getMustNotMatch {
+    my $self        = shift;
+    my $relativeUrl = shift;
+    my $length      = shift;
+    my $status      = shift;
+    my $errorMsg    = shift;
+
+    my $response = $self->get( $relativeUrl );
+    my $ret      = $self->mustNotHaveLength( $response, $regex, $errorMsg );
+    if( defined( $status )) {
+        my $tmp = $self->mustStatus( $response, $status, $errorMsg );
+        if( defined( $tmp->{error} )) {
+            appendError( $ret, $tmp->{error} );
+        }
+    }
+    return $ret;
+}
+
+##
 # Test that an HTTP GET on a relative URL redirects to a certain other URL.
 # Convenience method to make tests more concise.
 # $relativeUrl: appended to the application's context URL
@@ -609,6 +660,46 @@ sub mustNotMatch {
     unless( $self->notMatches( $response, $regex )) {
         debugResponse( $response );
         $ret{error} = $self->myerror( $errorMsg, 'Response content does not match regex', $regex );
+    }
+    return \%ret;
+}
+
+##
+# Test that the content in a response has a particular length
+# $response: the response
+# $length: length in bytes
+# $errorMsg: if the test fails, report this error message
+sub mustHaveLength {
+    my $self     = shift;
+    my $response = shift;
+    my $length   = shift;
+    my $errorMsg = shift;
+
+    my %ret = %$response; # make copy
+    my $responseLength = length( $response->{content} );
+    unless( $length == $responseLength ) {
+        debugResponse( $response );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content has wrong length:', $responseLength, 'vs', $length );
+    }
+    return \%ret;
+}
+
+##
+# Test that the content in a response does not have a particular length
+# $response: the response
+# $length: length in bytes
+# $errorMsg: if the test fails, report this error message
+sub mustNotHaveLengthMatch {
+    my $self     = shift;
+    my $response = shift;
+    my $length   = shift;
+    my $errorMsg = shift;
+
+    my %ret = %$response; # make copy
+    my $responseLength = length( $response->{content} );
+    if( $length == $responseLength ) {
+        debugResponse( $response );
+        $ret{error} = $self->myerror( $errorMsg, 'Response content has disallowed length:', $length );
     }
     return \%ret;
 }
