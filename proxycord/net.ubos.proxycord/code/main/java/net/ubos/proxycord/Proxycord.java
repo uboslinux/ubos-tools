@@ -12,9 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -124,7 +122,7 @@ public class Proxycord
     /**
      * Output the recorded steps.
      * 
-     * @param out the name of the output file, or null if stdout
+     * @param out the name of the output file
      * @throws IOException if an i/o problem occurred
      */
     public void writeJsonOutput(
@@ -132,27 +130,22 @@ public class Proxycord
         throws
             IOException
     {
-        Gson       gson      = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-        JsonObject jsonRet   = new JsonObject();
-        JsonArray  jsonSteps = new JsonArray();
-        jsonRet.add( "steps", jsonSteps );
-        
-        for( Step s : theSteps ) {
-            jsonSteps.add( s.asJson() );
+        try( PrintStream outStream = new PrintStream( new FileOutputStream( out ), false, "UTF-8" )) {
+            Gson       gson      = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+            JsonObject jsonRet   = new JsonObject();
+            JsonArray  jsonSteps = new JsonArray();
+            jsonRet.add( "steps", jsonSteps );
+            
+            for( Step s : theSteps ) {
+                jsonSteps.add( s.asJson() );
+            }
+            
+            String jsonString = gson.toJson( jsonRet );
+            
+            outStream.print( jsonString );
+            
+            outStream.flush();
         }
-        
-        String jsonString = gson.toJson( jsonRet );
-
-        PrintStream outStream;
-        if( out != null ) {
-            outStream = new PrintStream( new FileOutputStream( out ), false, "UTF-8" );
-        } else {
-            outStream = System.out;
-        }
-        outStream.print( jsonString );
-        
-        outStream.flush();
-        outStream.close();
     }
 
     /**

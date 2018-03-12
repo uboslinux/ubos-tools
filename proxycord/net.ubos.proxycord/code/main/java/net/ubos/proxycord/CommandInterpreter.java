@@ -90,6 +90,19 @@ public class CommandInterpreter
     }
 
     /**
+     * Emit an error message.
+     * 
+     * @param msg the message
+     */
+    public void printError(
+            String msg )
+    {
+        PrintStream o = System.out;
+        
+        o.println( "ERROR: " + msg );
+    }
+
+    /**
      * The application.
      */
     protected Proxycord theApp;
@@ -138,6 +151,21 @@ public class CommandInterpreter
                         steps = interpreter.theApp.getSteps();
                     }
                     interpreter.printSteps( steps );
+                    return true;
+                } );
+
+        theConsoleCommands.put(
+                "save",
+                ( CommandInterpreter interpreter, String ... args ) -> {
+                    if( args.length != 2 ) {
+                        interpreter.printError( "No file name given" );
+                    } else {
+                        try {
+                            interpreter.theApp.writeJsonOutput( args[1] );
+                        } catch( IOException ex ) {
+                            interpreter.printError( ex.getMessage() );
+                        }
+                    }
                     return true;
                 } );
 

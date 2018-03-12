@@ -41,7 +41,8 @@ public class Main
             }
         }
                 
-    Proxycord app = Proxycord.create();
+        Proxycord app = Proxycord.create();
+
         int status = 1;
         try {
             status = app.run(
@@ -50,7 +51,9 @@ public class Main
                     args.remoteHost,
                     args.remotePort );
 
-            app.writeJsonOutput( args.out );
+            if( args.out != null ) {
+                app.writeJsonOutput( args.out );
+            }
 
         } catch( Throwable t ) {
             t.printStackTrace();
