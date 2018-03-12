@@ -7,6 +7,8 @@ package net.ubos.proxycord;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.net.SocketException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles the response side of a connection.
@@ -15,6 +17,8 @@ public class HttpResponseHandler
     implements
         Runnable
 {
+    private final static Logger LOG = Logger.getLogger( HttpResponseHandler.class.getName() );
+
     /**
      * Constructor.
      * 
@@ -24,6 +28,8 @@ public class HttpResponseHandler
             HttpRequestHandler requestHandler )
     {
         theRequestHandler = requestHandler;
+
+        LOG.log( Level.INFO, "Created {0} for {1}", new Object[] { this, requestHandler.getName() } );
     }
     
     @Override
@@ -39,11 +45,18 @@ public class HttpResponseHandler
 
             int read;
             while( ( read = clientInStream.read( buf )) > 0 ) {
+                if( LOG.isLoggable( Level.INFO )) {
+                    LOG.info( String.format( "Received (%s) %d bytes", theRequestHandler.getName(), read ));
+                }
+
                 theRequestHandler.logResponseData( buf, read );
 
                 serverOutStream.write( buf, 0, read );
                 serverOutStream.flush();
-
+                
+                if( LOG.isLoggable( Level.INFO )) {
+                    LOG.info( String.format( "Sent (%s) %d bytes", theRequestHandler.getName(), read ));
+                }
             }
         
         } catch( SocketException ex ) {
@@ -62,6 +75,19 @@ public class HttpResponseHandler
                 ex.printStackTrace();
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void finalize()
+        throws
+            Throwable
+    {
+        LOG.log( Level.INFO, "Finalizing {0} ({1})", new Object[]{ this, theRequestHandler.getName() } );
+
+        super.finalize();
     }
 
     /**

@@ -6,12 +6,19 @@ package net.ubos.proxycord;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 /**
  * Main program
  */
 public class Main
 {
+    private final static Logger LOG = Logger.getLogger( Main.class.getName() );
+
     /**
      * Main program.
      *
@@ -22,7 +29,19 @@ public class Main
     {
         Args args = parseCommandLine( argv );
 
-        Proxycord app = Proxycord.create();
+        if( args.logConfig != null ) {
+            File logConfig = new File( args.logConfig );
+            if( logConfig.canRead() ) {
+                try {
+                    LogManager.getLogManager().readConfiguration( new FileInputStream( logConfig ));
+                } catch( IOException ex ) {
+                    LOG.severe( ex.getMessage() );
+                    System.exit( 1 );
+                }
+            }
+        }
+                
+    Proxycord app = Proxycord.create();
         int status = 1;
         try {
             status = app.run(

@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handles the request side of a connection.
@@ -19,24 +21,41 @@ public class HttpRequestHandler
     implements
         Runnable
 {
+    private final static Logger LOG = Logger.getLogger( HttpRequestHandler.class.getName() );
+
     /**
      * Constructor.
      * 
+     * @param name name of this object, for logging
      * @param app the application
      * @param serverSideSocket the server-side socket
      * @param remoteHost host to connect to
      * @param remotePort port to connect to
      */
     public HttpRequestHandler(
+            String    name,
             Proxycord app,
             Socket    serverSideSocket,
             String    remoteHost,
             int       remotePort )
     {
+        theName             = name;
         theApp              = app;
         theServerSideSocket = serverSideSocket;
         theRemoteHost       = remoteHost;
         theRemotePort       = remotePort;
+
+        LOG.log( Level.INFO, "Created {0} ({1})", new Object [] { this, theName } );
+    }
+    
+    /**
+     * Obtain name, for logging.
+     * 
+     * @return the name
+     */
+    public String getName()
+    {
+        return theName;
     }
     
     @Override
@@ -61,11 +80,18 @@ public class HttpRequestHandler
 
             int read;
             while( ( read = serverInStream.read( buf )) > 0 ) {
+                if( LOG.isLoggable( Level.INFO )) {
+                    LOG.info( String.format( "Received (%s) %d bytes", theName, read ));
+                }
+
                 logRequestData( buf, read );
 
                 clientOutStream.write( buf, 0, read );
                 clientOutStream.flush();
                 
+                if( LOG.isLoggable( Level.INFO )) {
+                    LOG.info( String.format( "Sent (%s) %d bytes", theName, read ));
+                }
             }
             
             
@@ -136,8 +162,10 @@ public class HttpRequestHandler
         
         // try to find a full HTTP request
         byte [] soFar = theRequestStreamBuffer.toByteArray();
-        HttpRequest request = HttpRequest.findHttpRequest( soFar );
+        HttpRequest request = HttpRequest.findHttpRequest( soFar, theName );
         if( request != null ) {
+            LOG.log( Level.INFO, String.format( "Queuing request (%s) %s", theName, request.getPath() ));
+
             theQueuedRequests.add( request );
 
             theRequestStreamBuffer = new ByteArrayOutputStream();
@@ -170,10 +198,14 @@ public class HttpRequestHandler
         
         // try to find a full HTTP response
         byte [] soFar = theResponseStreamBuffer.toByteArray();
-        HttpResponse response = HttpResponse.findHttpResponse( soFar );
+
+        HttpResponse response = HttpResponse.findHttpResponse( soFar, theName );
+
         if( response != null ) {
-            HttpRequest request = theQueuedRequests.remove( 0 );
-            theApp.logStep( new HttpRequestResponseStep( request, response ));
+            LOG.log( Level.INFO, String.format( "Unqueuing request (%s)", theName ));
+
+            HttpRequest inResponseTo = theQueuedRequests.remove( 0 );
+            theApp.logStep( new HttpRequestResponseStep( inResponseTo, response ));
 
             theResponseStreamBuffer = new ByteArrayOutputStream();
             byte [] leftover        = response.getLeftoverData();
@@ -187,6 +219,24 @@ public class HttpRequestHandler
             }
         }
     }
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void finalize()
+        throws
+            Throwable
+    {
+        LOG.log( Level.INFO, "Finalizing {0} ({1})", new Object [] { this, theName } );
+
+        super.finalize();
+    }
+
+    /**
+     * Name of this object, for logging.
+     */
+    protected String theName;
 
     /**
      * The application

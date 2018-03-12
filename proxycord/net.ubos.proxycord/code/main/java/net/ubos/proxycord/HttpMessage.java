@@ -87,6 +87,20 @@ public abstract class HttpMessage
             if( data.length - pos >= contentLength ) {
                 theContent = new byte[ contentLength ];
                 System.arraycopy( data, pos, theContent, 0, contentLength );
+                
+                pos += contentLength;
+
+                if( pos < data.length ) {
+                    theLeftoverData = new byte[ data.length - pos ];
+                    System.arraycopy( data, pos, theLeftoverData, 0, data.length - pos );
+                } else {
+                    theLeftoverData = null; // let's be explicit
+                }
+
+                return true;
+
+            } else {
+                return false;
             }
 
         } else if(    theHeaders.containsKey( HTTP_TRANSFER_ENCODING_HEADER )
@@ -125,12 +139,14 @@ public abstract class HttpMessage
                     ++i;
                 }
             }
-            if( theContent == null ) {
+            if( theContent != null ) {
+                return true;
+            } else {
                 return false;
             }
+        } else {       
+            return true;
         }
-        
-        return true;        
     }
     
     /**

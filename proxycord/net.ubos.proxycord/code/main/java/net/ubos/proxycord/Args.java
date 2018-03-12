@@ -30,7 +30,10 @@ public class Args
     
     @Parameter( names = { "-o", "--out" }, description = "JSON file to write with the recording" )
     String out;
-    
+
+    @Parameter( names = { "--logConfig" }, description = "Java logging configuration file" )
+    String logConfig = "/etc/proxycord/logging.properties"; 
+
     @Parameter( names = { "-h", "--help" }, description = "Help text", help = true )
     boolean help;
 }

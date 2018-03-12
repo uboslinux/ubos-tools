@@ -11,6 +11,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.logging.Logger;
 
 /**
  * Handles incoming HTTP connection requests to the opened ServerSocket and
@@ -20,6 +21,8 @@ public class HttpConnectionHandler
     implements
         Runnable
 {
+    private final static Logger LOG = Logger.getLogger( HttpConnectionHandler.class.getName() );
+
     /**
      * Constructor.
      * 
@@ -58,12 +61,16 @@ public class HttpConnectionHandler
     @Override
     public void run()
     {
+        int count = 0;
         while( theIsActive ) {
             try {
                 Socket serverSideSocket = theServerSocket.accept();
 
                 if( theIsActive ) {
+                    LOG.info( "Accepting incoming connection request" );
+
                     HttpRequestHandler requestHandler = new HttpRequestHandler(
+                            String.valueOf( count++ ),
                             theApp,
                             serverSideSocket,
                             theRemoteHost,

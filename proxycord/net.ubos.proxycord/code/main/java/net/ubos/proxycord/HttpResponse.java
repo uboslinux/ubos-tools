@@ -4,6 +4,8 @@
 
 package net.ubos.proxycord;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,19 +16,26 @@ public class HttpResponse
     extends
         HttpMessage
 {
+    private final static Logger LOG = Logger.getLogger( HttpResponse.class.getName() );
+
     /**
      * Factory method.
      *
      * @param data the data to parse
+     * @param requestHandlerName name of the request handler, for logging
      * @return the created HttpResponse, or null if not enough data
      */
     public static HttpResponse findHttpResponse(
-            byte [] data )
+            byte [] data,
+            String  requestHandlerName )
     {
         HttpResponse ret = new HttpResponse();
         if( ret.parse( data )) {
+            LOG.log( Level.INFO, "Succeeded parsing HttpResponse ({0})", requestHandlerName );
             return ret;
+
         } else {
+            LOG.log( Level.INFO, "Failed parsing HttpResponse ({0})", requestHandlerName );
             return null;
         }
     }

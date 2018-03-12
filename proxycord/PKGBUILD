@@ -28,6 +28,8 @@ build() {
 package() {
     installJar 'net.ubos.proxycord'
 
+    install -D -m644 ${startdir}/logging.properties ${pkgdir}/etc/${pkgname}/logging.properties
+
     install -D -m755 ${startdir}/bin/proxycord -t ${pkgdir}/usr/bin/
     perl -pi -e "s!\\\$\{PKGVER\}!${pkgver}!g" ${pkgdir}/usr/bin/proxycord
 }
