@@ -56,7 +56,7 @@ foreach my $dirWith ( @dirsWithPkgbuilds ) {
     my $out;
     UBOS::Utils::myexec(
             "cd '$dirWith' && /bin/bash",
-            ". 'PKGBUILD'; echo pkgname=\$pkgname ; echo pkgver=\$pkgver ; echo releasepage=\${releasepage[@]}",
+            ". 'PKGBUILD'; echo pkgname=\$pkgname ; echo pkgver=\$pkgver ; echo pkgverforked=\$pkgverforked ; echo releasepage=\${releasepage[@]}",
             \$out );
 
     my %found = ();
@@ -113,6 +113,8 @@ td, th {
      <th>Project name</th>
      <th>Package name</th>
      <th>UBOS has version</th>
+     <th>Upstream version forked</th>
+     <th>
      <th>Release page upstream</th>
     </tr>
    </thead>
@@ -127,6 +129,7 @@ foreach my $projectName ( sort keys %$projects ) {
         $html .= "      <td>$projectName</td>\n";
         $html .= "      <td>$packageName</td>\n";
         $html .= "      <td>$packageData->{pkgver}</td>\n";
+        $html .= "      <td>$packageData->{pkgverforked}</td>\n";
         $html .= "      <td>" . join( "<br>", map { "<a href='$_'>visit</a>" } sort @{$packageData->{releasepage}} ) . "</td>\n";
         $html .= "     </tr>\n";
     }
