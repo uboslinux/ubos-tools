@@ -1,0 +1,83 @@
+#!/usr/bin/perl
+# 
+# List the packages and their dbs that we need to add to ubos-buildconfig, if the
+# packages provided as command-line arguments were to be added to UBOS.
+# Invoke in the root directory of ubos-buildconfig
+#
+# Copyright (C) 2018 and later, Indie Computing Corp. All rights reserved. License: see package.
+
+
+use strict;
+use warnings;
+use UBOS::Utils;
+
+my @currentPackages = @ARGV;
+my %packagesToAdd   = ();
+my %found           = ();
+my %notFound        = ();
+
+while( 1 ) {
+    my @packagesToAdd = _addPackages( @currentPackages );
+    unless( @packagesToAdd ) {
+        last;
+    }
+    @currentPackages = @packagesToAdd;
+}
+
+print "Packages to add:\n";
+foreach my $repo ( sort keys %packagesToAdd ) {
+    print "$repo:\n";
+    print join( "\n", map { "        \"$_\" : {}," } sort keys %{$packagesToAdd{$repo}} ) . "\n";
+}
+if( keys %notFound ) {
+    print "Packages not found:\n    ";
+    print join( "\n    ", sort keys %notFound ) . "\n";
+}
+
+sub _addPackages {
+    my @toAdd = @_;
+
+    my $out;
+    my $err;
+    my @ret = ();
+    foreach my $package ( @toAdd ) {
+        if( exists( $found{$package} ) || exists( $notFound{$package} )) {
+            next;
+        }
+
+print "Looking for '$package'\n";
+        if( myexec( "grep -r '\"$package\"'", undef, \$out ) == 0 ) {
+            $found{$package} = 1;
+            # have it already
+# print "    Have it already\n";
+            next;
+        }
+        myexec( "pacman -Si $package", undef, \$out, \$err );
+        if( $out =~ m!Repository\s*:\s*(\S+)\s+Name\s*:\s*$package\s+!s ) {
+            my $repo = $1;
+# print "    Found in '$repo'\n";
+            ($packagesToAdd{$repo}->{$package}) = 1;
+            $found{$package} = 1;
+        } elsif( $err =~ m!error.*not found! ) {
+            $notFound{$package} = 1;
+        }
+        $out =~ s!.*Depends On\s*:\s*!!s;
+        $out =~ s!Optional.*!!s;
+        foreach my $dep ( split /\s+/, $out ) {
+# print "    Dep: '$dep'\n";
+             $dep =~ s!^\s+!!;
+             $dep =~ s!\s+$!!;
+             $dep =~ s![<>=].*!!; # strip version
+             unless( $dep eq 'None' ) {
+                 if( exists( $notFound{$dep} )) {
+                     $notFound{$dep} = 1;
+                 } else {
+                     push @ret, $dep;
+                 }
+             }
+        }
+    }
+    return @ret;
+}
+1;
+
