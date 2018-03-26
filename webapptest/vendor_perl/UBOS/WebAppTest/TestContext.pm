@@ -141,7 +141,7 @@ sub fullContext {
 sub apache2ContextDir {
     my $self = shift;
 
-    return '/srv/http/sites/' . $self->{testPlan}->siteId() . $self->context();
+    return '/ubos/http/sites/' . $self->{testPlan}->siteId() . $self->context();
 }
 
 ##
