@@ -465,7 +465,7 @@ sub getMustHaveLength {
 # $length: length in bytes
 # $status: optional HTTP status to look for
 # $errorMsg: if the test fails, report this error message
-sub getMustNotMatch {
+sub getMustNotHaveLength {
     my $self        = shift;
     my $relativeUrl = shift;
     my $length      = shift;
@@ -473,7 +473,7 @@ sub getMustNotMatch {
     my $errorMsg    = shift;
 
     my $response = $self->get( $relativeUrl );
-    my $ret      = $self->mustNotHaveLength( $response, $regex, $errorMsg );
+    my $ret      = $self->mustNotHaveLength( $response, $length, $errorMsg );
     if( defined( $status )) {
         my $tmp = $self->mustStatus( $response, $status, $errorMsg );
         if( defined( $tmp->{error} )) {
