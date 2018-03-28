@@ -214,7 +214,7 @@ sub setup {
     chmod 0755, $self->{staffDir}; # So it's consistent with the package
     $self->populateConfigDir( $self->{staffDir} );
 
-    info( 'Creating Scaffold container' );
+    info( 'Creating scaffold container' );
 
     $self->{nspawnLogFile} = File::Temp->new();
 
@@ -257,7 +257,7 @@ sub setup {
 sub teardown {
     my $self = shift;
 
-    info( 'Tearing down Scaffold Container' );
+    info( 'Tearing down scaffold container' );
 
     my $containerName = $self->{name};
 

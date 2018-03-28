@@ -135,7 +135,7 @@ sub setup {
         fatal( 'Unknown option(s) for Scaffold v-box:', join( ', ', keys %$options ));
     }
 
-    info( 'Creating Scaffold v-box' );
+    info( 'Creating scaffold v-box' );
 
     my $out;
     my $err;
@@ -253,7 +253,7 @@ sub setup {
 sub teardown {
     my $self = shift;
 
-    info( 'Tearing down Scaffold VBox' );
+    info( 'Tearing down scaffold v-box' );
 
     my $vmName = $self->{vmName};
 

@@ -33,7 +33,7 @@ sub setup {
         fatal( 'Unknown option(s) for Scaffold here:', join( ', ', keys %$options ));
     }
 
-    info( 'Creating Scaffold here' );
+    info( 'Creating scaffold here' );
 
     $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot );
 
@@ -109,7 +109,7 @@ sub restoreFromLocal {
 sub teardown {
     my $self = shift;
 
-    info( 'Tearing down Scaffold Here' );
+    info( 'Tearing down scaffold here' );
 
     return 1;
 }
@@ -129,11 +129,13 @@ sub invokeOnTarget {
 
     my $ret = UBOS::Utils::myexec( $cmd, $stdin, $stdout, $stderr );
 
-    if( $stderr && $$stderr !~ m!^(FATAL|ERROR|WARNING):! ) {
-        # If there are no errors, zap the log output, otherwise keep the whole thing
-        $$stderr =~ s!^(INFO|DEBUG):\s*$!!m;
-        if( $ret == 0 ) { # Guess the command was wrong
+    if( $ret == 0 && $stderr ) {
+        if( $$stderr =~ m!^(FATAL|ERROR|WARNING):! ) {
+            # Guess the command was wrong, it didn't return an error code
             $ret = -999;
+        } else {
+            # If there are no errors, zap the log output
+            $$stderr = '';
         }
     }
 

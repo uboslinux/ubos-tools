@@ -67,7 +67,7 @@ sub setup {
         fatal( 'Unknown option(s) for Scaffold ssh:', join( ', ', keys %$options ));
     }
 
-    info( 'Creating Scaffold ssh' );
+    info( 'Creating scaffold ssh' );
     
     $self->{isOk} = $self->handleImpersonateDepot( $impersonateDepot );
 
@@ -79,7 +79,7 @@ sub setup {
 sub teardown {
     my $self = shift;
 
-    info( 'Tearing down Scaffold Ssh' );
+    info( 'Tearing down scaffold ssh' );
 
     return 1;
 }
