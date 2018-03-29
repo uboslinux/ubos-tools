@@ -92,11 +92,18 @@ sub update {
 ##
 # Switch the release channel on the target and update all code on the target
 # $newChannel: the new channel
+# $verbose: verbosity level
 # $cmd: command to perform the switch
 sub switchChannelUpdate {
     my $self       = shift;
     my $newChannel = shift;
-    my $cmd        = shift || 'sudo ubos-admin update';
+    my $verbose    = shift;
+    my $cmd        = shift;
+
+    unless( $cmd ) {
+        $cmd = 'sudo ubos-admin update';
+        $cmd .= ( ' -v' x $verbose );
+    }
 
     my $script = <<SCRIPT;
 echo $newChannel > /etc/ubos/channel

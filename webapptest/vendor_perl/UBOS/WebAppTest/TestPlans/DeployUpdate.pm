@@ -11,7 +11,7 @@ use warnings;
 package UBOS::WebAppTest::TestPlans::DeployUpdate;
 
 use base qw( UBOS::WebAppTest::AbstractSingleSiteTestPlan );
-use fields qw( upgradeToChannel switchChannelCommand );
+use fields qw( upgradeToChannel switchChannelCommand maxTransitions );
 
 use UBOS::Logging;
 use UBOS::Utils;
@@ -41,6 +41,12 @@ sub new {
     if( exists( $options->{'switch-channel-command'} )) {
         $self->{switchChannelCommand} = $options->{'switch-channel-command'};
         delete $options->{'switch-channel-command'};
+    }
+    if( exists( $options->{'max-transitions'} )) {
+        $self->{maxTransitions} = $options->{'max-transitions'};
+        delete $options->{'max-transitions'};
+    } else {
+        $self->{maxTransitions} = 1;
     }
 
     if( defined( $options ) && %$options ) {
@@ -79,50 +85,80 @@ sub run {
     } while( $repeat );
     $ret &= $success;
 
-    my $c = new UBOS::WebAppTest::TestContext( $scaffold, $self, $verbose );
     if( !$abort && !$quit ) {
-        my $currentState = $self->getTest()->getVirginStateTest();
+        my $c = new UBOS::WebAppTest::TestContext( $scaffold, $self, $verbose );
 
-        info( 'Checking StateCheck', $currentState->getName() );
+        my $currentState    = $self->getTest()->getVirginStateTest();
+        my $transitionCount = 0;
+        while( $transitionCount < $self->{maxTransitions} ) {
+            ++$transitionCount;
 
-        do {
-            $success = $currentState->check( $c );
+            info( 'Checking StateCheck', $currentState->getName() );
 
-            ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
-
-        } while( $repeat );
-        $ret &= $success;
-    }
-    if( !$abort && !$quit ) {
-        my $currentState = $self->getTest()->getVirginStateTest();
-
-        do {
             do {
-                if( $self->{upgradeToChannel} ) {
-                    info( 'Switching to channel', $self->{upgradeToChannel}, 'and updating' );
-                    $success = $scaffold->switchChannelUpdate( $self->{upgradeToChannel}, $self->{switchChannelCommand} );
-                } else { 
-                    info( 'Updating' );
-                    $success = $scaffold->update();
-                }
-
-               ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed update', $interactive, $success, $ret );
-            } while( $repeat );
-
-            if( !$abort && !$quit ) { # apparently, do-while is "not a loop" in Perl, so I can't do "last" here.
-                
-                info( 'Checking StateCheck', $currentState->getName() );
-
                 $success = $currentState->check( $c );
 
                 ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
+
+            } while( $repeat );
+            $ret &= $success;
+
+            if( $abort || $quit ) {
+                last;
             }
-            
-        } while( $repeat );
-        $ret &= $success;
+
+            my( $transition, $nextState ) = $self->getTest()->getTransitionFrom( $currentState );
+            unless( $transition ) {
+                last;
+            }
+
+            info( 'Taking StateTransition', $transition->getName() );
+
+            do {
+                $success = $transition->execute( $c );
+
+                ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateTransition ' . $transition->getName(), $interactive, $success, $ret );
+
+            } while( $repeat );
+            $ret &= $success;
+
+            if( $abort || $quit ) {
+                last;
+            }
+
+            $currentState = $nextState;
+        }
+
+        # now upgrade
+
+        if( !$abort && !$quit ) {
+            do {
+                do {
+                    if( $self->{upgradeToChannel} ) {
+                        info( 'Switching to channel', $self->{upgradeToChannel}, 'and updating' );
+                        $success = $scaffold->switchChannelUpdate( $self->{upgradeToChannel}, $self->{switchChannelCommand}, $verbose );
+                    } else {
+                        info( 'Updating' );
+                        $success = $scaffold->update();
+                    }
+
+                   ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed update', $interactive, $success, $ret );
+                } while( $repeat );
+
+                if( !$abort && !$quit ) { # apparently, do-while is "not a loop" in Perl, so I can't do "last" here.
+
+                    info( 'Checking StateCheck', $currentState->getName() );
+
+                    $success = $currentState->check( $c );
+
+                    ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
+                }
+
+            } while( $repeat );
+            $ret &= $success;
+        }
+        $c->destroy();
     }
-    
-    $c->destroy();
 
     unless( $abort ) {
         $scaffold->undeploy( $siteJson );
