@@ -122,6 +122,12 @@ sub invokeOnTarget {
     my $stdout = shift;
     my $stderr = shift;
 
+    if( $stdin ) {
+        info( "Scaffold", ref( $self ) . "exec: $cmd << INPUT\n$stdin\nINPUT" );
+    } else {
+        info( "Scaffold", ref( $self ) . "exec: $cmd" );
+    }
+
     my $sshCmd = 'ssh';
     $sshCmd .= ' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=error';
             # don't put into known_hosts file, and don't print resulting warnings

@@ -102,7 +102,7 @@ sub switchChannelUpdate {
 
     unless( $cmd ) {
         $cmd = 'sudo ubos-admin update';
-        $cmd .= ( ' -v' x $verbose );
+        $cmd .= ( ' --verbose' x $verbose );
     }
 
     my $script = <<SCRIPT;
@@ -111,9 +111,14 @@ $cmd
 SCRIPT
 
     my $out;
-    my $exit = $self->invokeOnTarget( 'sudo /bin/bash', $script, \$out, \$out );
+    my $outP = $verbose ? undef : \$out;
+    my $exit = $self->invokeOnTarget( 'sudo /bin/bash', $script, $outP, $outP );
     if( $exit ) {
-        error( 'Channel switch failed:', "script:\n$script\nout:\n$out" );
+        if( $verbose ) {
+            error( 'Channel switch failed:', "script:\n$script\n" );
+        } else {
+            error( 'Channel switch failed:', "script:\n$script\nout:\n$out\n" );
+        }
     }
     return !$exit;
 }
