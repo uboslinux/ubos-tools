@@ -214,11 +214,8 @@ sub setup {
     chmod 0755, $self->{staffDir}; # So it's consistent with the package
     $self->populateConfigDir( $self->{staffDir} );
 
-    info( 'Creating scaffold container' );
-
     $self->{nspawnLogFile} = File::Temp->new();
 
-    trace( 'Starting container' );
     my $cmd = "sudo systemd-nspawn";
     $cmd .= " --boot";
     $cmd .= " --ephemeral";
@@ -233,6 +230,8 @@ sub setup {
     $cmd .= " > '" . $self->{nspawnLogFile}->filename . "'";
     $cmd .= " 2>&1";
     $cmd .= " &";                                          # run in background; we don't want the login prompt
+
+    info( 'Creating scaffold container:', $cmd );
 
     if( UBOS::Utils::myexec( $cmd )) {
         fatal( 'systemd-nspawn failed', UBOS::Utils::slurpFile( $self->{nspawnLogFile}->filename ));
@@ -257,9 +256,9 @@ sub setup {
 sub teardown {
     my $self = shift;
 
-    info( 'Tearing down scaffold container' );
-
     my $containerName = $self->{name};
+
+    info( "Tearing down scaffold container: sudo machinectl poweroff '$containerName'" );
 
     if( UBOS::Utils::myexec( "sudo machinectl poweroff '$containerName'" )) {
         error( 'machinectl poweroff failed, systemd-nspawn log:', UBOS::Utils::slurpFile( $self->{nspawnLogFile}->filename ));

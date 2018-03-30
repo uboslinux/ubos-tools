@@ -135,8 +135,6 @@ sub setup {
         fatal( 'Unknown option(s) for Scaffold v-box:', join( ', ', keys %$options ));
     }
 
-    info( 'Creating scaffold v-box' );
-
     my $out;
     my $err;
 
@@ -228,7 +226,8 @@ sub setup {
         fatal( 'VBoxManage storageattach failed' );
     }
 
-    trace( 'Starting vm', $vmName );
+    info( 'Creating scaffold v-box:', "VBoxManage startvm '$vmName' --type headless" );
+
     if( UBOS::Utils::myexec( "VBoxManage startvm '$vmName' --type headless", undef, \$out, \$err )) {
         # This starts the VM in the background (unlike VBoxHeadless)
         fatal( 'VBoxManage startvm failed' );
@@ -253,11 +252,10 @@ sub setup {
 sub teardown {
     my $self = shift;
 
-    info( 'Tearing down scaffold v-box' );
-
     my $vmName = $self->{vmName};
 
-    trace( 'Shutting down vm, unregistering, and deleting image file' );
+    info( 'Tearing down scaffold v-box:', "VBoxManage controlvm '$vmName' acpipowerbutton" );
+
     if( UBOS::Utils::myexec( "VBoxManage controlvm '$vmName' acpipowerbutton" )) {
         error( 'VBoxManage controlvm failed' );
     }

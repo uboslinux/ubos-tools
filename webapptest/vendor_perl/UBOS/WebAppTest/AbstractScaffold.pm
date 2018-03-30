@@ -46,6 +46,19 @@ sub isOk {
 }
 
 ##
+# Name of this scaffold
+# return: name
+sub name {
+    my $self = shift;
+
+    my $ret = ref( $self );
+    $ret =~ s!^.*::!!;
+    $ret =~ s!([A-Z])!-lc($1)!ge;
+    $ret =~ s!^-!!;
+    return $ret;
+}
+
+##
 # Deploy a site
 # $site: site JSON
 sub deploy {

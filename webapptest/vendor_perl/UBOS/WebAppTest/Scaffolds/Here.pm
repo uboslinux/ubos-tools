@@ -128,9 +128,9 @@ sub invokeOnTarget {
     my $stderr = shift;
 
     if( $stdin ) {
-        info( "Scaffold here exec: $cmd << INPUT\n$stdin\nINPUT" );
+        info( 'Scaffold', $self->name(), "exec: $cmd << INPUT\n$stdin\nINPUT" );
     } else {
-        info( "Scaffold here exec: $cmd" );
+        info( 'Scaffold', $self->name(), "exec: $cmd" );
     }
 
     my $ret = UBOS::Utils::myexec( $cmd, $stdin, $stdout, $stderr );
