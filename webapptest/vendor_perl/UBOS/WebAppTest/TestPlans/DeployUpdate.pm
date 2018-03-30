@@ -136,7 +136,7 @@ sub run {
                 do {
                     if( $self->{upgradeToChannel} ) {
                         info( 'Switching to channel', $self->{upgradeToChannel}, 'and updating' );
-                        $success = $scaffold->switchChannelUpdate( $self->{upgradeToChannel}, $self->{switchChannelCommand}, $verbose );
+                        $success = $scaffold->switchChannelUpdate( $self->{upgradeToChannel}, $verbose, $self->{switchChannelCommand} );
                     } else {
                         info( 'Updating' );
                         $success = $scaffold->update();
