@@ -85,6 +85,8 @@ sub run {
     } while( $repeat );
     $ret &= $success;
 
+    # do not check pre-upgrade states, the tests and/or paths may be all different
+
     if( !$abort && !$quit ) {
         my $c = new UBOS::WebAppTest::TestContext( $scaffold, $self, $verbose );
 
@@ -92,20 +94,6 @@ sub run {
         my $transitionCount = 0;
         while( $transitionCount < $self->{maxTransitions} ) {
             ++$transitionCount;
-
-            info( 'Checking StateCheck', $currentState->getName() );
-
-            do {
-                $success = $currentState->check( $c );
-
-                ( $repeat, $abort, $quit ) = UBOS::WebAppTest::TestingUtils::askUser( 'Performed StateCheck ' . $currentState->getName(), $interactive, $success, $ret );
-
-            } while( $repeat );
-            $ret &= $success;
-
-            if( $abort || $quit ) {
-                last;
-            }
 
             my( $transition, $nextState ) = $self->getTest()->getTransitionFrom( $currentState );
             unless( $transition ) {
