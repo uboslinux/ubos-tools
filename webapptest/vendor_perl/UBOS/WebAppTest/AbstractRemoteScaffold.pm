@@ -122,10 +122,12 @@ sub invokeOnTarget {
     my $stdout = shift;
     my $stderr = shift;
 
-    if( $stdin ) {
-        info( 'Scaffold', $self->name(), "exec: $cmd << INPUT\n$stdin\nINPUT" );
-    } else {
-        info( 'Scaffold', $self->name(), "exec: $cmd" );
+    if( $self->{verbose} ) {
+        if( $stdin ) {
+            info( 'Scaffold', $self->name(), "exec: $cmd << INPUT\n$stdin\nINPUT" );
+        } else {
+            info( 'Scaffold', $self->name(), "exec: $cmd" );
+        }
     }
 
     my $sshCmd = 'ssh';
