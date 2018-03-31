@@ -21,13 +21,15 @@ my $help          = 0;
 my $parseOk = GetOptions(
         'verbose+'    => \$verbose,
         'logConfig=s' => \$logConfigFile,
-        'directory=s' => \$dir,
         'out=s'       => \$out,
         'h|help'      => \$help );
 
 UBOS::Logging::initialize( 'releasepagelinks', 'generate', $verbose, $logConfigFile, 0 );
 
-if( !$parseOk ) {
+if( @ARGV ) {
+    $dir = shift @ARGV;
+}
+if( !$parseOk || @ARGV) {
     synopsisHelpQuit( 0 );
 }
 if( $help ) {
@@ -61,7 +63,7 @@ foreach my $dirWith ( @dirsWithPkgbuilds ) {
 
     my %found = ();
     foreach my $line( split /\n/, $out ) {
-        if( $line =~ m!^(.+)=(.+)$! ) { # ignore keys that don't have a value
+        if( $line =~ m!^([^=]+)=(.+)$! ) { # ignore keys that don't have a value
             if( $1 eq 'releasepage' ) {
                 $found{$1} = [ split( /\s/, $2 ) ];
             } else {
@@ -111,6 +113,7 @@ td, th {
    <thead>
     <tr>
      <th>Project name</th>
+     <th>#</th>
      <th>Package name</th>
      <th>UBOS has version</th>
      <th>Upstream version forked</th>
@@ -120,6 +123,7 @@ td, th {
    </thead>
 HTML
 
+my $i = 0;
 foreach my $projectName ( sort keys %$projects ) {
     $html .= "    <tbody>\n";
     foreach my $packageName ( sort keys %{$projects->{$projectName}} ) {
@@ -127,11 +131,25 @@ foreach my $projectName ( sort keys %$projects ) {
 
         $html .= "     <tr>\n";
         $html .= "      <td>$projectName</td>\n";
+        $html .= "      <td style=\"text-align: right\">$i</td>\n";
         $html .= "      <td>$packageName</td>\n";
-        $html .= "      <td>$packageData->{pkgver}</td>\n";
-        $html .= "      <td>$packageData->{pkgverforked}</td>\n";
-        $html .= "      <td>" . join( "<br>", map { "<a href='$_'>visit</a>" } sort @{$packageData->{releasepage}} ) . "</td>\n";
+        if( exists( $packageData->{pkgver} )) {
+            $html .= "      <td>$packageData->{pkgver}</td>\n";
+        } else {
+            $html .= "      <td>(no pkgver)</td>\n";
+        }
+        if( exists( $packageData->{pkgverforked} )) {
+            $html .= "      <td>$packageData->{pkgverforked}</td>\n";
+        } else {
+            $html .= "      <td>(no pkgverforked)</td>\n";
+        }
+        if( exists( $packageData->{releasepage} )) {
+            $html .= "      <td>" . join( "<br>", map { "<a href='$_'>visit</a>" } sort @{$packageData->{releasepage}} ) . "</td>\n";
+        } else {
+            $html .= "      <td>(no releasepage)</td>\n";
+        }
         $html .= "     </tr>\n";
+        ++$i;
     }
     $html .= "    </tbody>\n";
 }
@@ -164,7 +182,7 @@ Generate an HTML page that has links to all upstream packages' release pages, an
 END
     }
     print "Synopsis:\n";
-    print "    $0 [--directory <dir>] [--out <outfile>]\n";
+    print "    $0 [<dir>] [--out <outfile>]\n";
     if( $long ) {
         print <<END;
     <dir> -- the root directory from which PKGBUILD files will be searched, defaults to the current directory
