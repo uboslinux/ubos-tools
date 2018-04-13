@@ -2,7 +2,7 @@ developer=https://aws.amazon.com/
 url=${developer}
 maintainer=http://indiecomputing.com/
 pkgname=$(basename $(pwd))
-pkgver=1.9.21
+pkgver=1.10.4
 pkgrel=1
 pkgdesc='The low-level, core functionality of boto 3'
 arch=('any')
@@ -11,7 +11,7 @@ releasepage=('https://github.com/boto/botocore/releases')
 depends=('python')
 makedepends=('python-setuptools')
 license=("custom:${pkgname}")
-sha512sums=('9752a64b044d168e92fb85b2268e3eefaa4d393a4a4ccab6f3be5782a237db3e4d5482de721a9c9960fe7c8867785032544b61a9639a5f1ac3c99e9d271dfae4')
+sha512sums=('d6fe98fcbd9540de2d53fc4e0f5305d9a03acaad89cbf6e98ea8ffa78ff4a2ec31b6ccef191b47f984bb5466d34bfa09c78876a9ca182922953723843d7f1754')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
