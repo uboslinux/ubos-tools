@@ -60,7 +60,7 @@ foreach my $d ( @dirs ) {
 
         if( $statusArg ) {
             my $msg = `cd $d; git status`;
-            if( $msg =~ m!(Your branch is.*commit\.)! ) {
+            if( $msg =~ m!(Your branch is.*commits?\.)!s ) {
                 $out .= "Sync status: ";
                 $out .= $1 . "\n";
                 $isImportant = 1;
