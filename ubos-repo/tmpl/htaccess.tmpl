@@ -2,13 +2,13 @@
 # Copyright (C) 2014 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
-RedirectMatch ^/$ http://ubos.net/
+RedirectMatch ^/$ https://ubos.net/
 
 AliasMatch ^${appconfig.context}/[a-zA-Z0-9_]+/images/$ ${package.codedir}/index.php
-Alias ${appconfig.contextorslash} /var/lib/ubos-repo/${appconfig.appconfigid}
+Alias      ${appconfig.contextorslash}                  /ubos/lib/ubos-repo/${appconfig.appconfigid}
 
 <Location ${appconfig.contextorslash}>
-    SetEnv DATADIR /var/lib/ubos-repo/${appconfig.appconfigid}
+    SetEnv DATADIR /ubos/lib/ubos-repo/${appconfig.appconfigid}
     SetEnv CONTEXT "${appconfig.context}"
 
     <IfModule php7_module>
@@ -20,7 +20,7 @@ Alias ${appconfig.contextorslash} /var/lib/ubos-repo/${appconfig.appconfigid}
     Require all granted
 </Directory>
 
-<Directory /var/lib/ubos-repo/${appconfig.appconfigid}>
+<Directory ${appconfig.datadir}>
     Require all granted
     Options +Indexes
 </Directory>

@@ -2,7 +2,7 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.12
+pkgver=0.13
 pkgrel=1
 pkgdesc="UBOS package repository"
 arch=('any')
@@ -12,21 +12,15 @@ depends=('rsync')
 
 package() {
 # Manifest
-    mkdir -p ${pkgdir}/var/lib/ubos/manifests
-    install -m0644 ${startdir}/ubos-manifest.json ${pkgdir}/var/lib/ubos/manifests/${pkgname}.json
+    install -D -m0644 ${startdir}/ubos-manifest.json ${pkgdir}/ubos/lib/ubos/manifests/${pkgname}.json
 
 # Data
-    mkdir -p $pkgdir/var/lib/${pkgname}
+    mkdir -p ${pkgdir}/ubos/lib/${pkgname}
 
 # Code
-    mkdir -p ${pkgdir}/usr/share/${pkgname}
-    install -m0755 ${startdir}/index.php ${pkgdir}/usr/share/${pkgname}/
-
-    mkdir -p ${pkgdir}/usr/share/${pkgname}/bin
-    install -m0755 ${startdir}/bin/provision.pl ${pkgdir}/usr/share/${pkgname}/bin/
-    install -m0755 ${startdir}/bin/safe-rsync.pl ${pkgdir}/usr/share/${pkgname}/bin/
+    install -D -m0755 ${startdir}/index.php -t ${pkgdir}/ubos/share/${pkgname}/
+    install -D -m0755 ${startdir}/bin/*.pl -t ${pkgdir}/ubos/share/${pkgname}/bin/
 
 # Tmpl
-    mkdir -p ${pkgdir}/usr/share/${pkgname}/tmpl
-    install -m644 ${startdir}/tmpl/htaccess.tmpl ${pkgdir}/usr/share/${pkgname}/tmpl/
+    install -D -m644 ${startdir}/tmpl/htaccess.tmpl -t ${pkgdir}/ubos/share/${pkgname}/tmpl/
 }
