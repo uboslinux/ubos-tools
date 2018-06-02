@@ -1,0 +1,14 @@
+[Unit]
+Description=Install a product
+Wants=ubos-ready.service
+After=ubos-ready.service
+
+[Service]
+ExecStartPre=/usr/share/ubos-admin/bin/ubos-service-prestart ubos-product-install
+ExecStopPost=/usr/share/ubos-admin/bin/ubos-service-poststop ubos-product-install
+
+Type=oneshot
+ExecStart=/usr/share/ubos-product-install/bin/ubos-product-install
+
+[Install]
+WantedBy=multi-user.target
