@@ -3,6 +3,8 @@
 # Upload one or more locally built UBOS packages to a remote UBOS host
 # and install those packages there using ubos-admin update
 #
+# Copyright (C) 2014 and later, Indie Computing Corp. All rights reserved. License: see package.
+#
 
 use strict;
 use warnings;
