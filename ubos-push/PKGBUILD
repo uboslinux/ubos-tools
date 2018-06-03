@@ -6,7 +6,7 @@ pkgver=0.7
 pkgrel=1
 pkgdesc="Devops tools for remote UBOS hosts"
 arch=('any')
-license('AGPL3')
+license=('AGPL3')
 depends=('perl' 'openssh' 'ubos-perl-utils')
 options=('!strip')
 
