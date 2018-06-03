@@ -17,7 +17,7 @@ UBOS::Logging::initialize( 'ubos-appliance-install', undef, 0, '/etc/ubos/log-sy
 my $applianceJson = '/etc/ubos-appliance-install/appliance.json';
 my $shutdown      = 0;
 
-if( -e $productJson ) {
+if( -e $applianceJson ) {
     my $status = UBOS::Utils::myexec( 'ubos-install --config ' . $applianceJson );
     if( $status == 0 ) {
         $shutdown = 1;
