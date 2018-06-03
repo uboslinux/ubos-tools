@@ -8,7 +8,7 @@ ExecStartPre=/usr/share/ubos-admin/bin/ubos-service-prestart ubos-appliance-inst
 ExecStopPost=/usr/share/ubos-admin/bin/ubos-service-poststop ubos-appliance-install
 
 Type=oneshot
-ExecStart=/usr/share/ubos-appliance-install/bin/ubos-appliance-install
+ExecStart=/usr/bin/ubos-appliance-install
 
 [Install]
 WantedBy=multi-user.target
