@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+#
+# Install an appliance, if an appliance definition can be found. If successful installing,
+# shut down. If unsuccessful, or no appliance definition was found, stay up.
+#
+# Copyright (C) 2014 and later, Indie Computing Corp. All rights reserved. License: see package.
+#
+
+use strict;
+use warnings;
+
+use UBOS::Host;
+use UBOS::Logging;
+
+UBOS::Logging::initialize( 'ubos-appliance-install', undef, 0, '/etc/ubos/log-system.conf' );
+
+my $applianceJson = '/etc/ubos-appliance-install/appliance.json';
+my $shutdown      = 0;
+
+if( -e $productJson ) {
+    my $status = UBOS::Utils::myexec( 'ubos-install --config ' . $applianceJson );
+    if( $status == 0 ) {
+        $shutdown = 1;
+    }
+}
+
+if( $shutdown ) {
+    UBOS::Utils::myexec( "systemctl poweroff" );
+}
+
+1;
+

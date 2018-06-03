@@ -1,0 +1,14 @@
+[Unit]
+Description=Install UBOS for an appliance
+Wants=ubos-ready.service
+After=ubos-ready.service
+
+[Service]
+ExecStartPre=/usr/share/ubos-admin/bin/ubos-service-prestart ubos-appliance-install
+ExecStopPost=/usr/share/ubos-admin/bin/ubos-service-poststop ubos-appliance-install
+
+Type=oneshot
+ExecStart=/usr/share/ubos-appliance-install/bin/ubos-appliance-install
+
+[Install]
+WantedBy=multi-user.target
