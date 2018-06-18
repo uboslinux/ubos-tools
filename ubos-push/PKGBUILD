@@ -2,12 +2,12 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.7
+pkgver=0.8
 pkgrel=1
 pkgdesc="Devops tools for remote UBOS hosts"
 arch=('any')
 license=('AGPL3')
-depends=('perl' 'openssh' 'ubos-perl-utils')
+depends=('perl' 'openssh' 'ubos-perl-utils' 'rsync')
 options=('!strip')
 
 package() {
