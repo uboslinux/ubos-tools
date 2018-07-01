@@ -1,0 +1,14 @@
+developer=http://indiecomputing.com/
+url="https://github.com/uboslinux/tools"
+maintainer=$developer
+pkgname=$(basename $(pwd))
+pkgver=0.1
+pkgrel=1
+pkgdesc="Check whether package(s) in a directory have been updated since a certain timestamp"
+arch=( 'any' )
+license=('AGPL3')
+depends=('perl' 'git')
+
+package() {
+    install -D -m0755 ${startdir}/package-updated-since -t ${pkgdir/}usr/bin/
+}
