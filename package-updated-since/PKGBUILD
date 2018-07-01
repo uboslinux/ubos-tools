@@ -10,5 +10,5 @@ license=('AGPL3')
 depends=('perl' 'git')
 
 package() {
-    install -D -m0755 ${startdir}/package-updated-since -t ${pkgdir/}usr/bin/
+    install -D -m0755 ${startdir}/package-updated-since -t ${pkgdir}/usr/bin/
 }
