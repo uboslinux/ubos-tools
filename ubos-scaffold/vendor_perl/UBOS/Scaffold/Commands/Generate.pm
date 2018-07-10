@@ -25,13 +25,15 @@ sub run {
     my $logConfigFile = undef;
     my $directory     = undef;
     my $scaffoldName  = undef;
+    my $jsonFile          = undef;
 
     my $parseOk = GetOptionsFromArray(
             \@args,
-            'verbose+'       => \$verbose,
-            'logConfig=s'    => \$logConfigFile,
-            'directory=s'    => \$directory,
-            'scaffold=s'     => \$scaffoldName );
+            'verbose+'    => \$verbose,
+            'logConfig=s' => \$logConfigFile,
+            'directory=s' => \$directory,
+            'scaffold=s'  => \$scaffoldName,
+            'json=s'      => \$jsonFile );
 
     if(    !$parseOk
         || @args
@@ -42,30 +44,37 @@ sub run {
 
     UBOS::Logging::initialize( 'ubos-scaffold', 'generate', $verbose, $logConfigFile );
 
-    if( $directory ) {
-        UBOS::Scaffold::ScaffoldUtils::ensurePackageDirectory( $directory );
-    }
-
     my $scaffold = UBOS::Scaffold::ScaffoldUtils::findScaffold( $scaffoldName );
     unless( $scaffold ) {
         fatal( 'Cannot find scaffold', $scaffoldName );
     }
 
-    my $pars      = UBOS::Utils::invokeMethod( $scaffold . '::pars' );
-    my $parValues = {};
+    my $instance = UBOS::Utils::invokeMethod( $scaffold . '->new' );
 
-    print STDERR "To parameterize things properly, we need to know a few things.\n";
+    my $parValues;
+    if( $jsonFile ) {
+        $parValues = UBOS::Utils::readJsonFromFile( $jsonFile );
+        unless( $parValues ) {
+            fatal( $@ );
+        }
 
-    if( $pars ) {
-        foreach my $parPair ( @$pars ) {
-            my $value = UBOS::Scaffold::ScaffoldUtils::ask( $parPair->{description} );
-            $parValues->{$parPair->{name}} = $value;
+    } else {
+        my $pars = $instance->pars();
+
+        print STDERR "To parameterize things properly, we need to know a few things.\n";
+
+        $parValues = {};
+        if( $pars ) {
+            foreach my $key ( sort { ( $pars->{$a}->{index} || $a ) <=> ( $pars->{$b}->{index} || $b ) } keys %$pars ) {
+                my $value = UBOS::Scaffold::ScaffoldUtils::ask( $pars->{$key}->{description} );
+                $parValues->{$key} = $value;
+            }
         }
     }
 
-    print STDERR "Generating UBOS files for package $parValues->{name} using scaffold $scaffoldName\n";
+    print STDERR "Generating UBOS files for package " . $parValues->{name} . " using scaffold $scaffoldName\n";
 
-    UBOS::Utils::invokeMethod( $scaffold . '::generate', $parValues, $directory );
+    $instance->generate( $parValues, $directory );
 
     print STDERR "Done.\n";
 
