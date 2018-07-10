@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+#
+# For the given directory hierarchy, determine whether any packages
+# contained in it (look for PKGBUILD) have been updated since the
+# given time.
+#
+# Copyright (C) 2018 and later, Indie Computing Corp. All rights reserved. License: see package.
+#
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use UBOS::Logging;
+use UBOS::Utils;
+
+my $since;
+my $help;
+my $verbose;
+
+GetOptions( 'since=s'  => \$since,
+            'help'     => \$help,
+            'verbose+' => \$verbose );
+
+if( $help ) {
+    synopsisHelpQuit();
+}
+if( !$since || @ARGV == 0 ) {
+    synopsisHelpQuit();
+}
+
+UBOS::Logging::initialize( 'package-updated-since', undef, $verbose, undef );
+
+my @dirs = @ARGV;
+
+my $cmd  = 'for f in $(find ' . join( ' ', @dirs ) . ' -name PKGBUILD); do ';
+$cmd    .=     '( dir=$(dirname $f); cd $dir; [[ 0 == $(git log --since "' . $since . '" . | wc -l ) ]] || echo $dir );';
+$cmd    .= 'done';
+
+UBOS::Utils::myexec( $cmd );
+
+
+#####
+# Print synopsis or help
+sub synopsisHelpQuit {
+
+    print <<END;
+package-updated-since [--verbose] --since <timestamp> <dir>...
+    where:
+    <timestamp> : the cutoff time, in a format that "git log" understands
+    <dir>       : one or more directories in which to recursively look
+                  for PKGBUILD files.
+    --verbose   : Display extra output. May be repeated for even more output.
+END
+
+    exit 0;
+}
+
+1;
