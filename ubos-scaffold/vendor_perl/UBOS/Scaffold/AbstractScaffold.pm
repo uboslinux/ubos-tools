@@ -137,8 +137,7 @@ sub pkgbuildContent {
         $prepareFunction = $self->indent( $prepareFunction );
         $ret .= <<END
 prepare() {
-$prepareFunction
-}
+$prepareFunction}
 
 END
     }
@@ -146,8 +145,7 @@ END
         $buildFunction = $self->indent( $buildFunction );
         $ret .= <<END
 build() {
-$buildFunction
-}
+$buildFunction}
 
 END
     }
@@ -155,8 +153,7 @@ END
         $packageFunction = $self->indent( $packageFunction );
         $ret .= <<END
 package() {
-$packageFunction
-}
+$packageFunction}
 
 END
     }
@@ -206,7 +203,7 @@ sub pkgbuildContentVars {
         'pkgname'    => '$(basename $(pwd))',
         'pkgver'     => '0.1',
         'pkgrel'     => '1',
-        'pkgdesc'    => $pars->{description},
+        'pkgdesc'    => '"' . $pars->{description} . '"',
         'arch'       => '("any")',
         'license'    => '("' . $pars->{license} . '")',
         'depends'    => <<END,

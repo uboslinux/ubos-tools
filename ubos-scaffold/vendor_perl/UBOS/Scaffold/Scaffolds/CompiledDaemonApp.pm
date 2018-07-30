@@ -142,6 +142,7 @@ ProxyPassReverseCookieDomain 127.0.0.1 \${site.hostname}
 
 ProxyPreserveHost On
 
+RequestHeader set X-Forwarded-Host "\${site.hostname}"
 RequestHeader set X-Forwarded-Proto "\${site.protocol}"
 RequestHeader set X-Frame-Options SAMEORIGIN
 

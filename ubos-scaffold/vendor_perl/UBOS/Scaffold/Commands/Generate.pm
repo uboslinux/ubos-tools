@@ -72,7 +72,11 @@ sub run {
         }
     }
 
-    print STDERR "Generating UBOS files for package " . $parValues->{name} . " using scaffold $scaffoldName\n";
+    unless( $directory ) {
+        $directory = $parValues->{name};
+    }
+
+    print STDERR "Generating UBOS files for package " . $parValues->{name} . " using scaffold $scaffoldName into directory $directory\n";
 
     $instance->generate( $parValues, $directory );
 

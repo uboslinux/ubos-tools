@@ -59,7 +59,7 @@ sub manifestContent {
                 {
                     "type"   : "directorytree",
                     "name"   : "wp-content/themes/$name",
-                    "source" : "$pname",
+                    "source" : "$name",
                 }
             ],
             "installers" : [
