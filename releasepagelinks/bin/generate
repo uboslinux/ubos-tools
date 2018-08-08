@@ -117,7 +117,6 @@ td, th {
      <th>Package name</th>
      <th>UBOS has version</th>
      <th>Upstream version forked</th>
-     <th>
      <th>Release page upstream</th>
     </tr>
    </thead>
