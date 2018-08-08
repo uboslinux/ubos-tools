@@ -14,7 +14,7 @@ use Cwd;
 use UBOS::Logging;
 use UBOS::Utils;
 
-##
+####
 # Find available commands.
 # return: hash of command name to full package name
 sub findCommands {
@@ -23,7 +23,7 @@ sub findCommands {
     return $ret;
 }
 
-##
+####
 # Find available test scaffolds.
 # return: hash of scaffold name to full package name
 sub findScaffolds {
@@ -31,7 +31,7 @@ sub findScaffolds {
     return $ret;
 }
 
-##
+####
 # Find a named scaffold
 # $name: name of the scaffold
 # return: scaffold package, or undef
@@ -44,7 +44,7 @@ sub findScaffold {
     return $ret;
 }
 
-##
+####
 # Ask the user for parameter values.
 # $description: the description of the parameter
 sub ask {
@@ -70,40 +70,6 @@ sub ask {
     }
 
     return $userinput;
-}
-
-##
-# Copy the default icons
-# $dir: destination directory
-sub copyIcons {
-    my $dir = shift;
-
-    for my $f ( '72x72.png', '144x144.png' ) {
-        UBOS::Utils::myexec( "cp '/usr/share/ubos-scaffold/default-appicons/$f' '$dir'" );
-    }
-    1;
-}
-
-##
-# Ensure that this package directory exists and isn't already used
-# $dir: the package directory
-# return: 0: ok. 1: directory had to be created.
-sub ensurePackageDirectory {
-    my $dir = shift;
-
-    my $ret = 0;
-    if( -d $dir ) {
-        foreach my $f ( qw( PKGBUILD ubos-manifest.json )) {
-            if( -e "$dir/$f" ) {
-                fatal( "$dir/$f exists: refusing to proceed\n" );
-            }
-        }
-    } elsif( UBOS::Utils::mkdir( $dir )) {
-        $ret = 1;
-    } else {
-        fatal( 'Cannot find or create', $dir );
-    }
-    return $ret;
 }
 
 1;
