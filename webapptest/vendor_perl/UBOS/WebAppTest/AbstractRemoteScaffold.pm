@@ -31,7 +31,9 @@ sub backupToLocal {
     my $cmd = 'F=$(mktemp webapptest-XXXXX.ubos-backup)';
     $cmd .= ' sudo ubos-admin backup';
     $cmd .= ( ' --verbose' x $self->{verbose} );
-    $cmd .= ' --siteid ' . $site->{siteid} . ' --force --out $F;';
+    $cmd .= ' --siteid ' . $site->{siteid};
+    $cmd .= ' --force'
+    $cmd .= ' --backuptofile $F;';
     $cmd .= ' echo $F';
 
     my $remoteFile;

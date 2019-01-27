@@ -28,7 +28,7 @@ sub setup {
     $self->SUPER::setup( $options );
 
     my $impersonateDepot = delete $options->{impersonatedepot};
-    
+
     if( defined( $options ) && %$options ) {
         fatal( 'Unknown option(s) for Scaffold here:', join( ', ', keys %$options ));
     }
@@ -52,7 +52,8 @@ sub backupToLocal {
 
     my $cmd = 'sudo ubos-admin backup';
     $cmd .= ( ' --verbose' x $self->{verbose} );
-    $cmd .= ' --siteid ' . $site->{siteid} . ' --out ' . $filename;
+    $cmd .= ' --siteid ' . $site->{siteid};
+    $cmd .= ' --backuptofile ' . $filename;
 
     my $exit = UBOS::Utils::myexec( $cmd );
     if( !$exit ) {
@@ -62,7 +63,7 @@ sub backupToLocal {
         error( 'Backup failed, exit', $exit );
         return 0;
     }
-} 
+}
 
 ##
 # Restore a site from a local file on the local machine
@@ -95,7 +96,7 @@ sub restoreFromLocal {
     $cmd .= ' --in '         . $filename;
 
     $exit = UBOS::Utils::myexec( $cmd );
-    
+
     if( !$exit ) {
         return 1;
     } else {
