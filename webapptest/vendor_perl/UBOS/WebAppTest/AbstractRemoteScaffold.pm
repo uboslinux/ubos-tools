@@ -32,7 +32,7 @@ sub backupToLocal {
     $cmd .= ' sudo ubos-admin backup';
     $cmd .= ( ' --verbose' x $self->{verbose} );
     $cmd .= ' --siteid ' . $site->{siteid};
-    $cmd .= ' --force'
+    $cmd .= ' --force';
     $cmd .= ' --backuptofile $F;';
     $cmd .= ' echo $F';
 
