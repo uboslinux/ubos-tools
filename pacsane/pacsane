@@ -155,8 +155,8 @@ foreach my $dbFile ( @dbFiles ) {
         $foundPackages->{$packagePlusVersion} = $pkgInfo;
     }
 
-    info( 'Packages mentioned in package database:', $definedPackages );
-    info( 'Packages actually found in filesystem:', $foundPackages );
+    trace( 'Number packages mentioned in package database:', 0 + ( keys %$definedPackages ));
+    trace( 'Number packages actually found in filesystem:',  0 + ( keys %$foundPackages ));
 
     # Now let's do some matching. First: make sure all package files exist that are referenced in
     # the package database, and are consistent
@@ -283,10 +283,10 @@ sub compareFoundDefined {
                             '(package database)' );
                 }
             } else {
-                info( 'Package', "$nameVersion:", 'expected key', $definedKey, 'in package database, but not found' );
+                warning( 'Package', "$nameVersion:", 'expected key', $definedKey, 'in package database, but not found' );
             }
         } else {
-            info( 'Package', "$nameVersion:", 'expected key', $foundKey, 'in package metadata, but not found' );
+            warning( 'Package', "$nameVersion:", 'expected key', $foundKey, 'in package metadata, but not found' );
         }
     }
 }
