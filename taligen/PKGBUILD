@@ -1,0 +1,21 @@
+developer=http://indiecomputing.com/
+url=${developer}
+maintainer=http://indiecomputing.com/
+pkgname=$(basename $(pwd))
+pkgver=0.8
+pkgrel=1
+pkgdesc="Generate task lists which can be worked down using taliwodo"
+arch=('any')
+license=("GPL")
+source=("git+https://github.com/taligen/taligen.git#tag=v${pkgver}")
+options=('!strip')
+depends=('python')
+sha512sums=('SKIP')
+
+package() {
+# Code
+    cd ${srcdir}/taligen
+
+    python setup.py install --root="${pkgdir}/"
+    install -D -m755 bin/taligen ${pkgdir}/usr/bin/taligen
+}
