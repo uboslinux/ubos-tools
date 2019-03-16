@@ -169,7 +169,7 @@ foreach my $dbFile ( @dbFiles ) {
             if( $foundPackageInfo ) {
                 compareFoundDefined( $definedPackageNameVersion, $foundPackageInfo, $definedPackageInfo );
             } else {
-                error( 'Package', $definedPackageNameVersion, 'is listed in package database, but package file does not exist. Repository broken.' );
+                error( 'Package listed in package database, but package file does not exist. Repository broken:', $definedPackageNameVersion );
             }
         }
     }
@@ -195,9 +195,9 @@ foreach my $dbFile ( @dbFiles ) {
 
         } elsif( $verbose ) {
             if( $obsoleteOnly ) {
-                info( '# Package', $foundPackageNameVersion, 'found as expected' );
+                trace( '# Found as expected:', $foundPackageNameVersion );
             } else {
-                info( 'Package', $foundPackageNameVersion, 'found as expected' );
+                trace( 'Found as expected:', $foundPackageNameVersion );
             }
         }
     }
@@ -210,7 +210,7 @@ foreach my $dbFile ( @dbFiles ) {
             if( $obsoleteOnly ) {
                 print $notInDbPackageVersion;
             } else {
-                push @infoMsg, 'Package', $notInDbPackageVersion, 'not referenced, but alternate version in database:';
+                push @infoMsg, 'Package not referenced, but alternate version in database:', $notInDbPackageVersion, '=>' ;
             }
 
             foreach my $definedPackageVersion ( keys %$definedPackages ) {
@@ -283,10 +283,10 @@ sub compareFoundDefined {
                             '(package database)' );
                 }
             } else {
-                warning( 'Package', "$nameVersion:", 'expected key', $definedKey, 'in package database, but not found' );
+                warning( 'Package expected key in package database, but not found:', $nameVersion, ':', $definedKey );
             }
         } else {
-            warning( 'Package', "$nameVersion:", 'expected key', $foundKey, 'in package metadata, but not found' );
+            warning( 'Package expected key in package metadata, but not found:', $nameVersion, ':', $foundKey );
         }
     }
 }
