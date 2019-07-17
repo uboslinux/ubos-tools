@@ -85,7 +85,6 @@ sub new {
 
         $self->{appConfigJson} = {
             'context'     => $context,
-            'appconfigid' =>  'a' . UBOS::Utils::randomHex( 40 ),
             'appid'       => $test->appPackageName()
         };
         if( $test->accessoryPackageNames() ) {
@@ -119,7 +118,7 @@ sub new {
         };
 
         $self->{siteJson} = {
-                'siteid'     =>  's' . UBOS::Utils::randomHex( 40 ),
+                'siteid'     =>  's' . UBOS::Utils::randomHex( 40 ), # Generate here so we know what it is
                 'hostname'   => $hostname,
                 'admin'      => $admin,
                 'appconfigs' => [ $self->{appConfigJson} ]

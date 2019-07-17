@@ -68,7 +68,7 @@ sub deploy {
     my $jsonString = UBOS::Utils::writeJsonToString( $site );
     trace( 'Site JSON:', $jsonString );
 
-    my $cmd = 'sudo ubos-admin deploy --stdin';
+    my $cmd = 'sudo ubos-admin deploy --stdin --template';
     $cmd .= ( ' --verbose' x $self->{verbose} );
 
     my $exit = $self->invokeOnTarget( $cmd, $jsonString );
