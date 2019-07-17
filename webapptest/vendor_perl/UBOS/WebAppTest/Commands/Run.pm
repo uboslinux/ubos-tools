@@ -29,6 +29,7 @@ sub run {
     my $logConfigFile = undef;
     my @scaffoldOpts;
     my @testPlanOpts;
+    my $tlsSelfSigned = 0;
     my $tlsKeyFile;
     my $tlsCrtFile;
     my $tlsData = undef;
@@ -41,6 +42,7 @@ sub run {
             'logConfig=s'       => \$logConfigFile,
             'scaffold=s'        => \@scaffoldOpts,
             'testplan=s'        => \@testPlanOpts,
+            'tlsselfsigned'     => \$tlsSelfSigned,
             'tlskeyfile=s'      => \$tlsKeyFile,
             'tlscrtfile=s'      => \$tlsCrtFile );
 
@@ -79,6 +81,9 @@ sub run {
         if( !$tlsCrtFile && exists( $configData->{tlscrtfile} )) {
             $tlsCrtFile = $configData->{tlscrtfile};
         }
+        if( !$tlsSelfSigned && exists( $configData->{tlsselfsigned} )) {
+            $tlsSelfSigned = $configData->{tlsselfsigned};
+        }
     }
 
     my $tlsCount = 0;
@@ -90,8 +95,17 @@ sub run {
             }
         }
     }
-    if( $tlsCount && $tlsCount != 2 ) {
-        fatal( 'If providing TLS options, must provide both options: tlskeyfile, tlscrtfile' );
+    if( $tlsCount ) {
+        if( $tlsCount != 2 ) {
+            fatal( 'If providing TLS options, must provide both options: tlskeyfile, tlscrtfile' );
+        }
+        if( $tlsSelfSigned ) {
+            fatal( 'Either specify tlsselfsigned, or tlskeyfile and tlscrtfile, not both' );
+        }
+    }
+
+    if( $tlsSelfSigned ) {
+        $tlsData = {};
     }
     if( $tlsKeyFile ) {
         $tlsData->{key} = UBOS::Utils::slurpFile( $tlsKeyFile );
@@ -288,7 +302,7 @@ sub run {
 sub synopsisHelp {
     return {
         <<SSS => <<HHH,
-    [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold>] [--testplan <testplan>] [--tlskeyfile <tlskeyfile> --tlscrtfile <tlscrtfile>] <apptest>...
+    [--verbose | --logConfig <file>] [--interactive] [--scaffold <scaffold>] [--testplan <testplan>] [--tlskeyfile <tlskeyfile> --tlscrtfile <tlscrtfile> | --tlsselfsigned ] <apptest>...
 SSS
     Run the test apptest.
     --interactive: stop at important points and wait for user input
