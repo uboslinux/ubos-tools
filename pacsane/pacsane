@@ -246,14 +246,16 @@ sub _unpackTar {
     my $packageFile   = shift;
     my $tarArgs       = shift;
 
-    my $cmd = 'tar -x';
+    my $cmd;
     if( $packageFile =~ m!\.xz$! ) {
-        $cmd .= ' -J';
+        $cmd = "tar -x -J -C '$packageTarDir' -f '$packageFile'";
+
+    } elsif( $packageFile =~ m!\.lz4$! ) {
+        $cmd = "lz4 -d '$packageFile' | tar -x -C '$packageTarDir' -f '$packageFile'";
+
     } else {
-        $cmd .= ' -z';
+        $cmd = "tar -x -z -C '$packageTarDir' -f '$packageFile'";
     }
-    $cmd .= " -C '$packageTarDir'";
-    $cmd .= " -f '$packageFile'";
 
     if( $tarArgs ) {
         $cmd .= " $tarArgs";
