@@ -251,7 +251,7 @@ sub _unpackTar {
         $cmd = "tar -x -J -C '$packageTarDir' -f '$packageFile'";
 
     } elsif( $packageFile =~ m!\.lz4$! ) {
-        $cmd = "lz4 -d '$packageFile' | tar -x -C '$packageTarDir' -f -";
+        $cmd = "lz4 -d '$packageFile' --stdout | tar -x -C '$packageTarDir' -f -";
 
     } else {
         $cmd = "tar -x -z -C '$packageTarDir' -f '$packageFile'";
