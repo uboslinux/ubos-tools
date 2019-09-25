@@ -323,6 +323,10 @@ sub waitUntilTargetReady {
             # need to obtain IPv6 address that's not link-local, see
             # http://superuser.com/questions/236993/how-to-ssh-to-a-ipv6-ubuntu-in-a-lan#comment-1309716
 
+            # Try to set the host0 link to up -- some recent systemd version combinations
+            # keep it down, causing our upgrade tests to fail
+            UBOS::Utils::myexec( "sudo machinectl shell '$name' /bin/ip link set host0 up" );
+
         } else {
             if( $out =~ m!degraded! ) {
                 $ret = 1;
