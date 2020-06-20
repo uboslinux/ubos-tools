@@ -46,11 +46,14 @@ if( $identityFile ) {
 }
 $rsyncCmd .= '"';
 
-my $wd = '/var/tmp';
+my $wd = '/ubos/tmp';
 my $out;
 
 # We are trying to reduce the number of round-trips ...
-my $cmd = "( pacman -Qi rsync > /dev/null 2>&1 || sudo pacman -S --noconfirm rsync ) > /dev/null && mktemp --directory $wd/ubos-push-XXX";
+my $cmd = "( pacman -Qi rsync > /dev/null 2>&1 || sudo pacman -S --noconfirm rsync ) > /dev/null";
+$cmd .= " && ( [ -d $wd ] || mkdir -p $wd )";
+$cmd .= " && mktemp --directory $wd/ubos-push-XXX";
+
 if( UBOS::Utils::myexec( $sshCmd, $cmd, \$out )) {
     fatal( 'Cannot prepare destination host', $host );
 }
