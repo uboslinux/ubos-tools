@@ -67,7 +67,7 @@ for name in packagesInTree :
 fmt = '%-' + str(maxName) + 's %-12s %-12s'
 print( fmt % ( 'package', 'treeVersion', 'repoVersion' ))
 
-for ( name, treeVersion ) in packagesInTree.items() :
+for ( name, treeVersion ) in sorted( packagesInTree.items()) :
 
     cmd = 'pacman -Si %s' % name
     res = ubos.utils.myexec( cmd, None, True, True )
