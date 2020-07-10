@@ -25,7 +25,7 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
 for packageDir in packageDirs :
     cmd = 'cd %s' % packageDir
-    cmd += ' && bash -c ". PKGBUILD; echo pkgname=\\$pkgname; echo pkgver=\\$pkgver"'
+    cmd += ' && bash -c ". PKGBUILD; echo pkgname=\\$pkgname; echo pkgver=\\$pkgver; echo pkgrel=\\$pkgrel"'
 
     res = ubos.utils.myexec( cmd, None, True, None )
     res = res[1].decode('utf-8') 
@@ -42,14 +42,23 @@ for packageDir in packageDirs :
     else :
         version = None
 
+    m = re.search( r'pkgrel=(.*)', res, re.MULTILINE )
+    if m:
+        rel = m.group(1)
+    else :
+        rel = None
+
     if name is None :
         print( 'WARNING: pkgname not found in %s' % packageDir )
 
     if version is None:
         print( 'WARNING: pkgver not found in %s' % packageDir )
 
-    if name is not None and version is not None :
-        packagesInTree[name] = version
+    if rel is None:
+        print( 'WARNING: pkgrel not found in %s' % packageDir )
+
+    if name is not None and version is not None and rel is not None:
+        packagesInTree[name] = '%s-%s' % ( version, rel )
 
 maxName = 0
 for name in packagesInTree :
