@@ -1,0 +1,76 @@
+#!/usr/bin/python
+#
+# From the current directory, looks for all PKGBUILD files.
+# For each, determines the name and version of the to-be-built package
+# Then determines whether this package is in the repos, and in which
+# version. Provides summary.
+#
+# Copyright (C) 2020 and later, Indie Computing Corp. All rights reserved. License: see package.
+
+
+import os
+import re
+import ubos.utils
+
+rootDir = '.'
+packageDirs = []
+packagesInTree = {}
+
+for dirName, subdirList, fileList in os.walk(rootDir):
+    if dirName.endswith( '/.git' ) or '/.git/' in dirName:
+        continue
+
+    if 'PKGBUILD' in fileList :
+        packageDirs.append( dirName )
+
+for packageDir in packageDirs :
+    cmd = 'cd %s' % packageDir
+    cmd += ' && bash -c ". PKGBUILD; echo pkgname=\\$pkgname; echo pkgver=\\$pkgver"'
+
+    res = ubos.utils.myexec( cmd, None, True, None )
+    res = res[1].decode('utf-8') 
+
+    m = re.search( r'pkgname=(.*)', res, re.MULTILINE )
+    if m:
+        name = m.group(1)
+    else :
+        name = None
+
+    m = re.search( r'pkgver=(.*)', res, re.MULTILINE )
+    if m:
+        version = m.group(1)
+    else :
+        version = None
+
+    if name is None :
+        print( 'WARNING: pkgname not found in %s' % packageDir )
+
+    if version is None:
+        print( 'WARNING: pkgver not found in %s' % packageDir )
+
+    if name is not None and version is not None :
+        packagesInTree[name] = version
+
+maxName = 0
+for name in packagesInTree :
+    maxName = max( maxName, len(name))
+
+fmt = '%-' + str(maxName) + 's %-12s %-12s'
+print( fmt % ( 'package', 'treeVersion', 'repoVersion' ))
+
+for ( name, treeVersion ) in packagesInTree.items() :
+
+    cmd = 'pacman -Si %s' % name
+    res = ubos.utils.myexec( cmd, None, True, True )
+
+    repoVersion = None
+    if res[0] == 0 :
+        # Not found
+        res = res[1].decode('utf-8')
+
+        m = re.search( r'Version\s*:\s*(.*)$', res, re.MULTILINE )
+        if m :
+            repoVersion = m.group(1)
+
+
+    print( fmt % ( name, treeVersion if treeVersion else '--', repoVersion if repoVersion else '--' ) )
