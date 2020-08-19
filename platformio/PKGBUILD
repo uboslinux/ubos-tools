@@ -29,7 +29,7 @@ optdepends=('python-click-completion: for shell completions'
            'python-shellingham: for shell completions')
 conflicts=('platformio-git')
 source=("https://github.com/platformio/platformio-core/archive/v${pkgver}.tar.gz")
-sha512sums=('1fb3dcdf31b71896eeaa04cd113135274ef630219ab4f692a6bde7b3ca98cc70')
+sha512sums=('278bcde8ada62f5847665d333821f85bdb04df8fe376d845ebe0d197f80f5b5dc599126802c0e19dff32f139afafbe36187bb952c5c85b7c3fb6c14649691b4a')
 
 releasepage=(
     'https://aur.archlinux.org/packages/platformio/'
