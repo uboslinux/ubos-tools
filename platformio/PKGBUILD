@@ -19,7 +19,6 @@ depends=('python-setuptools'
          'python-bottle'
          'python-click'
          'python-colorama'
-         'python-lockfile'
          'python-pyserial>=3.4' #https://github.com/platformio/platformio-core/commit/a37eb9868f3b20e982d0c3cd1a742fcb8ab60efc
          'python-requests'
          'python-semantic-version'
@@ -36,7 +35,6 @@ releasepage=(
     'https://aur.archlinux.org/packages/platformio/'
 )
 pkgverforked=('5.1.0-2')
-
 
 package() {
     cd "$srcdir/platformio-core-$pkgver"
