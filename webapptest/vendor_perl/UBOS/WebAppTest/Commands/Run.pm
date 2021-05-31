@@ -273,11 +273,11 @@ sub run {
                     my $status = $testPlan->run( $scaffold, $interactive, $verbose );
                     $ret &= $status;
 
-                    unless( $status ) {
-                        error( 'Test', $appTest->name, 'failed.' );
-
-                    } elsif( $verbose > 0 ) {
+                    if( $status ) {
                         print "Test passed.\n";
+
+                    } else {
+                        error( 'Test', $appTest->name, 'failed.' );
                     }
                 }
             }
