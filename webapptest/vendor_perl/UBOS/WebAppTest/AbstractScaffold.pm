@@ -395,6 +395,7 @@ CMD
     $cmd .= <<'CMD';
 
 UBOS::Utils::myexec( "ubos-admin update --pacmanConfOnly" );
+UBOS::Utils::myexec( "pacman -Sy" );
 
 1;
 CMD
