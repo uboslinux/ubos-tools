@@ -10,7 +10,7 @@ use warnings;
 
 package UBOS::WebAppTest::AbstractScaffold;
 
-use fields qw( isOk verbose );
+use fields qw( isOk verbose noKeyRefresh );
 use Socket;
 use UBOS::Logging;
 use UBOS::Utils;
@@ -32,6 +32,7 @@ sub setup {
     } else {
         $self->{verbose} = 0;
     }
+    $self->{noKeyRefresh} = 1; # hard-coded for now, change only if needed
 
     return $self;
 }
@@ -96,6 +97,7 @@ sub update {
     my $self = shift;
 
     my $cmd = 'sudo ubos-admin update';
+    $cmd .= $self->{noKeyRefresh} ? ' --nokeyrefresh' : '';
     $cmd .= ( ' --verbose' x $self->{verbose} );
 
     my $exit = $self->invokeOnTarget( $cmd );
@@ -115,6 +117,7 @@ sub switchChannelUpdate {
 
     unless( $cmd ) {
         $cmd = 'sudo ubos-admin update';
+        $cmd .= $self->{noKeyRefresh} ? ' --nokeyrefresh' : '';
         $cmd .= ( ' --verbose' x $verbose );
     }
 

@@ -238,7 +238,10 @@ sub setup {
         $self->{isOk} = 1;
 
         $self->{isOk} &= $self->handleImpersonateDepot( $impersonateDepot );
-        $self->{isOk} &= ( $self->invokeOnTarget( "sudo ubos-admin update" . ( ' --verbose' x $self->{verbose} )) == 0 );
+        $self->{isOk} &= ( 0 == $self->invokeOnTarget(
+                "sudo ubos-admin update"
+                . ( $self->{noKeyRefresh} ? ' --nokeyrefresh' : '' )
+                . ( ' --verbose' x $self->{verbose} )));
 
     } else {
         error( 'Virtual machine failed to start up in time' );
