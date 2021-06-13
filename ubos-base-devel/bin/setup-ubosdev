@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+#
+# Setup an account called ubosdev that can be used by a developer
+#
+# Copyright (C) 2021 and later, Indie Computing Corp. All rights reserved. License: see package.
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use UBOS::Logging;
+use UBOS::Utils;
+
+my $verbose       = 0;
+my $logConfigFile = undef;
+
+my $parseOk = GetOptions(
+        'verbose+'    => \$verbose,
+        'logConfig=s' => \$logConfigFile );
+
+if(    !$parseOk
+    || @ARGV )
+{
+    helpQuit();
+}
+UBOS::Logging::initialize( 'setup-ubosdev', undef, $verbose, $logConfigFile );
+
+my $accountName = 'ubosdev';
+my $accountHome = "/home/$accountName";
+
+my $errors = 0;
+
+if( UBOS::Utils::ensureOsUser( $accountName, undef, 'UBOS default developer user', $accountHome )) {
+
+    unless( UBOS::Utils::saveFile( "/etc/sudoers.d/$accountName", <<CONTENT, 0600, 'root', 'root' )) {
+$accountName ALL = NOPASSWD: ALL
+
+CONTENT
+
+        error( 'Failed to write sudoers file' );
+        ++$errors;
+    }
+} else {
+    fatal( 'Failed to ensure user:', $accountName );
+}
+
+exit $errors ? 1 : 0;
+
+#####
+
+sub helpQuit {
+    print STDERR <<END;
+Setup an account called ubosdev that can be used by a developer.
+
+Optional arguments:
+
+    --logConfig <file>
+        Use an alternate log configuration file for this command.
+
+    --verbose
+        Display extra output. May be repeated for even more output.
+END
+
+    exit 0;
+}
+
+1;

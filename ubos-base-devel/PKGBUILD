@@ -1,0 +1,36 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=$developer
+pkgname=$(basename $(pwd))
+pkgver=0.1
+pkgrel=1
+pkgdesc="Base development tools metapackage with some useful scripts"
+arch=('any')
+license=('AGPL3')
+depends=(
+    'ubos-tools'
+    'webapptest'
+    'git'
+    'binutils'
+    'fakeroot'
+    'file'
+    'findutils'
+    'gawk'
+    'grep'
+    'gzip'
+    'libtool'
+    'm4'
+    'make'
+    'patch'
+    'pkgconf'
+    'sed'
+    'which'
+    'zip'
+    'unzip'
+    'python'
+)
+options=('!strip')
+
+package() {
+    install -D -m755 ${startdir}/bin/* -t ${pkgdir}/usr/share/${pkgname}/bin
+}

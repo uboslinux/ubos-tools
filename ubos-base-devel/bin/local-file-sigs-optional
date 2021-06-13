@@ -1,0 +1,61 @@
+#!/usr/bin/perl
+#
+# Modify /etc/pacman.conf so signatures for local packages become optional
+#
+# Copyright (C) 2021 and later, Indie Computing Corp. All rights reserved. License: see package.
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use UBOS::Logging;
+use UBOS::Utils;
+
+my $verbose       = 0;
+my $logConfigFile = undef;
+
+my $parseOk = GetOptions(
+        'verbose+'    => \$verbose,
+        'logConfig=s' => \$logConfigFile );
+
+if(    !$parseOk
+    || @ARGV )
+{
+    helpQuit();
+}
+UBOS::Logging::initialize( 'local-file-sigs-optional', undef, $verbose, $logConfigFile );
+
+my $pacmanConf = '/etc/pacman.conf';
+my $content    = UBOS::Utils::slurpFile( $pacmanConf );
+
+unless( $content ) {
+    fatal( 'Failed to read:', $pacmanConf );
+}
+
+$content =~ s!^(LocalFileSigLevel\s*=\s*)(.*)$!$1Optional!m;
+
+unless( UBOS::Utils::saveFile( $pacmanConf, $content )) {
+    fatal( 'Failed to write:', $pacmanConf );
+}
+
+exit 0;
+
+#####
+
+sub helpQuit {
+    print STDERR <<END;
+Modifies /etc/pacman.conf so signatures for local packages become optional.
+
+Optional arguments:
+
+    --logConfig <file>
+        Use an alternate log configuration file for this command.
+
+    --verbose
+        Display extra output. May be repeated for even more output.
+END
+
+    exit 0;
+}
+
+1;
