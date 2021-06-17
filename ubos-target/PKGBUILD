@@ -1,0 +1,15 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=$developer
+pkgname=$(basename $(pwd))
+pkgver=0.1
+pkgrel=1
+pkgdesc="Instrumentation for UBOS systems that are used to test"
+arch=('any')
+license=('AGPL3')
+depends=()
+options=('!strip')
+
+package() {
+    install -D -m755 ${startdir}/bin/* -t ${pkgdir}/usr/share/${pkgname}/bin
+}
