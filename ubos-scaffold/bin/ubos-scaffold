@@ -1,114 +1,11 @@
-#!/usr/bin/perl
+#!/usr/bin/python
 #
-# Command that lists all available Scaffolds.
+# Primary executable.
 #
 # Copyright (C) 2017 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
-use strict;
-use warnings;
+import ubos.scaffold
 
-use UBOS::Logging;
-use UBOS::Scaffold::ScaffoldUtils;
-use UBOS::Utils;
+ubos.scaffold.run()
 
-my $commands = UBOS::Scaffold::ScaffoldUtils::findCommands();
-
-unless( @ARGV ) {
-    synopsisHelpQuit();
-}
-my $command = shift @ARGV;
-if( '--help' eq $command || '-h' eq $command ) {
-    synopsisHelpQuit( 1 );
-}
-
-my $commandPackage = $commands->{$command};
-if( $commandPackage ) {
-    foreach my $arg ( @ARGV ) {
-        if( '--help' eq $arg || '-h' eq $arg ) {
-            if( $commandPackage ) {
-                synopsisHelpQuit( 1, $command );
-            } else {
-                synopsisHelpQuit( 1 );
-            }
-        }
-    }
-
-    trace( 'Invoking ubos-scaffold command', $commandPackage );
-
-    my $result = UBOS::Utils::invokeMethod( $commandPackage . '::run', @ARGV );
-
-    exit !$result;
-
-} else {
-    synopsisHelpQuit();
-}
-
-#####
-# Print synopsis or help
-# $long: if true, print long help
-# $helpFor: if given, only provide help on this command
-sub synopsisHelpQuit {
-    my $long    = shift;
-    my $helpFor = shift;
-
-    unless( $helpFor ) {
-        if( $long ) {
-            print <<END;
-Generate a scaffold for a UBOS package.
-
-It may be invoked in the following ways:
-
-END
-        } else {
-            print "Synopsis:\n";
-        }
-    }
-
-    my $cmd = $0;
-    $cmd =~ s!.*/!!;
-
-    foreach my $command ( sort keys %$commands ) {
-        if( !$helpFor || $command eq $helpFor ) {
-            my $package      = $commands->{$command};
-            my $synopsisHelp = UBOS::Utils::invokeMethod( $package . '::synopsisHelp' ) || '';
-
-            foreach my $synopsis ( sort keys %$synopsisHelp ) {
-                my $help = $synopsisHelp->{$synopsis};
-
-                $synopsis =~ s!^\s+!!;
-                $synopsis =~ s!\s+$!!;
-
-                print "    $cmd $command" . ( $synopsis ? " $synopsis" : '' ) . "\n";
-                if( $long || $helpFor ) {
-                    $help =~ s!^\s+!!gm;
-                    $help =~ s!\s+$!!gm;
-                    $help =~ s!^!        !gm;
-
-                    print "$help\n\n";
-                }
-            }
-        }
-    }
-
-    unless( $helpFor ) {
-        print "    $cmd --help\n";
-        if( $long ) {
-            print <<END;
-        Display help text.
-
-END
-        }
-        print "    $cmd <command> [<args>...] --help\n";
-        if( $long ) {
-            print <<END;
-        Display help text for this command.
-
-END
-        }
-    }
-
-    exit 0;
-}
-
-1;

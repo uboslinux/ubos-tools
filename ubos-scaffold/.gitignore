@@ -1,1 +1,3 @@
 ubos-scaffold-*.pkg*
+__pycache__/
+*.egg-info/

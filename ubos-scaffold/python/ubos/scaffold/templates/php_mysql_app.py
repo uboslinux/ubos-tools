@@ -1,60 +1,43 @@
-#!/usr/bin/perl
-#
-# A scaffold for PHP app packages on UBOS.
+#!/usr/bin/python
 #
 # Copyright (C) 2017 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
-use strict;
-use warnings;
+from ubos.scaffold.template import AbstractTemplate
+import ubos.scaffold.utils
 
-package UBOS::Scaffold::Scaffolds::PhpApp;
 
-use base qw( UBOS::Scaffold::AbstractScaffold );
+class PhpMysqlApp( AbstractTemplate ):
 
-use UBOS::Scaffold::ScaffoldUtils;
+    def pkgbuildContentPackage( self, pars, directory ):
 
-####
-sub pkgbuildContentPackage {
-    my $self = shift;
-    my $pars = shift;
-    my $dir  = shift;
+        ret = super().pkgbuildContentPackage( pars, directory )
+        ret += """
+    # PHP
+    # mkdir -p -m0755 ${pkgdir}/ubos/share/${pkgname}/php
+    # cp -a ${startdir}/php ${pkgdir}/ubos/share/${pkgname}/php/
 
-    my $ret = $self->pkgbuildContentPackage( $pars, $dir );
-    $ret .= <<END;
-# PHP
-# install your PHP files here, such as:
-# mkdir -p -m0755 \${pkgdir}/ubos/share/\${pkgname}/php
-# cp -a \${startdir}/php \${pkgdir}/ubos/share/\${pkgname}/php/
+    # Webserver configuration
+    install -D -m0644 ${startdir}/tmpl/htaccess.tmpl ${pkgdir}/ubos/share/${pkgname}/tmpl/
+"""
+        return ret
 
-# Webserver configuration
-install -D -m0644 \${startdir}/tmpl/htaccess.tmpl \${pkgdir}/ubos/share/\${pkgname}/tmpl/
-END
-    return $ret;
-}
 
-####
-sub manifestContent {
-    my $self = shift;
-    my $pars = shift;
-    my $dir  = shift;
-
-    my $name = $pars->{name};
-
-    return <<END;
-{
+    def manifestContent( self, pars, directory ):
+        return f"""\
+{{
     "type" : "app",
 
-    "roles" : {
-        "apache2" : {
-            "defaultcontext" : "/$name",
+    "roles" : {{
+        "apache2" : {{
+            "defaultcontext" : "/{ pars['name'] }",
             "depends" : [
                 "php-apache",
                 "php-apcu",
                 "php-gd"
             ],
             "apache2modules" : [
-                "php7",
+                "php",
                 "rewrite",
                 "headers",
                 "env",
@@ -68,65 +51,61 @@ sub manifestContent {
                 "pdo_mysql"
             ],
             "appconfigitems" : [
-                {
+                {{
                     "type"            : "directorytree",
                     "names"           : [
                         "index.php",
                     ],
-                    "source"          : "$name/\$1",
+                    "source"          : "{ pars['name'] }/$1",
                     "uname"           : "root",
                     "gname"           : "root",
                     "filepermissions" : "preserve",
                     "dirpermissions"  : "preserve"
-                },
-                {
+                }},
+                {{
                     "type"            : "directory",
-                    "name"            : "\${appconfig.datadir}"
-                },
-                {
+                    "name"            : "${{appconfig.datadir}}"
+                }},
+                {{
                     "type"            : "directory",
-                    "name"            : "\${appconfig.datadir}/data",
+                    "name"            : "${{appconfig.datadir}}/data",
                     "retentionpolicy" : "keep",
                     "retentionbucket" : "datadir",
                     "dirpermissions"  : "0750",
                     "filepermissions" : "0640",
-                    "uname"           : "\${apache2.uname}",
-                    "gname"           : "\${apache2.gname}"
-                },
-                {
+                    "uname"           : "${{apache2.uname}}",
+                    "gname"           : "${{apache2.gname}}"
+                }},
+                {{
                     "type"            : "file",
-                    "name"            : "\${appconfig.apache2.appconfigfragmentfile}",
+                    "name"            : "${{appconfig.apache2.appconfigfragmentfile}}",
                     "template"        : "tmpl/htaccess.tmpl",
                     "templatelang"    : "varsubst"
-                }
+                }}
             ]
-        },
-        "mysql" : {
+        }},
+        "mysql" : {{
             "appconfigitems" : [
-                {
+                {{
                     "type"             : "database",
                     "name"             : "maindb",
                     "retentionpolicy"  : "keep",
                     "retentionbucket"  : "maindb",
                     "privileges"       : "all privileges"
-                }
+                }}
             ]
-        }
-    }
-}
-END
-}
+        }}
+    }}
+}}
+"""
 
-####
-sub htAccessTmplContent {
-    my $self = shift;
-    my $pars = shift;
-    my $dir  = shift;
 
-    return <<END;
-<Directory "\${appconfig.apache2.dir}">
-  <IfModule php7_module>
-    php_admin_value open_basedir        \${appconfig.apache2.dir}:/tmp/:/usr/share/:/dev:\${appconfig.datadir}
+    def htAccessTmplContent( self, pars, directory ):
+
+        return """\
+<Directory "${appconfig.apache2.dir}">
+  <IfModule php_module>
+    php_admin_value open_basedir        ${appconfig.apache2.dir}:/tmp/:/usr/share/:/dev:${appconfig.datadir}
     php_value       post_max_size       1G
     php_value       upload_max_filesize 1G
   </IfModule>
@@ -134,14 +113,16 @@ sub htAccessTmplContent {
 <IfModule mod_headers.c>
   Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains; preload"
 </IfModule>
-END
-}
+"""
 
-####
-# Return help text.
-# return: help text
-sub help {
-    return 'PHP web app';
-}
 
-1;
+def create() :
+    """
+    Factory function
+    """
+    return PhpMysqlApp()
+
+
+def help() :
+    return 'PHP web app with MySQL or Mariadb'
+
