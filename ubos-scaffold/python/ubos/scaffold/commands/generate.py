@@ -46,7 +46,8 @@ def run( args ) :
 
     print( f"Generating UBOS files for package { parValues['name'] } using template { args.template } into directory { args.directory }." )
 
-    instance.generate( parValues, args.directory )
+    directory = args.directory + '/' + parValues['name']
+    instance.generate( parValues, directory )
 
     print( "Done." )
 

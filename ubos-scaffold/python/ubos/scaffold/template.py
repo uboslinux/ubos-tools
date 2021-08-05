@@ -62,27 +62,16 @@ License of your package, such as GPL, Apache, or Proprietary\
         directory: the output directory
         """
 
-        packageName = pars['name']
-
-        if not directory :
-            directory = packageName
-
         self.ensurePackageDirectory( directory )
 
         pkgbuildContent = self.pkgbuildContent( pars, directory );
-        manifestContent = self.manifestContent( pars, directory );
 
         if pkgbuildContent:
             ubos.utils.saveFile( directory + "/PKGBUILD", pkgbuildContent.encode(), 0o644 )
 
-        if manifestContent:
-            ubos.utils.saveFile( directory + "/ubos-manifest.json", manifestContent.encode(), 0o644 )
-
         htAccessTmpl = self.htAccessTmplContent( pars, directory )
         if htAccessTmpl:
-            if not os.path.isdir( directory + "/tmpl" ) :
-                ubos.utils.mkdir( directory + "/tmpl" );
-
+            ubos.scaffold.utils.ensureDirectories( directory + "/tmpl" )
             ubos.utils.saveFile( directory + "/tmpl/htaccess.tmpl", htAccessTmpl.encode(), 0o644 )
 
         gitIgnore = self.gitIgnoreContent( pars, directory );
@@ -252,21 +241,7 @@ package() {{
         """
 
         return """\
-    # Manifest
-    install -D -m0644 ${startdir}/ubos-manifest.json ${pkgdir}/ubos/lib/ubos/manifests/${pkgname}.json
-
-    # Data directory
-    mkdir -p ${pkgdir}/ubos/lib/${pkgname}
-
-    # Config files
-    mkdir -p ${pkgdir}/etc/${pkgname}
-
-    # Template files
-    install -p -m0644 ${startdir}/tmpl/* -t ${pkgdir}/ubos/share/${pkgname}/tmpl/
-
-    # Command-line executables
-    # install your command-line executables here, such as:
-    # install -D -m0755 ${startdir}/my-script ${pkgdir}/usr/bin/
+    # Assemble your package in ${pkgdir}
 """
 
     def pkgbuildContentOther( self, pars, directory ):
@@ -318,6 +293,8 @@ package() {{
 
         return f"""\
 {name}-*.pkg*
+src/
+pkg/
 """
 
 
@@ -381,7 +358,11 @@ class AbstractAppOrAccessoryTemplate( AbstractTemplate ) :
 
         ret = super().generate( pars, directory );
 
-        ubos.utils.mkdir( directory + "/appicons" );
+        manifestContent = self.manifestContent( pars, directory );
+        if manifestContent:
+            ubos.utils.saveFile( directory + "/ubos-manifest.json", manifestContent.encode(), 0o644 )
+
+        ubos.scaffold.utils.ensureDirectories( directory + "/appicons" )
         self.copyIcons( pars, directory + "/appicons" )
 
         return ret
@@ -389,11 +370,23 @@ class AbstractAppOrAccessoryTemplate( AbstractTemplate ) :
 
     def pkgbuildContentPackage( self, pars, directory ):
 
-        ret = super().pkgbuildContentPackage( pars, directory );
+        return """\
+    # Manifest
+    install -D -m0644 ${startdir}/ubos-manifest.json ${pkgdir}/ubos/lib/ubos/manifests/${pkgname}.json
 
-        ret += """\
+    # Data directory
+    mkdir -p ${pkgdir}/ubos/lib/${pkgname}
+
+    # Config files
+    mkdir -p ${pkgdir}/etc/${pkgname}
+
+    # Template files
+    install -p -m0644 ${startdir}/tmpl/* -t ${pkgdir}/ubos/share/${pkgname}/tmpl/
+
+    # Command-line executables
+    # install your command-line executables here, such as:
+    # install -D -m0755 ${startdir}/my-script ${pkgdir}/usr/bin/
+
     # Icons
     install -D -m0644 ${startdir}/appicons/{72x72,144x144}.png -t ${pkgdir}/ubos/http/_appicons/\{pkgname}/\
 """
-
-        return ret

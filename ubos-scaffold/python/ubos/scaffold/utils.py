@@ -4,6 +4,7 @@
 #
 
 import importlib
+import os.path
 import ubos.logging
 import ubos.scaffold.commands
 import ubos.scaffold.templates
@@ -69,3 +70,10 @@ def ask( description ):
             break
 
     return userinput;
+
+
+def ensureDirectories( *dirs ):
+    for d in dirs:
+        if not os.path.isdir( d ) :
+            ubos.utils.mkdirDashP( d );
+
