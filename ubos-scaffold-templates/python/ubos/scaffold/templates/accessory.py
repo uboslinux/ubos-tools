@@ -3,11 +3,11 @@
 # Copyright (C) 2017 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
-from ubos.scaffold.template import AbstractTemplate
+from ubos.scaffold.template import AbstractAppOrAccessoryTemplate
 import ubos.scaffold.utils
 
 
-class Accessory( AbstractTemplate ):
+class Accessory( AbstractAppOrAccessoryTemplate ):
     def pars( self ) :
         ret = super().pars()
 

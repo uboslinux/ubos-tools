@@ -1,0 +1,25 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=$developer
+pkgname=$(basename $(pwd))
+pkgver=$(cat PKGVER)
+pkgrel=1
+pkgdesc="Templates for UBOS scaffold packages"
+arch=('any')
+license=('AGPL3')
+depends=(
+    'ubos-scaffold'
+)
+makedepends=(
+    'python-setuptools'
+)
+options=('!strip')
+
+package() {
+    [[ -d "${srcdir}/build" ]] || mkdir -p "${srcdir}/build"
+    cd "${srcdir}/build"
+
+    cp -a "${startdir}/python/"* .
+
+    python setup.py install --root=${pkgdir} --optimize=1
+}

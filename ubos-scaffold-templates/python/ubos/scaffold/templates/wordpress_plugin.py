@@ -3,11 +3,11 @@
 # Copyright (C) 2017 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
-from ubos.scaffold.template import AbstractTemplate
+from ubos.scaffold.template import AbstractAppOrAccessoryTemplate
 import ubos.scaffold.utils
 
 
-class WordpressTheme( AbstractTemplate ):
+class WordpressPlugin( AbstractAppOrAccessoryTemplate ):
 
     def pkgbuildContentPackage( self, pars, directory ):
         return """
@@ -22,6 +22,7 @@ class WordpressTheme( AbstractTemplate ):
     cp -a ${startdir}/src/$name ${pkgdir}/ubos/share/${pkgname}/\
 """
 
+
     def manifestContent( self, pars, directory ):
         return f"""
 {{
@@ -30,7 +31,7 @@ class WordpressTheme( AbstractTemplate ):
     "accessoryinfo" : {{
         "appid"         : "wordpress",
         "accessoryid"   : "{ pars['name'] }",
-        "accessorytype" : "theme"
+        "accessorytype" : "plugin"
     }},
 
     "roles" : {{
@@ -38,14 +39,14 @@ class WordpressTheme( AbstractTemplate ):
             "appconfigitems" : [
                 {{
                     "type"   : "directorytree",
-                    "name"   : "wp-content/themes/{ pars['name'] }",
+                    "name"   : "wp-content/plugins/{ pars['name'] }",
                     "source" : "{ pars['name'] }",
                 }}
             ],
             "installers" : [
                 {{
                     "type"   : "perlscript",
-                    "source" : "/usr/share/wordpress/bin/activate-themes.pl"
+                    "source" : "/usr/share/wordpress/bin/activate-plugin.pl"
                 }}
             ]
         }}
@@ -58,9 +59,9 @@ def create() :
     """
     Factory function
     """
-    return WordpressTheme()
+    return WordpressPlugin()
 
 
 def help() :
-    return 'Wordpress theme'
+    return 'Wordpress plugin'
 

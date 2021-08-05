@@ -78,9 +78,6 @@ License of your package, such as GPL, Apache, or Proprietary\
         if manifestContent:
             ubos.utils.saveFile( directory + "/ubos-manifest.json", manifestContent.encode(), 0o644 )
 
-        ubos.utils.mkdir( directory + "/appicons" );
-        self.copyIcons( pars, directory + "/appicons" )
-
         htAccessTmpl = self.htAccessTmplContent( pars, directory )
         if htAccessTmpl:
             if not os.path.isdir( directory + "/tmpl" ) :
@@ -242,7 +239,7 @@ package() {{
         return """\
     # If your package requires compilation, insert your build code here
     cd "${srcdir}/${pkgname}-${pkgver}"
-    echo Building ...
+    echo Building ...\
 """
 
     def pkgbuildContentPackage( self, pars, directory ):
@@ -257,9 +254,6 @@ package() {{
         return """\
     # Manifest
     install -D -m0644 ${startdir}/ubos-manifest.json ${pkgdir}/ubos/lib/ubos/manifests/${pkgname}.json
-
-    # Icons
-    install -D -m0644 ${startdir}/appicons/{72x72,144x144}.png -t ${pkgdir}/ubos/http/_appicons/\{pkgname}/
 
     # Data directory
     mkdir -p ${pkgdir}/ubos/lib/${pkgname}
@@ -375,3 +369,31 @@ package() {{
         replace = i * '    '
         t = re.sub( "^\s+", replace, t, flags=re.MULTILINE )
         return t
+
+
+
+class AbstractAppOrAccessoryTemplate( AbstractTemplate ) :
+    """
+    Functionality common to Templates that are used for standalone Apps or Accessories
+    """
+
+    def generate( self, pars, directory ):
+
+        ret = super().generate( pars, directory );
+
+        ubos.utils.mkdir( directory + "/appicons" );
+        self.copyIcons( pars, directory + "/appicons" )
+
+        return ret
+
+
+    def pkgbuildContentPackage( self, pars, directory ):
+
+        ret = super().pkgbuildContentPackage( pars, directory );
+
+        ret += """\
+    # Icons
+    install -D -m0644 ${startdir}/appicons/{72x72,144x144}.png -t ${pkgdir}/ubos/http/_appicons/\{pkgname}/\
+"""
+
+        return ret

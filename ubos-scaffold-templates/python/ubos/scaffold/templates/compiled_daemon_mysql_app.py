@@ -4,12 +4,12 @@
 #
 
 import os.path
-from ubos.scaffold.template import AbstractTemplate
+from ubos.scaffold.template import AbstractAppOrAccessoryTemplate
 import ubos.scaffold.utils
 import ubos.utils
 
 
-class CompiledDaemonMysqlApp( AbstractTemplate ):
+class CompiledDaemonMysqlApp( AbstractAppOrAccessoryTemplate ):
 
     def generate( self, pars, directory ):
 
