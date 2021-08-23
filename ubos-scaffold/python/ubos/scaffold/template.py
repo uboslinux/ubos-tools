@@ -27,26 +27,26 @@ Name of the package\
 """
             },
             'developer' : {
-                'index'       : 20,
+                'index'       : 100,
                 'description' : """\
 URL of the developer, such as your company URL\
 """
             },
             'url' : {
-                'index'       : 30,
+                'index'       : 110,
                 'description' : """\
 URL of the package, such as a product information page on your company website\
 """
             },
             'description' : {
-                'index'       : 40,
+                'index'       : 120,
                 'description' : """\
 One-line description of your package, which will be shown to the user when
 they ask pacman about your package (-i flag to pacman)\
 """
             },
             'license' : {
-                'index'       : 50,
+                'index'       : 130,
                 'description' : """\
 License of your package, such as GPL, Apache, or Proprietary\
 """
