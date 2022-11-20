@@ -1,0 +1,101 @@
+{
+   "hostname" : "*",
+   "siteid" : "s1111111111222222222233333333444444445555",
+
+   "admin" : {
+      "userid" : "admin",
+      "username" : "Test User",
+      "email"    : "test@ubos.net",
+      "credential" : "qwerqwer"
+   },
+   "appconfigs" : [
+      {
+         "appid" : "ubos-mesh-underbars-mysql",
+         "appconfigid" : "a1111111111222222222233333333444444445555",
+         "context" : "",
+         "customizationpoints" : {
+            "ubos-mesh-underbars-mysql" : {
+               "usehistory" : {
+                  "value" : false
+               },
+               "useaccessmanager" : {
+                  "value" : false
+               },
+               "uselicensemanager" : {
+                  "value" : false
+               },
+               "useindex" : {
+                  "value" : true
+               },
+               "fullappname" : {
+                  "value" : "Data&nbsp;Palace"
+               },
+               "shortappname" : {
+                  "value" : "Dazzle"
+               },
+               "javaopts" : {
+                  "value" : "'-Xdebug -Xrunjdwp:transport=dt_socket,address=*:7777,server=y,suspend=n'"
+               },
+               "datakey" : {
+                  "value" : ""
+               }
+            },
+            "ubos-mesh-underbars-peertalk" : {
+               "authorizationtoken" : {
+                  "value" : "1234"
+               },
+               "cascadingapply" : {
+                  "value" : true
+               }
+            },
+            "ubos-mesh-underbars-identity" : {
+               "registration_enabled" : {
+                  "value" : false
+               }
+            }
+         },
+         "accessoryids" : [
+            "ubos-datapalace-seed",
+            "ubos-datapalace-underbars-skin-one",
+            "ubos-mesh-bot-advertisercategorizer",
+            "ubos-mesh-bot-personaggregation",
+            "ubos-mesh-bot-urlextractor",
+            "ubos-mesh-model-amazon",
+            "ubos-mesh-model-facebook",
+            "ubos-mesh-model-google",
+            "ubos-mesh-underbars-graphql",
+            "ubos-mesh-underbars-identity",
+            "ubos-mesh-underbars-peertalk",
+            "ubos-mesh-underbars-vl-account",
+            "ubos-mesh-underbars-vl-addressbook",
+            "ubos-mesh-underbars-vl-advertisementinteraction",
+            "ubos-mesh-underbars-vl-advertiser",
+            "ubos-mesh-underbars-vl-album",
+            "ubos-mesh-underbars-vl-annotation",
+            "ubos-mesh-underbars-vl-bookmark",
+            "ubos-mesh-underbars-vl-collection",
+            "ubos-mesh-underbars-vl-comment",
+            "ubos-mesh-underbars-vl-csv",
+            "ubos-mesh-underbars-vl-facebookpartner",
+            "ubos-mesh-underbars-vl-indexcloud",
+            "ubos-mesh-underbars-vl-industrycategory",
+            "ubos-mesh-underbars-vl-interest",
+            "ubos-mesh-underbars-vl-interestcollection",
+            "ubos-mesh-underbars-vl-mediaobject",
+            "ubos-mesh-underbars-vl-mediaproperty",
+            "ubos-mesh-underbars-vl-meshbase",
+            "ubos-mesh-underbars-vl-message",
+            "ubos-mesh-underbars-vl-messagethread",
+            "ubos-mesh-underbars-vl-order",
+            "ubos-mesh-underbars-vl-person",
+            "ubos-mesh-underbars-vl-portal",
+            "ubos-mesh-underbars-vl-post",
+            "ubos-mesh-underbars-vl-productoffering",
+            "ubos-mesh-underbars-vl-propertysheet",
+            "ubos-mesh-underbars-vl-searchquery",
+            "ubos-mesh-underbars-vl-webresource"
+         ]
+      }
+   ]
+}
+
