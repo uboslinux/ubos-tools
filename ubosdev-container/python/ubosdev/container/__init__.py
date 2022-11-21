@@ -62,7 +62,7 @@ def determineChannel( arg ) :
         if not arg in [ 'dev', 'red', 'yellow', 'green' ] :
             ubos.logging.fatal( 'Invalid channel:', arg )
     return arg
-        
+
 
 def determineArch( arg ) :
     if arg is None:
@@ -89,6 +89,21 @@ def determineContainerName( arg, channel, isMesh ) :
         else :
             arg = f"ubos-linux-{channel}"
 	return arg
+
+
+def listContainers( args ) :
+    """
+    List the available containers
+    """
+
+    parentDir = args.dir
+    if parentDir is None :
+        parentDir = f"{os.environ['HOME']}/ubos-containers/ubosdev"
+
+    osRelease = '/etc/os-release'
+    for found in Path( parentDir ).glob( '*' + osRelease ) :
+        dir = found[0:-len( osRelease ) ]
+        print( dir )
 
 
 def setupContainer( args ) :
@@ -198,12 +213,11 @@ def runContainer( args ) :
     """
     Run the container
     """
-    channel         = determineChannel( args.channel )
     arch            = determineArch( None )
     containerDir    = determineContainerDir( args.containerdirectory )
     containerName   = args.name
     siteTemplateUrl = args.sitetemplate
-    
+
     print( '*** Starting container' )
     cmd = f"systemd-nspawn -n -b -D {containerDir} -M {containerName}"
     cmd += f" --bind $HOME --bind /dev/fuse"
@@ -216,7 +230,7 @@ def myexec( cmd ) :
     """
     Simple wrapper for sub-commands
     """
-     
+
     ret = subprocess.run( cmd, shell=True )
     return ret.returncode
 
