@@ -1,0 +1,29 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=$developer
+pkgname=$(basename $(pwd))
+pkgver=$(cat PKGVER)
+pkgrel=1
+pkgdesc="Manage UBOS development containers with some high-level commands"
+arch=('any')
+license=('AGPL3')
+depends=(
+    'ubos-python'
+)
+makedepends=(
+    'python-setuptools'
+)
+options=('!strip')
+
+package() {
+    [[ -d "${srcdir}/build" ]] || mkdir -p "${srcdir}/build"
+    cd "${srcdir}/build"
+
+    cp -a "${startdir}/python/"* .
+
+    python setup.py install --root=${pkgdir} --optimize=1
+
+    install -D -m755 ${startdir}/bin/* -t ${pkgdir}/usr/bin/
+
+    install -D -m755 ${startdir}/site-templates/* -t ${pkgdir}/usr/share/${pkgname}/site-templates
+}

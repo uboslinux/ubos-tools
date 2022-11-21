@@ -8,15 +8,10 @@ pkgdesc="UBOS tools to run on an Arch Linux development host"
 arch=('any')
 license=('AGPL3')
 depends=(
-    'pacsane'
-    'ubos-check-packages'
-    'ubos-install'
-    'ubos-push'
     'git'
-    'webapptest' )
+    'ubosdev-container'
+    'ubos-push'
+    'webapptest'
+)
 options=('!strip')
-
-package() {
-    install -D -m755 ${startdir}/bin/* -t ${pkgdir}/usr/bin/
-}
 

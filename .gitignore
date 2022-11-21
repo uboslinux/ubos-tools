@@ -1,3 +1,4 @@
 pkg/
 src/
 /webapptest-record/net.ubos.webapptest.record/target/
+.DS_Store

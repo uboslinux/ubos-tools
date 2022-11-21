@@ -1,0 +1,10 @@
+#!/usr/bin/python
+#
+# Build script
+#
+# Copyright (C) Johannes Ernst. All rights reserved. License: see package.
+#
+
+import ubosdev.container
+
+ubosdev.container.run()
