@@ -8,7 +8,7 @@ pkgdesc="Manage UBOS development containers with some high-level commands"
 arch=('any')
 license=('AGPL3')
 depends=(
-    'ubos-python'
+    'ubos-python-utils'
 )
 makedepends=(
     'python-setuptools'
