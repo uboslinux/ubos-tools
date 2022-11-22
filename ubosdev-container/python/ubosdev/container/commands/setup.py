@@ -5,8 +5,6 @@
 # Copyright (C) 2022 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
-import ubos.logging
-import ubos.utils
 import ubosdev.container.utils
 
 def run( args ) :

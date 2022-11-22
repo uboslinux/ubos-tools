@@ -5,6 +5,10 @@
 # Copyright (C) Johannes Ernst. All rights reserved. License: see package.
 #
 
+import sys
 import ubosdev.container
+
+# We run this on Arch, which may have a newer version of python than UBOS
+sys.path.append( '/usr/lib/python3.9/site-packages' )
 
 ubosdev.container.run()

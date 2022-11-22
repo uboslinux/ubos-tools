@@ -13,6 +13,8 @@ import sys
 import tempfile
 import time
 import traceback
+import ubos.logging
+import ubos.utils
 import ubosdev.container.utils
 import sys
 
@@ -66,7 +68,7 @@ def determineChannel( arg ) :
 
 def determineArch( arg ) :
     if arg is None:
-    	arg = arch = myexecStdout( 'uname -m' ).strip().decode( 'UTF-8' )
+        arg = arch = myexecStdout( 'uname -m' ).strip().decode( 'UTF-8' )
     return arg
 
 
@@ -77,9 +79,9 @@ def determineContainerDir( arg, containerName ) :
 
 
 def determineImagesDir( arg ) :
-	if arg is None:
-		arg = f"{os.environ['HOME']}/ubos-containers/images"
-	return arg
+    if arg is None:
+        arg = f"{os.environ['HOME']}/ubos-containers/images"
+    return arg
 
 
 def determineContainerName( arg, channel, isMesh ) :
@@ -88,7 +90,7 @@ def determineContainerName( arg, channel, isMesh ) :
             arg = f"ubos-mesh-{channel}"
         else :
             arg = f"ubos-linux-{channel}"
-	return arg
+    return arg
 
 
 def listContainers( args ) :
@@ -137,6 +139,8 @@ def setupContainer( args ) :
     ensurePackage( 'ttf-liberation' )
     ensurePackage( 'firefox' )
     ensurePackage( 'snapper' )
+    ensurePackage( 'geany' )
+    ensurePackage( 'geany-plugins' )
     if isMesh :
         ensurePackage( 'jdk11-openjdk' ) # for now
         ensurePackage( 'netbeans' )
@@ -273,4 +277,3 @@ def ensureSubvol( name ) :
         return True
     else :
         return False
-
