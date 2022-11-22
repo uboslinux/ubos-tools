@@ -104,7 +104,8 @@ def listContainers( args ) :
 
     osRelease = '/etc/os-release'
     for found in Path( parentDir ).glob( '*' + osRelease ) :
-        dir = found[0:-len( osRelease ) ]
+        dir = str( found )
+        dir = dir[ len(parentDir)+1 : -len( osRelease ) ]
         print( dir )
 
 
@@ -114,9 +115,9 @@ def setupContainer( args ) :
     """
 
     isMesh          = args.flavor == 'mesh'
-    containerName   = determineContainerName( args.name, channel, isMesh )
     channel         = determineChannel( args.channel )
     arch            = determineArch( args.arch )
+    containerName   = determineContainerName( args.name, channel, isMesh )
     containerDir    = determineContainerDir( args.containerdirectory, containerName )
     imagesDir       = determineImagesDir( args.imagesdirectory )
     siteTemplateUrl = args.sitetemplate
@@ -189,7 +190,7 @@ def setupContainer( args ) :
 
     print( '*** Starting container' )
     cmd = f"systemd-nspawn -n -b -D {containerDir} -M {containerName}"
-    if len( siteTemplateUrl ) > 0 and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
+    if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
         cmd += f" --bind {siteTemplateUrl}"
     myexec( f"sudo {cmd} > /dev/null 2>&1 &" ) # in the background
 
@@ -218,14 +219,17 @@ def runContainer( args ) :
     Run the container
     """
     arch            = determineArch( None )
-    containerDir    = determineContainerDir( args.containerdirectory )
     containerName   = args.name
+    containerDir    = determineContainerDir( args.containerdirectory, containerName )
     siteTemplateUrl = args.sitetemplate
+
+    if not os.path.exists( containerDir ) :
+        fatal( 'Container not found:', containerDir )
 
     print( '*** Starting container' )
     cmd = f"systemd-nspawn -n -b -D {containerDir} -M {containerName}"
     cmd += f" --bind $HOME --bind /dev/fuse"
-    if len( siteTemplateUrl ) > 0 and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
+    if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
         cmd += f" --bind {siteTemplateUrl}"
     myexec( f"sudo {cmd}" )
 
