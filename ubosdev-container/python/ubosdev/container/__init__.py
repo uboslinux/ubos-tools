@@ -124,7 +124,7 @@ def setupContainer( args ) :
 
     if siteTemplateUrl is None :
         if isMesh:
-            siteTemplateUrl = '/usr/share/ubos-tools-arch/site-templates/ubos-mesh-default-site-development-debug.json'
+            siteTemplateUrl = '/usr/share/ubosdev-container/site-templates/ubos-mesh-default-site-development-debug.json'
 
     def cleanup() :
         print( '*** Shutting down container' )
