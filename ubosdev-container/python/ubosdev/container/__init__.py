@@ -124,7 +124,7 @@ def setupContainer( args ) :
 
     if siteTemplateUrl is None :
         if isMesh:
-            siteTemplateUrl = '/usr/share/ubosdev-container/site-templates/ubos-mesh-default-site-development-debug.json'
+            siteTemplateUrl = '/usr/share/ubosdev-container/site-templates/mesh-default-site-development-debug.json'
 
     def cleanup() :
         print( '*** Shutting down container' )
@@ -191,7 +191,11 @@ def setupContainer( args ) :
     print( '*** Starting container' )
     cmd = f"systemd-nspawn -n -b -D {containerDir} -M {containerName}"
     if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
-        cmd += f" --bind {siteTemplateUrl}"
+        if os.path.exists( siteTemplateUrl ) :
+            cmd += f" --bind {siteTemplateUrl}"
+        else :
+            ubos.logging.warning( 'Site template file does not exist, skipping:', siteTemplateUrl )
+            timeTemplateUrl = None
     myexec( f"sudo {cmd} > /dev/null 2>&1 &" ) # in the background
 
     # wait until the container is running
