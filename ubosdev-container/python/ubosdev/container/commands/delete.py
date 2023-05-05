@@ -1,17 +1,19 @@
 #!/usr/bin/python
 #
-# List the available development Linux containers
+# Delete an existing development container
 #
 # Copyright (C) 2022 and later, Indie Computing Corp. All rights reserved. License: see package.
 #
 
+import ubos.logging
+import ubos.utils
 import ubosdev.container.utils
 
 def run( args ) :
     """
     Run this command.
     """
-    ubosdev.container.listContainers( args );
+    ubosdev.container.deleteContainer( args );
 
 
 def addSubParser( parentParser, cmdName ) :
@@ -20,5 +22,6 @@ def addSubParser( parentParser, cmdName ) :
     parentParser: the parent argparse parser
     cmdName: name of this command
     """
-    parser = parentParser.add_parser( cmdName, help='List the available UBOS development containers' )
+    parser = parentParser.add_parser( cmdName, help='Delete an existing development container' )
+    parser.add_argument( "--name",                             help="Name of the container to delete" )
     parser.add_argument( '--containerdirectory', default=None, help='Directory containing the UBOS Linux containers' )

@@ -25,7 +25,10 @@ def run() :
     """
     cmds = ubosdev.container.utils.findCommands()
 
-    parser = argparse.ArgumentParser( description='Run commands on UBOS development containers.')
+    parser = argparse.ArgumentParser( description='Run commands on UBOS development containers.'
+            + ' After you have run sub-command "setup" with your desired release channel,'
+            + ' run "list-templates" to determine which container templates are available,'
+            + ' and then "create" to instantiate one, and "run" to run it.' )
     parser.add_argument('-v', '--verbose', action='count',       default=0,  help='Display extra output. May be repeated for even more output.')
     parser.add_argument('--logConfig',                                       help='Use an alternate log configuration file for this command.')
     parser.add_argument('--debug',         action='store_const', const=True, help='Suspend execution at certain points for debugging' )
@@ -72,10 +75,14 @@ def determineArch( arg ) :
     return arg
 
 
-def determineContainerDir( arg, containerName ) :
+def determineContainerDir( arg ) :
     if arg is None:
-        arg = f"{os.environ['HOME']}/ubos-containers/ubosdev/{containerName}"
+        arg = f"{os.environ['HOME']}/ubos-containers/ubosdev"
     return arg
+
+
+def determineNamedContainerRootDir( containerDir, containerName ) :
+    return f"{containerDir}/{containerName}"
 
 
 def determineImagesDir( arg ) :
@@ -84,158 +91,8 @@ def determineImagesDir( arg ) :
     return arg
 
 
-def determineContainerName( arg, channel, isMesh ) :
-    if arg is None:
-        if isMesh :
-            arg = f"ubos-mesh-{channel}"
-        else :
-            arg = f"ubos-linux-{channel}"
-    return arg
-
-
-def listContainers( args ) :
-    """
-    List the available containers
-    """
-
-    parentDir = args.dir
-    if parentDir is None :
-        parentDir = f"{os.environ['HOME']}/ubos-containers/ubosdev"
-
-    osRelease = '/etc/os-release'
-    for found in Path( parentDir ).glob( '*' + osRelease ) :
-        dir = str( found )
-        dir = dir[ len(parentDir)+1 : -len( osRelease ) ]
-        print( dir )
-
-
-def setupContainer( args ) :
-    """
-    Setup a container
-    """
-
-    isMesh          = args.flavor == 'mesh'
-    channel         = determineChannel( args.channel )
-    arch            = determineArch( args.arch )
-    containerName   = determineContainerName( args.name, channel, isMesh )
-    containerDir    = determineContainerDir( args.containerdirectory, containerName )
-    imagesDir       = determineImagesDir( args.imagesdirectory )
-    siteTemplateUrl = args.sitetemplate
-
-    if siteTemplateUrl is None :
-        if isMesh:
-            siteTemplateUrl = '/usr/share/ubosdev-container/site-templates/mesh-default-site-development-debug.json'
-
-    def cleanup() :
-        print( '*** Shutting down container' )
-        myexec( f"sudo machinectl poweroff {containerName} > /dev/null 2>&1" )
-
-    atexit.register( cleanup )
-
-    print( '*** Upgrading system' )
-    myexec( 'sudo pacman -Syu' )
-
-    print( '*** Ensuring all needed packages' )
-    ensurePackage( 'gnu-free-fonts' )
-    ensurePackage( 'ttf-liberation' )
-    ensurePackage( 'firefox' )
-    ensurePackage( 'snapper' )
-    ensurePackage( 'geany' )
-    ensurePackage( 'geany-plugins' )
-    if isMesh :
-        ensurePackage( 'jdk11-openjdk' ) # for now
-        ensurePackage( 'netbeans' )
-
-    print( '*** Running iptables' )
-    for f in [ '/etc/iptables/iptables.rules', '/etc/iptables/ip6tables.rules' ] :
-        if not os.path.exists( f ) :
-            myexec( f"sudo cp /etc/iptables/empty.rules {f}" )
-    myexec( 'sudo systemctl enable --now iptables ip6tables' )
-
-    if os.path.exists( containerDir ) :
-        print( f"*** Container director exists already, skipping right to software update: {containerDir}" )
-        isFirst = False
-
-    else :
-        print( f"*** Setting up for release channel {channel} on arch {arch}" )
-
-        imageName = f"ubos-develop_{channel}_{arch}-container_LATEST.tar.xz"
-
-        print( '*** Ensuring we have a UBOS Linux container image' )
-        ensureDirectory( imagesDir )
-
-        if os.path.exists( f"{imagesDir}/{imageName}" ) :
-            print( '*** Have image already, not downloading nor checking for updates' )
-        else :
-            myexec( f"curl -o {imagesDir}/{imageName} http://depot.ubos.net/{channel}/{arch}/images/{imageName}" )
-
-        if ensureSubvol( containerDir ) :
-            print( f"*** Unpacking image into {containerDir}" )
-            myexec( f"sudo tar -C {containerDir} -x -J -f {imagesDir}/{imageName}" )
-
-        if isMesh :
-            print( 'Ensuring container has ubos-mesh packages' )
-            temp = tempfile.NamedTemporaryFile( delete=False )
-            temp.write( b"[mesh]\nServer = http://depot.ubos.net/$channel/$arch/mesh\n" )
-            temp.close()
-            myexec( f"sudo mv {temp.name} {containerDir}/etc/pacman.d/repositories.d/mesh" )
-
-            print( 'Opening up default debug ports 7777 and 7778' )
-            temp = tempfile.NamedTemporaryFile( delete=False )
-            temp.write( b"7777/tcp\n7778/tcp\n" )
-            temp.close()
-            myexec( f"sudo mv {temp.name} {containerDir}/etc/ubos/open-ports.d/java-debugging" )
-
-        isFirst = True
-
-    print( '*** Starting container' )
-    cmd = f"systemd-nspawn -n -b -D {containerDir} -M {containerName}"
-    if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
-        if os.path.exists( siteTemplateUrl ) :
-            cmd += f" --bind {siteTemplateUrl}"
-        else :
-            ubos.logging.warning( 'Site template file does not exist, skipping:', siteTemplateUrl )
-            timeTemplateUrl = None
-    myexec( f"sudo {cmd} > /dev/null 2>&1 &" ) # in the background
-
-    # wait until the container is running
-    while True :
-        time.sleep( 5 )
-        if 0 == myexec( f"sudo systemctl -M {containerName} is-system-running > /dev/null" ) :
-            break
-
-    print( '*** Updating container' )
-    containerCmd = 'ubos-admin update -v --nokeyrefresh'
-    if isFirst :
-        containerCmd += ' && pacman -S --noconfirm ubos-mesh-devtools'
-        containerCmd += ' && snapper create-config .'
-        containerCmd += ' && snapper create -d after-first-update'
-    myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
-
-    if isFirst and len( siteTemplateUrl ) > 0 :
-        print( '*** Deploying site to container' )
-        containerCmd = f"ubos-admin createsite --from-template {siteTemplateUrl} && snapper create -d after-first-site-deploy"
-        myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
-
-
-def runContainer( args ) :
-    """
-    Run the container
-    """
-    arch            = determineArch( None )
-    containerName   = args.name
-    containerDir    = determineContainerDir( args.containerdirectory, containerName )
-    siteTemplateUrl = args.sitetemplate
-
-    if not os.path.exists( containerDir ) :
-        fatal( 'Container not found:', containerDir )
-
-    print( '*** Starting container' )
-    cmd = f"systemd-nspawn -n -b -D {containerDir} -M {containerName}"
-    cmd += f" --bind $HOME --bind /dev/fuse"
-    if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
-        cmd += f" --bind {siteTemplateUrl}"
-    myexec( f"sudo {cmd}" )
+def determineNamedTemplateRootDir( imagesDir, templateName ) :
+    return f"{imagesDir}/{templateName}"
 
 
 def myexec( cmd ) :
@@ -285,3 +142,233 @@ def ensureSubvol( name ) :
         return True
     else :
         return False
+
+
+def deleteSubvol( name ) :
+    """
+    Delete this subvolume
+    """
+
+    myexec( f"sudo btrfs subvol delete '{name}'" )
+
+
+def copyRecursively( fromDir, toDir ) :
+    """
+    Copy a directory hierarchy that happens to be subvols on both sides
+    """
+    myexec( f"sudo btrfs subvol snapshot '{fromDir}' '{toDir}' 2>/dev/null" )
+
+
+# -- commands --
+
+
+def listContainerTemplates( args ) :
+    """
+    List the available templates
+    """
+
+    imagesDir = determineImagesDir( args.imagesdirectory )
+
+    osRelease = '/etc/os-release'
+    for found in Path( imagesDir ).glob( '*' + osRelease ) :
+        dir = str( found )
+        dir = dir[ len(imagesDir)+1 : -len( osRelease ) ]
+        print( dir )
+
+
+def listContainers( args ) :
+    """
+    List the available containers
+    """
+
+    containerDir = determineContainerDir( args.containerdirectory )
+
+    osRelease = '/etc/os-release'
+    for found in Path( containerDir ).glob( '*' + osRelease ) :
+        dir = str( found )
+        dir = dir[ len(containerDir)+1 : -len( osRelease ) ]
+        print( dir )
+
+
+def setup( args ) :
+    """
+    Setup for a particular release channel
+    """
+
+    channel         = determineChannel( args.channel )
+    arch            = determineArch( args.arch )
+    containerDir    = determineContainerDir( args.containerdirectory )
+    imagesDir       = determineImagesDir( args.imagesdirectory )
+
+    print( '*** Upgrading system' )
+    myexec( 'sudo pacman -Syu' )
+
+    print( '*** Ensuring all needed packages' )
+    ensurePackage( 'gnu-free-fonts' )
+    ensurePackage( 'ttf-liberation' )
+    ensurePackage( 'firefox' )
+    ensurePackage( 'snapper' )
+    ensurePackage( 'geany' )
+    ensurePackage( 'geany-plugins' )
+    ensurePackage( 'jdk11-openjdk' ) # for now
+    ensurePackage( 'netbeans' )
+
+    print( '*** Running iptables' )
+    for f in [ '/etc/iptables/iptables.rules', '/etc/iptables/ip6tables.rules' ] :
+        if not os.path.exists( f ) :
+            myexec( f"sudo cp /etc/iptables/empty.rules {f}" )
+    myexec( 'sudo systemctl enable --now iptables ip6tables' )
+
+    ensureDirectory( containerDir )
+    ensureDirectory( imagesDir )
+
+    print( f"*** Setting up for release channel {channel} on arch {arch}" )
+
+    imageName   = f"ubos-develop_{channel}_{arch}-container_LATEST.tar.xz"
+    templateDir = f"{imagesDir}/ubos-develop-{channel}"
+
+    if os.path.exists( f"{imagesDir}/{imageName}" ) :
+        print( '*** Have image already, not downloading nor checking for updates' )
+    else :
+        print( '*** Downloading a UBOS Linux container image. This may take a while' )
+        myexec( f"curl -o {imagesDir}/{imageName} http://depot.ubos.net/{channel}/{arch}/images/{imageName}" )
+
+    if ensureSubvol( templateDir ) :
+        print( f"*** Unpacking image into {templateDir}" )
+        myexec( f"sudo tar -C {templateDir} -x -J -f {imagesDir}/{imageName}" )
+
+
+def createContainer( args ) :
+    """
+    Create a container from a template
+    """
+
+    containerName   = args.name
+    templateName    = args.templatename
+    containerDir    = determineContainerDir( args.containerdirectory )
+    siteTemplateUrl = args.sitetemplate
+    imagesDir       = determineImagesDir( args.imagesdirectory )
+    isMesh          = args.flavor == 'mesh'
+
+    if containerName is None or not containerName:
+        ubos.logging.fatal( 'Must specify a name for the container with --name' )
+
+    if templateName is None or not templateName:
+        ubos.logging.fatal( 'Must specify a name for the template with --templatename' )
+
+    if siteTemplateUrl is None :
+        if isMesh:
+            siteTemplateUrl = '/usr/share/ubosdev-container/site-templates/mesh-default-site-development-debug.json'
+
+    def cleanup() :
+        print( '*** Shutting down container' )
+        myexec( f"sudo machinectl poweroff {containerName} > /dev/null 2>&1" )
+
+    atexit.register( cleanup )
+
+    namedContainerRootDir = determineNamedContainerRootDir( containerDir, containerName )
+    namedTemplateRootDir  = determineNamedTemplateRootDir(  imagesDir,    templateName )
+
+    if os.path.exists( namedContainerRootDir ) :
+        ubos.logging.fatal( f"*** Cannot create container, container directory exists already: {namedContainerRootDir}" )
+
+    if not os.path.exists( namedTemplateRootDir ) :
+        ubos.logging.fatal( f"*** Cannot create container, template directory does not exist: {namedTemplateRootDir}" )
+
+    print( '*** Copying from template' )
+    copyRecursively( namedTemplateRootDir, namedContainerRootDir )
+
+
+    if isMesh :
+        print( 'Ensuring container has ubos-mesh packages' )
+        temp = tempfile.NamedTemporaryFile( delete=False )
+        temp.write( b"[mesh]\nServer = http://depot.ubos.net/$channel/$arch/mesh\n" )
+        temp.close()
+        myexec( f"sudo mv {temp.name} {namedContainerRootDir}/etc/pacman.d/repositories.d/mesh" )
+
+        print( 'Opening up default debug ports 7777 and 7778' )
+        temp = tempfile.NamedTemporaryFile( delete=False )
+        temp.write( b"7777/tcp\n7778/tcp\n" )
+        temp.close()
+        myexec( f"sudo mv {temp.name} {namedContainerRootDir}/etc/ubos/open-ports.d/java-debugging" )
+
+
+    print( '*** Temporarily starting container for updates' )
+    cmd = f"systemd-nspawn -n -b -D {namedContainerRootDir} -M {containerName}"
+    if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
+        if os.path.exists( siteTemplateUrl ) :
+            cmd += f" --bind {siteTemplateUrl}"
+        else :
+            ubos.logging.warning( 'Site template file does not exist, skipping:', siteTemplateUrl )
+            timeTemplateUrl = None
+    myexec( f"sudo {cmd} > /dev/null 2>&1 &" ) # in the background
+
+    # wait until the container is running
+    while True :
+        time.sleep( 5 )
+        if 0 == myexec( f"sudo systemctl -M {containerName} is-system-running > /dev/null" ) :
+            break
+
+    print( '*** Updating container' )
+    containerCmd = 'ubos-admin update -v --nokeyrefresh'
+    containerCmd += ' && pacman -S --noconfirm ubos-mesh-devtools'
+    containerCmd += ' && snapper create-config .'
+    containerCmd += ' && snapper create -d after-first-update'
+    myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
+
+    if isMesh:
+        print( '*** Setting PACKAGE_RESOURCES_PARENT_DIR to use assets from the source tree, not package' )
+        temp = tempfile.NamedTemporaryFile( delete=False )
+        tmp.write(  b"\n" )
+        tmp.write(  b"# Take web app assets from the source tree, not the package; makes development faster\n" )
+        temp.write( b"PACKAGE_RESOURCES_PARENT_DIR=/home/ubosdev/git/gitlab.com/ubos/ubos-datapalace:/home/ubosdev/git/gitlab.com/ubos/ubos-mesh-underbars-ui:/home/jernst/git/gitlab.com/ubos/ubos-mesh-underbars-ui-experimental:/home/ubosdev/git/gitlab.com/ubos/ubos-mesh\n" )
+        temp.close()
+        myexec( f"sudo cat {temp.name} >> {namedContainerRootDir}/etc/diet4j/diet4j-jsvc-defaults.conf" )
+
+    if siteTemplateUrl and len( siteTemplateUrl ) > 0 :
+        print( '*** Deploying site to container' )
+        containerCmd = f"ubos-admin createsite --from-template {siteTemplateUrl} && snapper create -d after-first-site-deploy"
+        myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
+
+    # we registered a handler earlier that will shut down the container again
+
+
+def runContainer( args ) :
+    """
+    Run a container
+    """
+    containerName   = args.name
+    containerDir    = determineContainerDir( args.containerdirectory )
+    siteTemplateUrl = args.sitetemplate
+    networkZone     = args.network_zone
+
+    namedContainerRootDir = determineNamedContainerRootDir( containerDir, containerName )
+
+    if not os.path.exists( namedContainerRootDir ) :
+        ubos.logging.fatal( 'Container not found:', namedContainerRootDir )
+
+    print( '*** Starting container' )
+    cmd = f"systemd-nspawn -n -b -D {namedContainerRootDir} -M {containerName}"
+    if networkZone :
+        cmd += f" --network-zone {networkZone}"
+    cmd += f" --bind $HOME --bind /dev/fuse"
+    if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
+        cmd += f" --bind {siteTemplateUrl}"
+
+    myexec( f"sudo {cmd}" )
+
+
+def deleteContainer( args ) :
+    """
+    Delete a container
+    """
+    containerName   = args.name
+    containerDir    = determineContainerDir( args.containerdirectory )
+
+    namedContainerRootDir = determineNamedContainerRootDir( containerDir, containerName )
+
+    if not os.path.exists( namedContainerRootDir ) :
+        ubos.logging.fatal( 'Container not found:', namedContainerRootDir )
+
+    deleteSubvol( namedContainerRootDir )
+
