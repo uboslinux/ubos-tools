@@ -14,7 +14,7 @@ use UBOS::Utils;
 
 my $verbose       = 0;
 my $logConfigFile = undef;
-my $dir;
+my @dirs;
 my $out;
 my $help          = 0;
 
@@ -27,34 +27,34 @@ my $parseOk = GetOptions(
 UBOS::Logging::initialize( 'releasepagelinks', 'generate', $verbose, $logConfigFile, 0 );
 
 if( @ARGV ) {
-    $dir = shift @ARGV;
+    @dirs = @ARGV;
 }
-if( !$parseOk || @ARGV) {
+if( !$parseOk ) {
     synopsisHelpQuit( 0 );
 }
 if( $help ) {
     synopsisHelpQuit( 1 );
 }
 
-unless( $dir ) {
-    $dir = '.';
+unless( @dirs ) {
+    @dirs = ( '.' );
 }
 
-my @dirsWithPkgbuilds = ();
+my %dirsWithPkgbuilds = ();
 my $projects          = (); # 'ubos-wordpress' -> 'wordpress' -> data
 
-find (
+find(
         sub {
             my $name = $_;
             if( $name eq 'PKGBUILD' ) {
-                push @dirsWithPkgbuilds, $File::Find::dir;
+                $dirsWithPkgbuilds{$File::Find::dir} = 1;
             }
         },
-        $dir );
+        @dirs );
 
-info( "Found dirs with PKGBUILDS:", @dirsWithPkgbuilds );
+info( "Found dirs with PKGBUILDS:", keys %dirsWithPkgbuilds );
 
-foreach my $dirWith ( @dirsWithPkgbuilds ) {
+foreach my $dirWith ( keys %dirsWithPkgbuilds ) {
     my $out;
     UBOS::Utils::myexec(
             "cd '$dirWith' && /bin/bash",
@@ -181,11 +181,11 @@ Generate an HTML page that has links to all upstream packages' release pages, an
 END
     }
     print "Synopsis:\n";
-    print "    $0 [<dir>] [--out <outfile>]\n";
+    print "    $0 [--out <outfile>]  [<dir>]... \n";
     if( $long ) {
         print <<END;
-    <dir> -- the root directory from which PKGBUILD files will be searched, defaults to the current directory
-    <out> -- filename of the HTML output file, defaults to stdout        
+    <out> -- filename of the HTML output file, defaults to stdout
+    <dir> -- the start directories from which PKGBUILD files will be searched, defaults to the current directory
 END
     }
     exit 0;
