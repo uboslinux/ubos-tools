@@ -2,7 +2,7 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.3
+pkgver=0.4
 pkgrel=1
 pkgdesc="Base development tools metapackage with some useful scripts"
 arch=('any')
@@ -17,7 +17,7 @@ depends=(
     'gradle'
     'grep'
     'gzip'
-    'jdk11-openjdk'
+    'java-environment-openjdk'
     'libtool'
     'm4'
     'make'
