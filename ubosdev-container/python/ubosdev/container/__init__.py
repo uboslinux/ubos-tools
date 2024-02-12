@@ -210,7 +210,7 @@ def setup( args ) :
     ensurePackage( 'snapper' )
     ensurePackage( 'geany' )
     ensurePackage( 'geany-plugins' )
-    ensurePackage( 'jdk11-openjdk' ) # for now
+    ensurePackage( 'java-environment' )
     ensurePackage( 'netbeans' )
 
     print( '*** Running iptables' )
