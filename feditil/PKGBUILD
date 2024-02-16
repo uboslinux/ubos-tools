@@ -1,0 +1,64 @@
+developer="http://indiecomputing.com/"
+url="http://ubos.net/"
+maintainer=${developer}
+pkgname=$(basename $(pwd))
+pkgver=0.1
+pkgrel=1
+pkgdesc='Fediverse command-line utilities (FEDIversion uTIL)'
+arch=('any')
+url=${developer}
+license=('AGPL')
+depends=(
+    'python'
+    'ubos-python-utils'
+)
+makedepends=(
+    'python-build'
+    'python-hatchling'
+    'python-httpx'
+    'python-installer'
+    'python-wheel'
+)
+
+prepare() {
+    cd "${srcdir}"
+    [ -d "${pkgname}-${pkgver}" ] || mkdir "${pkgname}-${pkgver}"
+
+    cd "${pkgname}-${pkgver}"
+    rsync -a --delete ${startdir}/python/ ./
+
+    cat > pyproject.toml <<EOF
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "${pkgname}"
+version = "${pkgver}"
+description = "${pkgdesc}"
+dependencies = [
+  "httpx"
+]
+
+[project.scripts]
+feditil = "feditil.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["feditil"]
+
+[tool.pylint]
+max-line-length=120
+EOF
+}
+
+build() {
+    cd "${srcdir}/${pkgname}-${pkgver}"
+
+    python -m build --wheel --no-isolation
+}
+
+package() {
+# Code
+    cd "${srcdir}/${pkgname}-${pkgver}"
+    python -m installer --destdir="${pkgdir}" dist/*.whl
+}
