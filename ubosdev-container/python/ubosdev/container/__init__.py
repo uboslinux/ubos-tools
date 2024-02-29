@@ -231,7 +231,7 @@ def setup( args ) :
         print( '*** Have image already, not downloading nor checking for updates' )
     else :
         print( '*** Downloading a UBOS Linux container image. This may take a while' )
-        myexec( f"curl -o {imagesDir}/{imageName} http://depot.ubos.net/{channel}/{arch}/images/{imageName}" )
+        myexec( f"curl -o {imagesDir}/{imageName} https://depot.ubosfiles.net/{channel}/{arch}/images/{imageName}" )
 
     if ensureSubvol( templateDir ) :
         print( f"*** Unpacking image into {templateDir}" )
@@ -282,7 +282,7 @@ def createContainer( args ) :
     if isMesh :
         print( 'Ensuring container has ubos-mesh packages' )
         temp = tempfile.NamedTemporaryFile( delete=False )
-        temp.write( b"[mesh]\nServer = http://depot.ubos.net/$channel/$arch/mesh\n" )
+        temp.write( b"[mesh]\nServer = https://depot.ubosfiles.net/$channel/$arch/mesh\n" )
         temp.close()
         myexec( f"sudo mv {temp.name} {namedContainerRootDir}/etc/pacman.d/repositories.d/mesh" )
 

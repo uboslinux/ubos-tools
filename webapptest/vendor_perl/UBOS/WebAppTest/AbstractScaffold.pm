@@ -286,7 +286,7 @@ sub getFileInfo {
 
 ##
 # Handle the impersonatedepot option, if given
-# $ip: the IP address to use for depot.ubos.net, or undef if using the real one
+# $ip: the IP address to use for depot.ubosfiles.net, or undef if using the real one
 # return: 1 if successful
 sub handleImpersonateDepot {
     my $self = shift;
@@ -321,10 +321,10 @@ CMD
 my $etchosts = UBOS::Utils::slurpFile( '/etc/hosts' );
 if( $etchosts ) {
     if( defined( $ip )) {
-        unless( $etchosts =~ m!depot\.ubos\.net! ) {
+        unless( $etchosts =~ m!depot\.ubosfiles\.net! ) {
             $etchosts .= <<ADD;
 # webapptest added
-$ip depot.ubos.net
+$ip depot.ubosfiles.net
 ADD
             UBOS::Utils::saveFile( '/etc/hosts', $etchosts, 0644, 'root', 'root' );
         }
@@ -334,7 +334,7 @@ ADD
             $changed = 1;
         }
         my $ipEsc = quotemeta( $ip );
-        if( $etchosts =~ s!$ipEsc\s+depot\.ubos\.net!! ) {
+        if( $etchosts =~ s!$ipEsc\s+depot\.ubosfiles\.net!! ) {
             $changed = 1;
         }
         if( $changed ) {
@@ -352,11 +352,11 @@ CMD
     my $out;
     my $err;
     if( $self->invokeOnTarget( 'sudo /bin/bash -c /usr/bin/perl', $cmd, \$out, \$err )) {
-        error( "Failed to edit /etc/hosts file to add depot.ubos.net:\nout:$out\nerr:$err\ncmd:$cmd" );
+        error( "Failed to edit /etc/hosts file to add depot.ubosfiles.net:\nout:$out\nerr:$err\ncmd:$cmd" );
         return 0;
 
     } elsif( $err =~ /Respect the privacy of others/ ) {
-        error( "Failed to edit /etc/hosts file to add depot.ubos.net. sudo problem:", $out, $err );
+        error( "Failed to edit /etc/hosts file to add depot.ubosfiles.net. sudo problem:", $out, $err );
         return 0;
     }
     return 1;

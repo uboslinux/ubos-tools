@@ -52,11 +52,14 @@ sub setup {
     my $depotNic;
     my $depotNicForwarding=0;
     for( my $i=0 ; $i<5 ; ++$i ) {
-        UBOS::Utils::myexec( 'getent ahostsv4 depot.ubos.net', undef, \$out );
+        UBOS::Utils::myexec( 'getent ahostsv4 depot.ubosfiles.net', undef, \$out );
         if( $out =~ m!^(\d+\.\d+\.\d+\.\d+)\s+STREAM! ) {
-                # 52.23.168.209   STREAM depot.ubos.net
-                # 52.23.168.209   DGRAM
-                # 52.23.168.209   RAW
+                # 104.18.12.192   STREAM depot-ubosfiles.nyc3.cdn.digitaloceanspaces.com
+                # 104.18.12.192   DGRAM  
+                # 104.18.12.192   RAW    
+                # 104.18.13.192   STREAM 
+                # 104.18.13.192   DGRAM  
+                # 104.18.13.192   RAW    
             $depotIp = $1;
 
         } else {
@@ -82,9 +85,9 @@ sub setup {
         sleep( 2 );
     }
     if( !defined( $depotIp )) {
-        fatal( 'Failed to determine IPv4 address of depot.ubos.net' );
+        fatal( 'Failed to determine IPv4 address of depot.ubosfiles.net' );
     } elsif( !defined( $depotNic )) {
-        fatal( 'Failed to determine NIC of route to depot.ubos.net' );
+        fatal( 'Failed to determine NIC of route to depot.ubosfiles.net' );
     } elsif( $depotNicForwarding==0 ) {
         fatal( 'Failed to set IPv4 forwarding on upstream NIC', $depotNic );
     }
