@@ -9,6 +9,8 @@ arch=('any')
 license=('AGPL3')
 depends=(
     'ubos-python-utils'
+    'python-pip'
+    'python-pipx'
 )
 makedepends=(
     'python-setuptools'
