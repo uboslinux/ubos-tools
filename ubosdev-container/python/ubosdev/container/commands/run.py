@@ -21,8 +21,7 @@ def addSubParser( parentParser, cmdName ) :
     cmdName: name of this command
     """
     parser = parentParser.add_parser( cmdName, help='Run a UBOS development container on Arch Linux' )
-
     parser.add_argument( '--name',               required=True, help='Name of the systemd-nspawn container' )
-    parser.add_argument( '--containerdirectory', default=None,  help='Directory containing the UBOS Linux containers' )
+    parser.add_argument( '--containerdirectory', default=None,  help='Directory where the UBOS Linux containers are stored' )
     parser.add_argument( '--sitetemplate',       default=None,  help='URL of the site JSON template to deploy in the container' )
     parser.add_argument( '--network-zone',       default=None,  help='If given, become part of this named network zone for container-to-container communication' )

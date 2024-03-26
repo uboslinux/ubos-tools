@@ -2,7 +2,7 @@ developer="http://indiecomputing.com/"
 url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
-pkgver=0.6
+pkgver=0.7
 pkgrel=1
 pkgdesc="Base development tools metapackage with some useful scripts"
 arch=('any')
@@ -26,6 +26,8 @@ depends=(
     'patch'
     'pkgconf'
     'python'
+    'python-pip'
+    'python-pipx'
     'python-setuptools'
     'sed'
     'unzip'

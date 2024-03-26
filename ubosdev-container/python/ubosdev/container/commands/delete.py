@@ -24,4 +24,4 @@ def addSubParser( parentParser, cmdName ) :
     """
     parser = parentParser.add_parser( cmdName, help='Delete an existing development container' )
     parser.add_argument( "--name",                             help="Name of the container to delete" )
-    parser.add_argument( '--containerdirectory', default=None, help='Directory containing the UBOS Linux containers' )
+    parser.add_argument( '--containerdirectory', default=None, help='Directory where the UBOS Linux containers are stored' )

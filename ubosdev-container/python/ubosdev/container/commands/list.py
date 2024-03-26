@@ -21,4 +21,4 @@ def addSubParser( parentParser, cmdName ) :
     cmdName: name of this command
     """
     parser = parentParser.add_parser( cmdName, help='List the available UBOS development containers' )
-    parser.add_argument( '--containerdirectory', default=None, help='Directory containing the UBOS Linux containers' )
+    parser.add_argument( '--containerdirectory', default=None, help='Directory where the UBOS Linux containers are stored' )

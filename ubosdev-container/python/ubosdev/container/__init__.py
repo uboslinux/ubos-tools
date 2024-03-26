@@ -71,7 +71,8 @@ def determineChannel( arg ) :
 
 def determineArch( arg ) :
     if arg is None:
-        arg = arch = myexecStdout( 'uname -m' ).strip().decode( 'UTF-8' )
+        result = ubos.utils.myexec( 'uname -m', captureStdout=True )
+        arg = result[1].strip().decode( 'UTF-8' )
     return arg
 
 
@@ -95,31 +96,13 @@ def determineNamedTemplateRootDir( imagesDir, templateName ) :
     return f"{imagesDir}/{templateName}"
 
 
-def myexec( cmd ) :
-    """
-    Simple wrapper for sub-commands
-    """
-
-    ret = subprocess.run( cmd, shell=True )
-    return ret.returncode
-
-
-def myexecStdout( cmd ) :
-    """
-    Simple wrapper for sub-commands whose stdout we want to obtain
-    """
-
-    ret = subprocess.run( "LANG=en_US.UTF-8 " + cmd, shell=True, stdout=subprocess.PIPE )
-    return ret.stdout
-
-
 def ensurePackage( name ) :
     """
     Ensure that a package is installed
     """
 
     cmd = f"pacman -Q '{name}' 2> /dev/null || sudo pacman -S --noconfirm '{name}'"
-    ret = myexec( cmd )
+    ret = ubos.utils.myexec( cmd )
     return ret
 
 
@@ -138,7 +121,7 @@ def ensureSubvol( name ) :
     """
     os.makedirs( Path( name ).parent, exist_ok=True )
     if not os.path.exists( name ) :
-        myexec( f"sudo btrfs subvol create '{name}'" )
+        ubos.utils.myexec( f"sudo btrfs subvol create '{name}'" )
         return True
     else :
         return False
@@ -149,14 +132,14 @@ def deleteSubvol( name ) :
     Delete this subvolume
     """
 
-    myexec( f"sudo btrfs subvol delete '{name}'" )
+    ubos.utils.myexec( f"sudo btrfs subvol delete '{name}'" )
 
 
 def copyRecursively( fromDir, toDir ) :
     """
     Copy a directory hierarchy that happens to be subvols on both sides
     """
-    myexec( f"sudo btrfs subvol snapshot '{fromDir}' '{toDir}' 2>/dev/null" )
+    ubos.utils.myexec( f"sudo btrfs subvol snapshot '{fromDir}' '{toDir}' 2>/dev/null" )
 
 
 # -- commands --
@@ -169,7 +152,7 @@ def listContainerTemplates( args ) :
 
     imagesDir = determineImagesDir( args.imagesdirectory )
 
-    osRelease = '/etc/os-release'
+    osRelease = '/etc/os-release' # look for this file, so we know it's a valid container system
     for found in Path( imagesDir ).glob( '*' + osRelease ) :
         dir = str( found )
         dir = dir[ len(imagesDir)+1 : -len( osRelease ) ]
@@ -183,7 +166,7 @@ def listContainers( args ) :
 
     containerDir = determineContainerDir( args.containerdirectory )
 
-    osRelease = '/etc/os-release'
+    osRelease = '/etc/os-release' # look for this file, so we know it's a valid container system
     for found in Path( containerDir ).glob( '*' + osRelease ) :
         dir = str( found )
         dir = dir[ len(containerDir)+1 : -len( osRelease ) ]
@@ -199,11 +182,12 @@ def setup( args ) :
     arch            = determineArch( args.arch )
     containerDir    = determineContainerDir( args.containerdirectory )
     imagesDir       = determineImagesDir( args.imagesdirectory )
+    depotUrl        = args.depoturl or 'https://depot.ubosfiles.net'
 
-    print( '*** Upgrading system' )
-    myexec( 'sudo pacman -Syu' )
+    print( '*** Upgrading system.' )
+    ubos.utils.myexec( 'sudo pacman -Syu' )
 
-    print( '*** Ensuring all needed packages' )
+    print( '*** Ensuring all needed packages.' )
     ensurePackage( 'gnu-free-fonts' )
     ensurePackage( 'ttf-liberation' )
     ensurePackage( 'firefox' )
@@ -213,29 +197,29 @@ def setup( args ) :
     ensurePackage( 'java-environment' )
     ensurePackage( 'netbeans' )
 
-    print( '*** Running iptables' )
+    print( '*** Running iptables.' )
     for f in [ '/etc/iptables/iptables.rules', '/etc/iptables/ip6tables.rules' ] :
         if not os.path.exists( f ) :
-            myexec( f"sudo cp /etc/iptables/empty.rules {f}" )
-    myexec( 'sudo systemctl enable --now iptables ip6tables' )
+            ubos.utils.myexec( f"sudo cp /etc/iptables/empty.rules {f}" )
+    ubos.utils.myexec( 'sudo systemctl enable --now iptables ip6tables' )
 
     ensureDirectory( containerDir )
     ensureDirectory( imagesDir )
 
-    print( f"*** Setting up for release channel {channel} on arch {arch}" )
+    print( f"*** Setting up for release channel {channel} on arch {arch}." )
 
     imageName   = f"ubos-develop_{channel}_{arch}-container_LATEST.tar.xz"
     templateDir = f"{imagesDir}/ubos-develop-{channel}"
 
     if os.path.exists( f"{imagesDir}/{imageName}" ) :
-        print( '*** Have image already, not downloading nor checking for updates' )
+        print( '*** Have image already, not downloading nor checking for updates.' )
     else :
-        print( '*** Downloading a UBOS Linux container image. This may take a while' )
-        myexec( f"curl -o {imagesDir}/{imageName} https://depot.ubosfiles.net/{channel}/{arch}/images/{imageName}" )
+        print( '*** Downloading a UBOS Linux container image. This may take a while.' )
+        ubos.utils.myexec( f"curl -o {imagesDir}/{imageName} {depotUrl}/{channel}/{arch}/images/{imageName}" )
 
     if ensureSubvol( templateDir ) :
-        print( f"*** Unpacking image into {templateDir}" )
-        myexec( f"sudo tar -C {templateDir} -x -J -f {imagesDir}/{imageName}" )
+        print( f"*** Unpacking image into {templateDir}." )
+        ubos.utils.myexec( f"sudo tar -C {templateDir} -x -J -f {imagesDir}/{imageName}" )
 
 
 def createContainer( args ) :
@@ -261,8 +245,9 @@ def createContainer( args ) :
             siteTemplateUrl = '/usr/share/ubosdev-container/site-templates/mesh-default-site-development-debug.json'
 
     def cleanup() :
-        print( '*** Shutting down container' )
-        myexec( f"sudo machinectl poweroff {containerName} > /dev/null 2>&1" )
+        if 0 == ubos.utils.myexec( f"machinectl show {containerName} > /dev/null 2>&1" ) :
+            print( '*** Shutting down container' )
+            ubos.utils.myexec( f"sudo machinectl poweroff {containerName} > /dev/null 2>&1" )
 
     atexit.register( cleanup )
 
@@ -284,13 +269,13 @@ def createContainer( args ) :
         temp = tempfile.NamedTemporaryFile( delete=False )
         temp.write( b"[mesh]\nServer = https://depot.ubosfiles.net/$channel/$arch/mesh\n" )
         temp.close()
-        myexec( f"sudo mv {temp.name} {namedContainerRootDir}/etc/pacman.d/repositories.d/mesh" )
+        ubos.utils.myexec( f"sudo mv {temp.name} {namedContainerRootDir}/etc/pacman.d/repositories.d/mesh" )
 
         print( 'Opening up default debug ports 7777 and 7778' )
         temp = tempfile.NamedTemporaryFile( delete=False )
         temp.write( b"7777/tcp\n7778/tcp\n" )
         temp.close()
-        myexec( f"sudo mv {temp.name} {namedContainerRootDir}/etc/ubos/open-ports.d/java-debugging" )
+        ubos.utils.myexec( f"sudo mv {temp.name} {namedContainerRootDir}/etc/ubos/open-ports.d/java-debugging" )
 
 
     print( '*** Temporarily starting container for updates' )
@@ -301,12 +286,12 @@ def createContainer( args ) :
         else :
             ubos.logging.warning( 'Site template file does not exist, skipping:', siteTemplateUrl )
             timeTemplateUrl = None
-    myexec( f"sudo {cmd} > /dev/null 2>&1 &" ) # in the background
+    ubos.utils.myexec( f"sudo {cmd} > /dev/null 2>&1 &" ) # in the background
 
     # wait until the container is running
     while True :
         time.sleep( 5 )
-        if 0 == myexec( f"sudo systemctl -M {containerName} is-system-running > /dev/null" ) :
+        if 0 == ubos.utils.myexec( f"sudo systemctl -M {containerName} is-system-running > /dev/null" ) :
             break
 
     print( '*** Updating container' )
@@ -314,7 +299,7 @@ def createContainer( args ) :
     containerCmd += ' && pacman -S --noconfirm ubos-mesh-devtools'
     containerCmd += ' && snapper create-config .'
     containerCmd += ' && snapper create -d after-first-update'
-    myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
+    ubos.utils.myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
 
     if isMesh:
         print( '*** Setting PACKAGE_RESOURCES_PARENT_DIR to use assets from the source tree, not package' )
@@ -323,12 +308,12 @@ def createContainer( args ) :
         tmp.write(  b"# Take web app assets from the source tree, not the package; makes development faster\n" )
         temp.write( b"PACKAGE_RESOURCES_PARENT_DIR=/home/ubosdev/git/gitlab.com/ubos/ubos-datapalace:/home/ubosdev/git/gitlab.com/ubos/ubos-mesh-underbars-ui:/home/jernst/git/gitlab.com/ubos/ubos-mesh-underbars-ui-experimental:/home/ubosdev/git/gitlab.com/ubos/ubos-mesh\n" )
         temp.close()
-        myexec( f"sudo cat {temp.name} >> {namedContainerRootDir}/etc/diet4j/diet4j-jsvc-defaults.conf" )
+        ubos.utils.myexec( f"sudo cat {temp.name} >> {namedContainerRootDir}/etc/diet4j/diet4j-jsvc-defaults.conf" )
 
     if siteTemplateUrl and len( siteTemplateUrl ) > 0 :
         print( '*** Deploying site to container' )
         containerCmd = f"ubos-admin createsite --from-template {siteTemplateUrl} && snapper create -d after-first-site-deploy"
-        myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
+        ubos.utils.myexec( f"sudo machinectl shell {containerName} /bin/bash -c '{containerCmd}'" )
 
     # we registered a handler earlier that will shut down the container again
 
@@ -355,7 +340,7 @@ def runContainer( args ) :
     if siteTemplateUrl is not None and not siteTemplateUrl.startswith( 'http:' ) and not siteTemplateUrl.startswith( 'https:' ) :
         cmd += f" --bind {siteTemplateUrl}"
 
-    myexec( f"sudo {cmd}" )
+    ubos.utils.myexec( f"sudo {cmd}" )
 
 
 def deleteContainer( args ) :

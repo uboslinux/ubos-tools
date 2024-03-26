@@ -23,4 +23,4 @@ def addSubParser( parentParser, cmdName ) :
     cmdName: name of this command
     """
     parser = parentParser.add_parser( cmdName, help='List the templates that are available for UBOS development containers' )
-    parser.add_argument( '--imagesdirectory', default=None, help='Directory containing the downloaded images and unpacked container templates' )
+    parser.add_argument( '--imagesdirectory', default=None, help='Directory where downloaded images are stored' )

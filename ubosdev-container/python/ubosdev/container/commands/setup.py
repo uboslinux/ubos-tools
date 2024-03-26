@@ -20,10 +20,10 @@ def addSubParser( parentParser, cmdName ) :
     parentParser: the parent argparse parser
     cmdName: name of this command
     """
-    parser = parentParser.add_parser( cmdName, help='Set up a container-based development environment for UBOS Mesh on Arch Linux' )
-
+    parser = parentParser.add_parser( cmdName, help='Set up a container-based UBOS development environment on Arch Linux' )
     parser.add_argument( '--channel',            default='yellow', help='Release channel (default: yellow)' )
     parser.add_argument( '--arch',               default=None,     help='Processor architecture' )
-    parser.add_argument( '--containerdirectory', default=None,     help='Directory for the UBOS Linux containers' )
+    parser.add_argument( '--containerdirectory', default=None,     help='Directory where the UBOS Linux containers are stored' )
     parser.add_argument( '--imagesdirectory',    default=None,     help='Directory where downloaded images are stored' )
+    parser.add_argument( '--depoturl',           default=None,     help='URL of a non-default depot that holds images' )
 
