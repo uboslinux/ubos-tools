@@ -1,6 +1,6 @@
-# from AUR
+# from AUR, changed name of package
 # Maintainer: Kain Huang <iblader@gmail.com>
-pkgname=netbeans-bin
+pkgname=$(basename $(pwd))
 pkgver=21
 pkgrel=1
 pkgdesc='IDE for Java, HTML5, PHP, Groovy, C and C++'
@@ -17,13 +17,13 @@ optdepends=('php: for developing programs in php'
 sha512sums=('1bd5695755eb9547d88a5539a6e43884d787dba4da6ecadc1b261e07c1dda56d0a03986a66755c5d3a358216711c0393ac8fdd649e15c953bdfe380cb564ca65')
 
 build(){
-	gendesk -f -n \
-		--name "Netbeans ${pkgver}"\
-		--pkgname "netbeans-${pkgver}" \
-		--pkgdesc "$pkgdesc" \
-		--custom "StartupWMClass=NetBeans IDE Dev" \
-		--exec="/opt/netbeans-${pkgver}/bin/netbeans" \
-		--icon="/opt/netbeans-${pkgver}/netbeans-logo.svg"
+    gendesk -f -n \
+        --name "Netbeans ${pkgver}"\
+        --pkgname "netbeans-${pkgver}" \
+        --pkgdesc "$pkgdesc" \
+        --custom "StartupWMClass=NetBeans IDE Dev" \
+        --exec="/opt/netbeans-${pkgver}/bin/netbeans" \
+        --icon="/opt/netbeans-${pkgver}/netbeans-logo.svg"
 }
 
 package() {
