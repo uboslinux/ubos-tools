@@ -7,7 +7,7 @@
 
 # We run this on Arch, which may have a newer version of python than UBOS
 import sys
-sys.path.append( '/usr/lib/python3.10/site-packages' )
+sys.path.append( '/usr/lib/pythonPYTHONVER/site-packages' )
 
 import ubosdev.container
 ubosdev.container.run()

@@ -3,7 +3,7 @@ url="http://ubos.net/"
 maintainer=$developer
 pkgname=$(basename $(pwd))
 pkgver=$(cat PKGVER)
-pkgrel=1
+pkgrel=2
 pkgdesc="Manage UBOS development containers with some high-level commands"
 arch=('any')
 license=('AGPL3')
@@ -14,6 +14,16 @@ makedepends=(
     'python-setuptools'
 )
 options=('!strip')
+PYTHONVER=3.11
+# Add to the sys.path, so we can run this on Arch which may have a newer version of python than UBOS does
+
+prepare() {
+    ACTUALPYTHONVER=$(python --version | awk '{ print $2 }')
+    if [[ ${ACTUALPYTHONVER} != ${PYTHONVER}* ]]; then
+        echo ERROR while makepkg ${pkgname}: Adjust constant PYTHONVER=${PYTHONVER} to something compatible with ${ACTUALPYTHONVER}
+        exit 1
+    fi
+}
 
 package() {
     [[ -d "${srcdir}/build" ]] || mkdir -p "${srcdir}/build"
@@ -24,6 +34,7 @@ package() {
     python setup.py install --root=${pkgdir} --optimize=1
 
     install -D -m755 ${startdir}/bin/* -t ${pkgdir}/usr/bin/
+    perl -i -pe "s/PYTHONVER/${PYTHONVER}/g" ${pkgdir}/usr/bin/ubosdev-container
 
     install -D -m755 ${startdir}/site-templates/* -t ${pkgdir}/usr/share/${pkgname}/site-templates
 }
